@@ -19,5 +19,11 @@ __pycache__/
 # Logs
 *.log
 
+
 # SQLite
 *.sqlite3
+
+backend/venv/
+__pycache__/
+.idea/
+.env

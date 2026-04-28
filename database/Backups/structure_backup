@@ -1,0 +1,2364 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict Q3aS2b7xdEIzzNKhkuasqS7hb7hFsJ1uJmXZvpyovX7pwp0c3aGSf356ExGqwyE
+
+-- Dumped from database version 18.3 (Homebrew)
+-- Dumped by pg_dump version 18.2
+
+-- Started on 2026-04-27 15:22:55 -05
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- TOC entry 234 (class 1259 OID 16538)
+-- Name: cajas; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.cajas (
+    id bigint NOT NULL,
+    fecha_apertura timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    fecha_cierre timestamp with time zone,
+    usuario_apertura_id bigint NOT NULL,
+    usuario_cierre_id bigint,
+    efectivo_inicial numeric(12,2) NOT NULL,
+    efectivo_esperado numeric(12,2),
+    efectivo_obtenido numeric(12,2),
+    diferencia numeric(12,2),
+    estado character varying(20) DEFAULT 'ABIERTA'::character varying NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT chk_caja_estado CHECK (((estado)::text = ANY ((ARRAY['ABIERTA'::character varying, 'CERRADA'::character varying, 'ANULADA'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.cajas OWNER TO daniel;
+
+--
+-- TOC entry 233 (class 1259 OID 16537)
+-- Name: cajas_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.cajas_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.cajas_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4224 (class 0 OID 0)
+-- Dependencies: 233
+-- Name: cajas_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.cajas_id_seq OWNED BY public.cajas.id;
+
+
+--
+-- TOC entry 246 (class 1259 OID 16722)
+-- Name: categorias_producto; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.categorias_producto (
+    id bigint NOT NULL,
+    nombre character varying(40) NOT NULL,
+    descripcion character varying(100),
+    activo boolean DEFAULT true NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.categorias_producto OWNER TO daniel;
+
+--
+-- TOC entry 245 (class 1259 OID 16721)
+-- Name: categorias_producto_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.categorias_producto_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.categorias_producto_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4225 (class 0 OID 0)
+-- Dependencies: 245
+-- Name: categorias_producto_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.categorias_producto_id_seq OWNED BY public.categorias_producto.id;
+
+
+--
+-- TOC entry 266 (class 1259 OID 16971)
+-- Name: detalles_produccion; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.detalles_produccion (
+    id bigint NOT NULL,
+    produccion_id bigint NOT NULL,
+    receta_id bigint NOT NULL,
+    cantidad_esperada numeric(12,2) NOT NULL,
+    cantidad_real numeric(12,2),
+    CONSTRAINT chk_detalles_produccion_cantidad_esperada CHECK ((cantidad_esperada > (0)::numeric)),
+    CONSTRAINT chk_detalles_produccion_cantidad_real CHECK ((cantidad_real >= (0)::numeric))
+);
+
+
+ALTER TABLE public.detalles_produccion OWNER TO daniel;
+
+--
+-- TOC entry 265 (class 1259 OID 16970)
+-- Name: detalles_produccion_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.detalles_produccion_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.detalles_produccion_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4226 (class 0 OID 0)
+-- Dependencies: 265
+-- Name: detalles_produccion_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.detalles_produccion_id_seq OWNED BY public.detalles_produccion.id;
+
+
+--
+-- TOC entry 260 (class 1259 OID 16906)
+-- Name: detalles_receta; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.detalles_receta (
+    id bigint NOT NULL,
+    receta_id bigint NOT NULL,
+    producto_insumo_id bigint NOT NULL,
+    cantidad numeric(12,2) NOT NULL,
+    CONSTRAINT chk_detalles_receta_cantidad CHECK ((cantidad > (0)::numeric))
+);
+
+
+ALTER TABLE public.detalles_receta OWNER TO daniel;
+
+--
+-- TOC entry 259 (class 1259 OID 16905)
+-- Name: detalles_receta_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.detalles_receta_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.detalles_receta_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4227 (class 0 OID 0)
+-- Dependencies: 259
+-- Name: detalles_receta_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.detalles_receta_id_seq OWNED BY public.detalles_receta.id;
+
+
+--
+-- TOC entry 238 (class 1259 OID 16616)
+-- Name: detalles_venta; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.detalles_venta (
+    id bigint NOT NULL,
+    venta_id bigint NOT NULL,
+    producto_id bigint NOT NULL,
+    cantidad numeric(12,2) NOT NULL,
+    precio_unitario numeric(12,2) NOT NULL,
+    subtotal numeric(12,2) NOT NULL,
+    descuento numeric(12,2) DEFAULT 0 NOT NULL,
+    tipo_descuento_id bigint NOT NULL,
+    total numeric(12,2) NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT chk_detalle_cantidad CHECK ((cantidad > (0)::numeric)),
+    CONSTRAINT chk_detalle_precio CHECK ((precio_unitario >= (0)::numeric)),
+    CONSTRAINT chk_detalle_total CHECK ((total >= (0)::numeric))
+);
+
+
+ALTER TABLE public.detalles_venta OWNER TO daniel;
+
+--
+-- TOC entry 237 (class 1259 OID 16615)
+-- Name: detalles_venta_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.detalles_venta_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.detalles_venta_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4228 (class 0 OID 0)
+-- Dependencies: 237
+-- Name: detalles_venta_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.detalles_venta_id_seq OWNED BY public.detalles_venta.id;
+
+
+--
+-- TOC entry 224 (class 1259 OID 16424)
+-- Name: empleados; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.empleados (
+    id bigint NOT NULL,
+    nombre character varying(80) NOT NULL,
+    apellido character varying(80) NOT NULL,
+    documento character varying(30) NOT NULL,
+    celular character varying(20),
+    direccion character varying(150),
+    cargo character varying(80),
+    email character varying(120),
+    fecha_ingreso date NOT NULL,
+    fecha_retiro date,
+    salario numeric(12,2),
+    activo boolean DEFAULT true NOT NULL,
+    fecha_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.empleados OWNER TO daniel;
+
+--
+-- TOC entry 223 (class 1259 OID 16423)
+-- Name: empleados_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.empleados_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.empleados_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4229 (class 0 OID 0)
+-- Dependencies: 223
+-- Name: empleados_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.empleados_id_seq OWNED BY public.empleados.id;
+
+
+--
+-- TOC entry 222 (class 1259 OID 16407)
+-- Name: estados_usuarios; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.estados_usuarios (
+    id smallint CONSTRAINT estado_usuarios_id_not_null NOT NULL,
+    nombre character varying(50) CONSTRAINT estado_usuarios_nombre_not_null NOT NULL,
+    descripcion text,
+    activo boolean DEFAULT true CONSTRAINT estado_usuarios_activo_not_null NOT NULL,
+    fecha_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP CONSTRAINT estado_usuarios_fecha_creacion_not_null NOT NULL
+);
+
+
+ALTER TABLE public.estados_usuarios OWNER TO daniel;
+
+--
+-- TOC entry 221 (class 1259 OID 16406)
+-- Name: estado_usuarios_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.estado_usuarios_id_seq
+    AS smallint
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.estado_usuarios_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4230 (class 0 OID 0)
+-- Dependencies: 221
+-- Name: estado_usuarios_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.estado_usuarios_id_seq OWNED BY public.estados_usuarios.id;
+
+
+--
+-- TOC entry 262 (class 1259 OID 16928)
+-- Name: estados_produccion; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.estados_produccion (
+    id bigint NOT NULL,
+    nombre character varying(30) NOT NULL,
+    descripcion text NOT NULL,
+    activo boolean DEFAULT true NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.estados_produccion OWNER TO daniel;
+
+--
+-- TOC entry 261 (class 1259 OID 16927)
+-- Name: estados_produccion_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.estados_produccion_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.estados_produccion_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4231 (class 0 OID 0)
+-- Dependencies: 261
+-- Name: estados_produccion_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.estados_produccion_id_seq OWNED BY public.estados_produccion.id;
+
+
+--
+-- TOC entry 232 (class 1259 OID 16521)
+-- Name: metodos_pago; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.metodos_pago (
+    id bigint NOT NULL,
+    nombre character varying(50) NOT NULL,
+    descripcion text,
+    activo boolean DEFAULT true NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.metodos_pago OWNER TO daniel;
+
+--
+-- TOC entry 231 (class 1259 OID 16520)
+-- Name: metodos_pago_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.metodos_pago_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.metodos_pago_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4232 (class 0 OID 0)
+-- Dependencies: 231
+-- Name: metodos_pago_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.metodos_pago_id_seq OWNED BY public.metodos_pago.id;
+
+
+--
+-- TOC entry 242 (class 1259 OID 16669)
+-- Name: movimientos_caja; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.movimientos_caja (
+    id bigint NOT NULL,
+    caja_id bigint NOT NULL,
+    usuario_id bigint NOT NULL,
+    tipo_movimiento_id bigint NOT NULL,
+    valor numeric(12,2) NOT NULL,
+    observacion text NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT chk_movimientos_valor CHECK ((valor > (0)::numeric))
+);
+
+
+ALTER TABLE public.movimientos_caja OWNER TO daniel;
+
+--
+-- TOC entry 241 (class 1259 OID 16668)
+-- Name: movimientos_caja_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.movimientos_caja_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.movimientos_caja_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4233 (class 0 OID 0)
+-- Dependencies: 241
+-- Name: movimientos_caja_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.movimientos_caja_id_seq OWNED BY public.movimientos_caja.id;
+
+
+--
+-- TOC entry 256 (class 1259 OID 16830)
+-- Name: movimientos_stock_producto; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.movimientos_stock_producto (
+    id bigint NOT NULL,
+    producto_id bigint NOT NULL,
+    tipo_movimiento_id bigint NOT NULL,
+    cantidad numeric(12,2) NOT NULL,
+    stock_anterior numeric(12,2) NOT NULL,
+    stock_actual numeric(12,2) NOT NULL,
+    observaciones character varying(200),
+    usuario_id bigint NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT chk_movimientos_stock_producto_cantidad CHECK ((cantidad > (0)::numeric)),
+    CONSTRAINT chk_movimientos_stock_producto_stock_actual CHECK ((stock_actual >= (0)::numeric)),
+    CONSTRAINT chk_movimientos_stock_producto_stock_anterior CHECK ((stock_anterior >= (0)::numeric))
+);
+
+
+ALTER TABLE public.movimientos_stock_producto OWNER TO daniel;
+
+--
+-- TOC entry 255 (class 1259 OID 16829)
+-- Name: movimientos_stock_producto_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.movimientos_stock_producto_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.movimientos_stock_producto_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4234 (class 0 OID 0)
+-- Dependencies: 255
+-- Name: movimientos_stock_producto_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.movimientos_stock_producto_id_seq OWNED BY public.movimientos_stock_producto.id;
+
+
+--
+-- TOC entry 268 (class 1259 OID 16994)
+-- Name: pasos_receta; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.pasos_receta (
+    id bigint NOT NULL,
+    receta_id bigint NOT NULL,
+    orden_paso integer NOT NULL,
+    titulo character varying(80) NOT NULL,
+    descripcion text NOT NULL,
+    temperatura integer,
+    tiempo_minutos integer,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT chk_pasos_receta_orden CHECK ((orden_paso > 0)),
+    CONSTRAINT chk_pasos_receta_temperatura CHECK ((temperatura >= 0)),
+    CONSTRAINT chk_pasos_receta_tiempo CHECK ((tiempo_minutos >= 0))
+);
+
+
+ALTER TABLE public.pasos_receta OWNER TO daniel;
+
+--
+-- TOC entry 267 (class 1259 OID 16993)
+-- Name: pasos_receta_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.pasos_receta_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.pasos_receta_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4235 (class 0 OID 0)
+-- Dependencies: 267
+-- Name: pasos_receta_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.pasos_receta_id_seq OWNED BY public.pasos_receta.id;
+
+
+--
+-- TOC entry 264 (class 1259 OID 16946)
+-- Name: producciones; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.producciones (
+    id bigint NOT NULL,
+    fecha_programada timestamp with time zone NOT NULL,
+    fecha_inicio timestamp with time zone,
+    fecha_fin timestamp with time zone,
+    usuario_id bigint NOT NULL,
+    estado_produccion_id bigint NOT NULL,
+    observaciones text,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.producciones OWNER TO daniel;
+
+--
+-- TOC entry 263 (class 1259 OID 16945)
+-- Name: producciones_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.producciones_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.producciones_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4236 (class 0 OID 0)
+-- Dependencies: 263
+-- Name: producciones_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.producciones_id_seq OWNED BY public.producciones.id;
+
+
+--
+-- TOC entry 250 (class 1259 OID 16752)
+-- Name: productos; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.productos (
+    id bigint NOT NULL,
+    categoria_id bigint NOT NULL,
+    tipo_producto_id bigint NOT NULL,
+    nombre character varying(100) NOT NULL,
+    descripcion character varying(200),
+    codigo_barras text,
+    costo numeric(12,2) NOT NULL,
+    precio_venta numeric(12,2),
+    unidad_medida_id bigint NOT NULL,
+    activo boolean DEFAULT true NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT chk_productos_costo CHECK ((costo >= (0)::numeric)),
+    CONSTRAINT chk_productos_precio_venta CHECK ((precio_venta >= (0)::numeric))
+);
+
+
+ALTER TABLE public.productos OWNER TO daniel;
+
+--
+-- TOC entry 249 (class 1259 OID 16751)
+-- Name: productos_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.productos_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.productos_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4237 (class 0 OID 0)
+-- Dependencies: 249
+-- Name: productos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.productos_id_seq OWNED BY public.productos.id;
+
+
+--
+-- TOC entry 258 (class 1259 OID 16875)
+-- Name: recetas; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.recetas (
+    id bigint NOT NULL,
+    nombre_receta character varying(100) NOT NULL,
+    producto_resultado_id bigint NOT NULL,
+    descripcion text,
+    cantidad_resultado numeric(12,2) NOT NULL,
+    unidad_medida_resultado_id bigint NOT NULL,
+    activo boolean DEFAULT true NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT chk_recetas_cantidad_resultado CHECK ((cantidad_resultado > (0)::numeric))
+);
+
+
+ALTER TABLE public.recetas OWNER TO daniel;
+
+--
+-- TOC entry 257 (class 1259 OID 16874)
+-- Name: recetas_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.recetas_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.recetas_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4238 (class 0 OID 0)
+-- Dependencies: 257
+-- Name: recetas_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.recetas_id_seq OWNED BY public.recetas.id;
+
+
+--
+-- TOC entry 220 (class 1259 OID 16390)
+-- Name: roles; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.roles (
+    id smallint NOT NULL,
+    nombre character varying(60) NOT NULL,
+    descripcion text,
+    activo boolean DEFAULT true NOT NULL,
+    fecha_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.roles OWNER TO daniel;
+
+--
+-- TOC entry 219 (class 1259 OID 16389)
+-- Name: roles_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.roles_id_seq
+    AS smallint
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.roles_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4239 (class 0 OID 0)
+-- Dependencies: 219
+-- Name: roles_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.roles_id_seq OWNED BY public.roles.id;
+
+
+--
+-- TOC entry 252 (class 1259 OID 16792)
+-- Name: stock_producto; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.stock_producto (
+    id bigint NOT NULL,
+    producto_id bigint NOT NULL,
+    cantidad_actual numeric(12,2) NOT NULL,
+    fecha_ultima_actualizacion timestamp with time zone,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT chk_stock_producto_cantidad_actual CHECK ((cantidad_actual >= (0)::numeric))
+);
+
+
+ALTER TABLE public.stock_producto OWNER TO daniel;
+
+--
+-- TOC entry 251 (class 1259 OID 16791)
+-- Name: stock_producto_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.stock_producto_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.stock_producto_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4240 (class 0 OID 0)
+-- Dependencies: 251
+-- Name: stock_producto_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.stock_producto_id_seq OWNED BY public.stock_producto.id;
+
+
+--
+-- TOC entry 230 (class 1259 OID 16503)
+-- Name: tipos_descuento; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.tipos_descuento (
+    id bigint NOT NULL,
+    nombre character varying(50) NOT NULL,
+    descripcion text,
+    valor_descuento numeric(12,2) NOT NULL,
+    activo boolean DEFAULT true NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.tipos_descuento OWNER TO daniel;
+
+--
+-- TOC entry 229 (class 1259 OID 16502)
+-- Name: tipos_descuento_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.tipos_descuento_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.tipos_descuento_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4241 (class 0 OID 0)
+-- Dependencies: 229
+-- Name: tipos_descuento_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.tipos_descuento_id_seq OWNED BY public.tipos_descuento.id;
+
+
+--
+-- TOC entry 240 (class 1259 OID 16652)
+-- Name: tipos_movimiento_caja; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.tipos_movimiento_caja (
+    id bigint NOT NULL,
+    nombre character varying(50) NOT NULL,
+    naturaleza character varying(10) NOT NULL,
+    activo boolean DEFAULT true NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT chk_tipos_movimiento_caja_naturaleza CHECK (((naturaleza)::text = ANY ((ARRAY['ENTRADA'::character varying, 'SALIDA'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.tipos_movimiento_caja OWNER TO daniel;
+
+--
+-- TOC entry 239 (class 1259 OID 16651)
+-- Name: tipos_movimiento_caja_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.tipos_movimiento_caja_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.tipos_movimiento_caja_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4242 (class 0 OID 0)
+-- Dependencies: 239
+-- Name: tipos_movimiento_caja_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.tipos_movimiento_caja_id_seq OWNED BY public.tipos_movimiento_caja.id;
+
+
+--
+-- TOC entry 254 (class 1259 OID 16812)
+-- Name: tipos_movimiento_stock; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.tipos_movimiento_stock (
+    id bigint NOT NULL,
+    nombre character varying(50) NOT NULL,
+    descripcion character varying(150) NOT NULL,
+    naturaleza character varying(50) NOT NULL,
+    activo boolean DEFAULT true NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT chk_tipos_movimiento_stock_naturaleza CHECK (((naturaleza)::text = ANY ((ARRAY['ENTRADA'::character varying, 'SALIDA'::character varying, 'AJUSTE'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.tipos_movimiento_stock OWNER TO daniel;
+
+--
+-- TOC entry 253 (class 1259 OID 16811)
+-- Name: tipos_movimiento_stock_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.tipos_movimiento_stock_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.tipos_movimiento_stock_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4243 (class 0 OID 0)
+-- Dependencies: 253
+-- Name: tipos_movimiento_stock_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.tipos_movimiento_stock_id_seq OWNED BY public.tipos_movimiento_stock.id;
+
+
+--
+-- TOC entry 244 (class 1259 OID 16707)
+-- Name: tipos_producto; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.tipos_producto (
+    id bigint NOT NULL,
+    nombre character varying(50) NOT NULL,
+    descripcion character varying(100),
+    activo boolean DEFAULT true NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.tipos_producto OWNER TO daniel;
+
+--
+-- TOC entry 243 (class 1259 OID 16706)
+-- Name: tipos_producto_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.tipos_producto_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.tipos_producto_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4244 (class 0 OID 0)
+-- Dependencies: 243
+-- Name: tipos_producto_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.tipos_producto_id_seq OWNED BY public.tipos_producto.id;
+
+
+--
+-- TOC entry 228 (class 1259 OID 16486)
+-- Name: tipos_venta; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.tipos_venta (
+    id bigint NOT NULL,
+    nombre character varying(50) NOT NULL,
+    descripcion text,
+    activo boolean DEFAULT true NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.tipos_venta OWNER TO daniel;
+
+--
+-- TOC entry 227 (class 1259 OID 16485)
+-- Name: tipos_venta_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.tipos_venta_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.tipos_venta_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4245 (class 0 OID 0)
+-- Dependencies: 227
+-- Name: tipos_venta_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.tipos_venta_id_seq OWNED BY public.tipos_venta.id;
+
+
+--
+-- TOC entry 248 (class 1259 OID 16737)
+-- Name: unidades_medida; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.unidades_medida (
+    id bigint NOT NULL,
+    nombre character varying(20) NOT NULL,
+    descripcion character varying(100),
+    activo boolean DEFAULT true NOT NULL,
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.unidades_medida OWNER TO daniel;
+
+--
+-- TOC entry 247 (class 1259 OID 16736)
+-- Name: unidades_medida_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.unidades_medida_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.unidades_medida_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4246 (class 0 OID 0)
+-- Dependencies: 247
+-- Name: unidades_medida_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.unidades_medida_id_seq OWNED BY public.unidades_medida.id;
+
+
+--
+-- TOC entry 226 (class 1259 OID 16446)
+-- Name: usuarios; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.usuarios (
+    id bigint NOT NULL,
+    empleado_id bigint NOT NULL,
+    username character varying(50) NOT NULL,
+    password_hash text NOT NULL,
+    rol_id bigint NOT NULL,
+    email character varying(120),
+    ultimo_login timestamp without time zone,
+    estado_id bigint NOT NULL,
+    fecha_creacion timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.usuarios OWNER TO daniel;
+
+--
+-- TOC entry 225 (class 1259 OID 16445)
+-- Name: usuarios_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.usuarios_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.usuarios_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4247 (class 0 OID 0)
+-- Dependencies: 225
+-- Name: usuarios_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.usuarios_id_seq OWNED BY public.usuarios.id;
+
+
+--
+-- TOC entry 236 (class 1259 OID 16568)
+-- Name: ventas; Type: TABLE; Schema: public; Owner: daniel
+--
+
+CREATE TABLE public.ventas (
+    id bigint NOT NULL,
+    fecha timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    usuario_id bigint NOT NULL,
+    caja_id bigint NOT NULL,
+    metodo_pago_id bigint NOT NULL,
+    tipo_venta_id bigint NOT NULL,
+    subtotal numeric(12,2) NOT NULL,
+    descuento numeric(12,2) DEFAULT 0 NOT NULL,
+    total numeric(12,2) NOT NULL,
+    efectivo_recibido numeric(12,2),
+    cambio numeric(12,2),
+    observaciones character varying(200),
+    fecha_creacion timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT chk_ventas_descuento CHECK ((descuento >= (0)::numeric)),
+    CONSTRAINT chk_ventas_subtotal CHECK ((subtotal >= (0)::numeric)),
+    CONSTRAINT chk_ventas_total CHECK ((total >= (0)::numeric))
+);
+
+
+ALTER TABLE public.ventas OWNER TO daniel;
+
+--
+-- TOC entry 235 (class 1259 OID 16567)
+-- Name: ventas_id_seq; Type: SEQUENCE; Schema: public; Owner: daniel
+--
+
+CREATE SEQUENCE public.ventas_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.ventas_id_seq OWNER TO daniel;
+
+--
+-- TOC entry 4248 (class 0 OID 0)
+-- Dependencies: 235
+-- Name: ventas_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: daniel
+--
+
+ALTER SEQUENCE public.ventas_id_seq OWNED BY public.ventas.id;
+
+
+--
+-- TOC entry 3835 (class 2604 OID 16541)
+-- Name: cajas id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.cajas ALTER COLUMN id SET DEFAULT nextval('public.cajas_id_seq'::regclass);
+
+
+--
+-- TOC entry 3854 (class 2604 OID 16725)
+-- Name: categorias_producto id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.categorias_producto ALTER COLUMN id SET DEFAULT nextval('public.categorias_producto_id_seq'::regclass);
+
+
+--
+-- TOC entry 3879 (class 2604 OID 16974)
+-- Name: detalles_produccion id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.detalles_produccion ALTER COLUMN id SET DEFAULT nextval('public.detalles_produccion_id_seq'::regclass);
+
+
+--
+-- TOC entry 3873 (class 2604 OID 16909)
+-- Name: detalles_receta id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.detalles_receta ALTER COLUMN id SET DEFAULT nextval('public.detalles_receta_id_seq'::regclass);
+
+
+--
+-- TOC entry 3843 (class 2604 OID 16619)
+-- Name: detalles_venta id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.detalles_venta ALTER COLUMN id SET DEFAULT nextval('public.detalles_venta_id_seq'::regclass);
+
+
+--
+-- TOC entry 3821 (class 2604 OID 16427)
+-- Name: empleados id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.empleados ALTER COLUMN id SET DEFAULT nextval('public.empleados_id_seq'::regclass);
+
+
+--
+-- TOC entry 3874 (class 2604 OID 16931)
+-- Name: estados_produccion id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.estados_produccion ALTER COLUMN id SET DEFAULT nextval('public.estados_produccion_id_seq'::regclass);
+
+
+--
+-- TOC entry 3818 (class 2604 OID 16410)
+-- Name: estados_usuarios id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.estados_usuarios ALTER COLUMN id SET DEFAULT nextval('public.estado_usuarios_id_seq'::regclass);
+
+
+--
+-- TOC entry 3832 (class 2604 OID 16524)
+-- Name: metodos_pago id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.metodos_pago ALTER COLUMN id SET DEFAULT nextval('public.metodos_pago_id_seq'::regclass);
+
+
+--
+-- TOC entry 3849 (class 2604 OID 16672)
+-- Name: movimientos_caja id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.movimientos_caja ALTER COLUMN id SET DEFAULT nextval('public.movimientos_caja_id_seq'::regclass);
+
+
+--
+-- TOC entry 3868 (class 2604 OID 16833)
+-- Name: movimientos_stock_producto id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.movimientos_stock_producto ALTER COLUMN id SET DEFAULT nextval('public.movimientos_stock_producto_id_seq'::regclass);
+
+
+--
+-- TOC entry 3880 (class 2604 OID 16997)
+-- Name: pasos_receta id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.pasos_receta ALTER COLUMN id SET DEFAULT nextval('public.pasos_receta_id_seq'::regclass);
+
+
+--
+-- TOC entry 3877 (class 2604 OID 16949)
+-- Name: producciones id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.producciones ALTER COLUMN id SET DEFAULT nextval('public.producciones_id_seq'::regclass);
+
+
+--
+-- TOC entry 3860 (class 2604 OID 16755)
+-- Name: productos id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.productos ALTER COLUMN id SET DEFAULT nextval('public.productos_id_seq'::regclass);
+
+
+--
+-- TOC entry 3870 (class 2604 OID 16878)
+-- Name: recetas id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.recetas ALTER COLUMN id SET DEFAULT nextval('public.recetas_id_seq'::regclass);
+
+
+--
+-- TOC entry 3815 (class 2604 OID 16393)
+-- Name: roles id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.roles ALTER COLUMN id SET DEFAULT nextval('public.roles_id_seq'::regclass);
+
+
+--
+-- TOC entry 3863 (class 2604 OID 16795)
+-- Name: stock_producto id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.stock_producto ALTER COLUMN id SET DEFAULT nextval('public.stock_producto_id_seq'::regclass);
+
+
+--
+-- TOC entry 3829 (class 2604 OID 16506)
+-- Name: tipos_descuento id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.tipos_descuento ALTER COLUMN id SET DEFAULT nextval('public.tipos_descuento_id_seq'::regclass);
+
+
+--
+-- TOC entry 3846 (class 2604 OID 16655)
+-- Name: tipos_movimiento_caja id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.tipos_movimiento_caja ALTER COLUMN id SET DEFAULT nextval('public.tipos_movimiento_caja_id_seq'::regclass);
+
+
+--
+-- TOC entry 3865 (class 2604 OID 16815)
+-- Name: tipos_movimiento_stock id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.tipos_movimiento_stock ALTER COLUMN id SET DEFAULT nextval('public.tipos_movimiento_stock_id_seq'::regclass);
+
+
+--
+-- TOC entry 3851 (class 2604 OID 16710)
+-- Name: tipos_producto id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.tipos_producto ALTER COLUMN id SET DEFAULT nextval('public.tipos_producto_id_seq'::regclass);
+
+
+--
+-- TOC entry 3826 (class 2604 OID 16489)
+-- Name: tipos_venta id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.tipos_venta ALTER COLUMN id SET DEFAULT nextval('public.tipos_venta_id_seq'::regclass);
+
+
+--
+-- TOC entry 3857 (class 2604 OID 16740)
+-- Name: unidades_medida id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.unidades_medida ALTER COLUMN id SET DEFAULT nextval('public.unidades_medida_id_seq'::regclass);
+
+
+--
+-- TOC entry 3824 (class 2604 OID 16449)
+-- Name: usuarios id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.usuarios ALTER COLUMN id SET DEFAULT nextval('public.usuarios_id_seq'::regclass);
+
+
+--
+-- TOC entry 3839 (class 2604 OID 16571)
+-- Name: ventas id; Type: DEFAULT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.ventas ALTER COLUMN id SET DEFAULT nextval('public.ventas_id_seq'::regclass);
+
+
+--
+-- TOC entry 3942 (class 2606 OID 16553)
+-- Name: cajas cajas_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.cajas
+    ADD CONSTRAINT cajas_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3974 (class 2606 OID 16735)
+-- Name: categorias_producto categorias_producto_nombre_key; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.categorias_producto
+    ADD CONSTRAINT categorias_producto_nombre_key UNIQUE (nombre);
+
+
+--
+-- TOC entry 3976 (class 2606 OID 16733)
+-- Name: categorias_producto categorias_producto_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.categorias_producto
+    ADD CONSTRAINT categorias_producto_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4032 (class 2606 OID 16982)
+-- Name: detalles_produccion detalles_produccion_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.detalles_produccion
+    ADD CONSTRAINT detalles_produccion_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4016 (class 2606 OID 16916)
+-- Name: detalles_receta detalles_receta_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.detalles_receta
+    ADD CONSTRAINT detalles_receta_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3954 (class 2606 OID 16636)
+-- Name: detalles_venta detalles_venta_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.detalles_venta
+    ADD CONSTRAINT detalles_venta_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3914 (class 2606 OID 16442)
+-- Name: empleados empleados_documento_key; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.empleados
+    ADD CONSTRAINT empleados_documento_key UNIQUE (documento);
+
+
+--
+-- TOC entry 3916 (class 2606 OID 16444)
+-- Name: empleados empleados_email_key; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.empleados
+    ADD CONSTRAINT empleados_email_key UNIQUE (email);
+
+
+--
+-- TOC entry 3918 (class 2606 OID 16440)
+-- Name: empleados empleados_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.empleados
+    ADD CONSTRAINT empleados_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3910 (class 2606 OID 16422)
+-- Name: estados_usuarios estado_usuarios_nombre_key; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.estados_usuarios
+    ADD CONSTRAINT estado_usuarios_nombre_key UNIQUE (nombre);
+
+
+--
+-- TOC entry 3912 (class 2606 OID 16420)
+-- Name: estados_usuarios estado_usuarios_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.estados_usuarios
+    ADD CONSTRAINT estado_usuarios_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4020 (class 2606 OID 16944)
+-- Name: estados_produccion estados_produccion_nombre_key; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.estados_produccion
+    ADD CONSTRAINT estados_produccion_nombre_key UNIQUE (nombre);
+
+
+--
+-- TOC entry 4022 (class 2606 OID 16942)
+-- Name: estados_produccion estados_produccion_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.estados_produccion
+    ADD CONSTRAINT estados_produccion_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3938 (class 2606 OID 16536)
+-- Name: metodos_pago metodos_pago_nombre_key; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.metodos_pago
+    ADD CONSTRAINT metodos_pago_nombre_key UNIQUE (nombre);
+
+
+--
+-- TOC entry 3940 (class 2606 OID 16534)
+-- Name: metodos_pago metodos_pago_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.metodos_pago
+    ADD CONSTRAINT metodos_pago_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3968 (class 2606 OID 16685)
+-- Name: movimientos_caja movimientos_caja_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.movimientos_caja
+    ADD CONSTRAINT movimientos_caja_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4007 (class 2606 OID 16847)
+-- Name: movimientos_stock_producto movimientos_stock_producto_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.movimientos_stock_producto
+    ADD CONSTRAINT movimientos_stock_producto_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4039 (class 2606 OID 17011)
+-- Name: pasos_receta pasos_receta_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.pasos_receta
+    ADD CONSTRAINT pasos_receta_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4030 (class 2606 OID 16959)
+-- Name: producciones producciones_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.producciones
+    ADD CONSTRAINT producciones_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3987 (class 2606 OID 16775)
+-- Name: productos productos_codigo_barras_key; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.productos
+    ADD CONSTRAINT productos_codigo_barras_key UNIQUE (codigo_barras);
+
+
+--
+-- TOC entry 3989 (class 2606 OID 16773)
+-- Name: productos productos_nombre_key; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.productos
+    ADD CONSTRAINT productos_nombre_key UNIQUE (nombre);
+
+
+--
+-- TOC entry 3991 (class 2606 OID 16771)
+-- Name: productos productos_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.productos
+    ADD CONSTRAINT productos_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4012 (class 2606 OID 16894)
+-- Name: recetas recetas_nombre_receta_key; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.recetas
+    ADD CONSTRAINT recetas_nombre_receta_key UNIQUE (nombre_receta);
+
+
+--
+-- TOC entry 4014 (class 2606 OID 16892)
+-- Name: recetas recetas_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.recetas
+    ADD CONSTRAINT recetas_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3906 (class 2606 OID 16405)
+-- Name: roles roles_nombre_key; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.roles
+    ADD CONSTRAINT roles_nombre_key UNIQUE (nombre);
+
+
+--
+-- TOC entry 3908 (class 2606 OID 16403)
+-- Name: roles roles_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.roles
+    ADD CONSTRAINT roles_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3995 (class 2606 OID 16803)
+-- Name: stock_producto stock_producto_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.stock_producto
+    ADD CONSTRAINT stock_producto_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3997 (class 2606 OID 16805)
+-- Name: stock_producto stock_producto_producto_id_key; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.stock_producto
+    ADD CONSTRAINT stock_producto_producto_id_key UNIQUE (producto_id);
+
+
+--
+-- TOC entry 3934 (class 2606 OID 16519)
+-- Name: tipos_descuento tipos_descuento_nombre_key; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.tipos_descuento
+    ADD CONSTRAINT tipos_descuento_nombre_key UNIQUE (nombre);
+
+
+--
+-- TOC entry 3936 (class 2606 OID 16517)
+-- Name: tipos_descuento tipos_descuento_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.tipos_descuento
+    ADD CONSTRAINT tipos_descuento_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3960 (class 2606 OID 16667)
+-- Name: tipos_movimiento_caja tipos_movimiento_caja_nombre_key; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.tipos_movimiento_caja
+    ADD CONSTRAINT tipos_movimiento_caja_nombre_key UNIQUE (nombre);
+
+
+--
+-- TOC entry 3962 (class 2606 OID 16665)
+-- Name: tipos_movimiento_caja tipos_movimiento_caja_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.tipos_movimiento_caja
+    ADD CONSTRAINT tipos_movimiento_caja_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3999 (class 2606 OID 16828)
+-- Name: tipos_movimiento_stock tipos_movimiento_stock_nombre_key; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.tipos_movimiento_stock
+    ADD CONSTRAINT tipos_movimiento_stock_nombre_key UNIQUE (nombre);
+
+
+--
+-- TOC entry 4001 (class 2606 OID 16826)
+-- Name: tipos_movimiento_stock tipos_movimiento_stock_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.tipos_movimiento_stock
+    ADD CONSTRAINT tipos_movimiento_stock_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3970 (class 2606 OID 16720)
+-- Name: tipos_producto tipos_producto_nombre_key; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.tipos_producto
+    ADD CONSTRAINT tipos_producto_nombre_key UNIQUE (nombre);
+
+
+--
+-- TOC entry 3972 (class 2606 OID 16718)
+-- Name: tipos_producto tipos_producto_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.tipos_producto
+    ADD CONSTRAINT tipos_producto_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3930 (class 2606 OID 16501)
+-- Name: tipos_venta tipos_venta_nombre_key; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.tipos_venta
+    ADD CONSTRAINT tipos_venta_nombre_key UNIQUE (nombre);
+
+
+--
+-- TOC entry 3932 (class 2606 OID 16499)
+-- Name: tipos_venta tipos_venta_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.tipos_venta
+    ADD CONSTRAINT tipos_venta_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3978 (class 2606 OID 16750)
+-- Name: unidades_medida unidades_medida_nombre_key; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.unidades_medida
+    ADD CONSTRAINT unidades_medida_nombre_key UNIQUE (nombre);
+
+
+--
+-- TOC entry 3980 (class 2606 OID 16748)
+-- Name: unidades_medida unidades_medida_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.unidades_medida
+    ADD CONSTRAINT unidades_medida_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4041 (class 2606 OID 17013)
+-- Name: pasos_receta uq_pasos_receta_orden; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.pasos_receta
+    ADD CONSTRAINT uq_pasos_receta_orden UNIQUE (receta_id, orden_paso);
+
+
+--
+-- TOC entry 3924 (class 2606 OID 16465)
+-- Name: usuarios usuarios_email_key; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.usuarios
+    ADD CONSTRAINT usuarios_email_key UNIQUE (email);
+
+
+--
+-- TOC entry 3926 (class 2606 OID 16461)
+-- Name: usuarios usuarios_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.usuarios
+    ADD CONSTRAINT usuarios_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3928 (class 2606 OID 16463)
+-- Name: usuarios usuarios_username_key; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.usuarios
+    ADD CONSTRAINT usuarios_username_key UNIQUE (username);
+
+
+--
+-- TOC entry 3952 (class 2606 OID 16589)
+-- Name: ventas ventas_pkey; Type: CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.ventas
+    ADD CONSTRAINT ventas_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 3943 (class 1259 OID 16566)
+-- Name: idx_cajas_estado; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_cajas_estado ON public.cajas USING btree (estado);
+
+
+--
+-- TOC entry 3944 (class 1259 OID 16564)
+-- Name: idx_cajas_usuario_apertura; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_cajas_usuario_apertura ON public.cajas USING btree (usuario_apertura_id);
+
+
+--
+-- TOC entry 3945 (class 1259 OID 16565)
+-- Name: idx_cajas_usuario_cierre; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_cajas_usuario_cierre ON public.cajas USING btree (usuario_cierre_id);
+
+
+--
+-- TOC entry 4033 (class 1259 OID 17030)
+-- Name: idx_detalles_produccion_produccion_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_detalles_produccion_produccion_id ON public.detalles_produccion USING btree (produccion_id);
+
+
+--
+-- TOC entry 4034 (class 1259 OID 17031)
+-- Name: idx_detalles_produccion_receta_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_detalles_produccion_receta_id ON public.detalles_produccion USING btree (receta_id);
+
+
+--
+-- TOC entry 4017 (class 1259 OID 17023)
+-- Name: idx_detalles_receta_producto_insumo_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_detalles_receta_producto_insumo_id ON public.detalles_receta USING btree (producto_insumo_id);
+
+
+--
+-- TOC entry 4018 (class 1259 OID 17022)
+-- Name: idx_detalles_receta_receta_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_detalles_receta_receta_id ON public.detalles_receta USING btree (receta_id);
+
+
+--
+-- TOC entry 3955 (class 1259 OID 16648)
+-- Name: idx_detalles_venta_fecha_creacion; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_detalles_venta_fecha_creacion ON public.detalles_venta USING btree (fecha_creacion);
+
+
+--
+-- TOC entry 3956 (class 1259 OID 16647)
+-- Name: idx_detalles_venta_producto_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_detalles_venta_producto_id ON public.detalles_venta USING btree (producto_id);
+
+
+--
+-- TOC entry 3957 (class 1259 OID 16649)
+-- Name: idx_detalles_venta_tipo_descuento_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_detalles_venta_tipo_descuento_id ON public.detalles_venta USING btree (tipo_descuento_id);
+
+
+--
+-- TOC entry 3958 (class 1259 OID 16650)
+-- Name: idx_detalles_venta_venta_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_detalles_venta_venta_id ON public.detalles_venta USING btree (venta_id);
+
+
+--
+-- TOC entry 3919 (class 1259 OID 16484)
+-- Name: idx_empleados_nombre; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_empleados_nombre ON public.empleados USING btree (nombre);
+
+
+--
+-- TOC entry 4023 (class 1259 OID 17024)
+-- Name: idx_estados_produccion_activo; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_estados_produccion_activo ON public.estados_produccion USING btree (activo);
+
+
+--
+-- TOC entry 4002 (class 1259 OID 16873)
+-- Name: idx_mov_stock_fecha; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_mov_stock_fecha ON public.movimientos_stock_producto USING btree (fecha_creacion);
+
+
+--
+-- TOC entry 4003 (class 1259 OID 16870)
+-- Name: idx_mov_stock_producto_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_mov_stock_producto_id ON public.movimientos_stock_producto USING btree (producto_id);
+
+
+--
+-- TOC entry 4004 (class 1259 OID 16871)
+-- Name: idx_mov_stock_tipo_movimiento_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_mov_stock_tipo_movimiento_id ON public.movimientos_stock_producto USING btree (tipo_movimiento_id);
+
+
+--
+-- TOC entry 4005 (class 1259 OID 16872)
+-- Name: idx_mov_stock_usuario_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_mov_stock_usuario_id ON public.movimientos_stock_producto USING btree (usuario_id);
+
+
+--
+-- TOC entry 3963 (class 1259 OID 16701)
+-- Name: idx_movimientos_caja_caja_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_movimientos_caja_caja_id ON public.movimientos_caja USING btree (caja_id);
+
+
+--
+-- TOC entry 3964 (class 1259 OID 16704)
+-- Name: idx_movimientos_caja_fecha; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_movimientos_caja_fecha ON public.movimientos_caja USING btree (fecha_creacion);
+
+
+--
+-- TOC entry 3965 (class 1259 OID 16703)
+-- Name: idx_movimientos_caja_tipo_movimiento_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_movimientos_caja_tipo_movimiento_id ON public.movimientos_caja USING btree (tipo_movimiento_id);
+
+
+--
+-- TOC entry 3966 (class 1259 OID 16702)
+-- Name: idx_movimientos_caja_usuario_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_movimientos_caja_usuario_id ON public.movimientos_caja USING btree (usuario_id);
+
+
+--
+-- TOC entry 4035 (class 1259 OID 17033)
+-- Name: idx_pasos_receta_orden_paso; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_pasos_receta_orden_paso ON public.pasos_receta USING btree (orden_paso);
+
+
+--
+-- TOC entry 4036 (class 1259 OID 17032)
+-- Name: idx_pasos_receta_receta_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_pasos_receta_receta_id ON public.pasos_receta USING btree (receta_id);
+
+
+--
+-- TOC entry 4037 (class 1259 OID 17034)
+-- Name: idx_pasos_receta_receta_orden; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_pasos_receta_receta_orden ON public.pasos_receta USING btree (receta_id, orden_paso);
+
+
+--
+-- TOC entry 4024 (class 1259 OID 17029)
+-- Name: idx_producciones_estado_produccion_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_producciones_estado_produccion_id ON public.producciones USING btree (estado_produccion_id);
+
+
+--
+-- TOC entry 4025 (class 1259 OID 17027)
+-- Name: idx_producciones_fecha_fin; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_producciones_fecha_fin ON public.producciones USING btree (fecha_fin);
+
+
+--
+-- TOC entry 4026 (class 1259 OID 17026)
+-- Name: idx_producciones_fecha_inicio; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_producciones_fecha_inicio ON public.producciones USING btree (fecha_inicio);
+
+
+--
+-- TOC entry 4027 (class 1259 OID 17025)
+-- Name: idx_producciones_fecha_programada; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_producciones_fecha_programada ON public.producciones USING btree (fecha_programada);
+
+
+--
+-- TOC entry 4028 (class 1259 OID 17028)
+-- Name: idx_producciones_usuario_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_producciones_usuario_id ON public.producciones USING btree (usuario_id);
+
+
+--
+-- TOC entry 3981 (class 1259 OID 16867)
+-- Name: idx_productos_activo; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_productos_activo ON public.productos USING btree (activo);
+
+
+--
+-- TOC entry 3982 (class 1259 OID 16864)
+-- Name: idx_productos_categoria_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_productos_categoria_id ON public.productos USING btree (categoria_id);
+
+
+--
+-- TOC entry 3983 (class 1259 OID 16863)
+-- Name: idx_productos_nombre; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_productos_nombre ON public.productos USING btree (nombre);
+
+
+--
+-- TOC entry 3984 (class 1259 OID 16865)
+-- Name: idx_productos_tipo_producto_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_productos_tipo_producto_id ON public.productos USING btree (tipo_producto_id);
+
+
+--
+-- TOC entry 3985 (class 1259 OID 16866)
+-- Name: idx_productos_unidad_medida_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_productos_unidad_medida_id ON public.productos USING btree (unidad_medida_id);
+
+
+--
+-- TOC entry 4008 (class 1259 OID 17021)
+-- Name: idx_recetas_activo; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_recetas_activo ON public.recetas USING btree (activo);
+
+
+--
+-- TOC entry 4009 (class 1259 OID 17019)
+-- Name: idx_recetas_producto_resultado_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_recetas_producto_resultado_id ON public.recetas USING btree (producto_resultado_id);
+
+
+--
+-- TOC entry 4010 (class 1259 OID 17020)
+-- Name: idx_recetas_unidad_medida_resultado_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_recetas_unidad_medida_resultado_id ON public.recetas USING btree (unidad_medida_resultado_id);
+
+
+--
+-- TOC entry 3992 (class 1259 OID 16869)
+-- Name: idx_stock_producto_fecha_actualizacion; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_stock_producto_fecha_actualizacion ON public.stock_producto USING btree (fecha_ultima_actualizacion);
+
+
+--
+-- TOC entry 3993 (class 1259 OID 16868)
+-- Name: idx_stock_producto_producto_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_stock_producto_producto_id ON public.stock_producto USING btree (producto_id);
+
+
+--
+-- TOC entry 3920 (class 1259 OID 16481)
+-- Name: idx_usuarios_empleado_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_usuarios_empleado_id ON public.usuarios USING btree (empleado_id);
+
+
+--
+-- TOC entry 3921 (class 1259 OID 16483)
+-- Name: idx_usuarios_estado_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_usuarios_estado_id ON public.usuarios USING btree (estado_id);
+
+
+--
+-- TOC entry 3922 (class 1259 OID 16482)
+-- Name: idx_usuarios_rol_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_usuarios_rol_id ON public.usuarios USING btree (rol_id);
+
+
+--
+-- TOC entry 3946 (class 1259 OID 16613)
+-- Name: idx_ventas_caja_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_ventas_caja_id ON public.ventas USING btree (caja_id);
+
+
+--
+-- TOC entry 3947 (class 1259 OID 16610)
+-- Name: idx_ventas_fecha; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_ventas_fecha ON public.ventas USING btree (fecha);
+
+
+--
+-- TOC entry 3948 (class 1259 OID 16614)
+-- Name: idx_ventas_metodo_pago_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_ventas_metodo_pago_id ON public.ventas USING btree (metodo_pago_id);
+
+
+--
+-- TOC entry 3949 (class 1259 OID 16612)
+-- Name: idx_ventas_tipo_venta_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_ventas_tipo_venta_id ON public.ventas USING btree (tipo_venta_id);
+
+
+--
+-- TOC entry 3950 (class 1259 OID 16611)
+-- Name: idx_ventas_usuario_id; Type: INDEX; Schema: public; Owner: daniel
+--
+
+CREATE INDEX idx_ventas_usuario_id ON public.ventas USING btree (usuario_id);
+
+
+--
+-- TOC entry 4045 (class 2606 OID 16554)
+-- Name: cajas fk_caja_usuario_apertura; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.cajas
+    ADD CONSTRAINT fk_caja_usuario_apertura FOREIGN KEY (usuario_apertura_id) REFERENCES public.usuarios(id);
+
+
+--
+-- TOC entry 4046 (class 2606 OID 16559)
+-- Name: cajas fk_caja_usuario_cierre; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.cajas
+    ADD CONSTRAINT fk_caja_usuario_cierre FOREIGN KEY (usuario_cierre_id) REFERENCES public.usuarios(id);
+
+
+--
+-- TOC entry 4051 (class 2606 OID 16642)
+-- Name: detalles_venta fk_detalle_venta_tipo_descuento; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.detalles_venta
+    ADD CONSTRAINT fk_detalle_venta_tipo_descuento FOREIGN KEY (tipo_descuento_id) REFERENCES public.tipos_descuento(id);
+
+
+--
+-- TOC entry 4052 (class 2606 OID 16637)
+-- Name: detalles_venta fk_detalle_venta_venta; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.detalles_venta
+    ADD CONSTRAINT fk_detalle_venta_venta FOREIGN KEY (venta_id) REFERENCES public.ventas(id);
+
+
+--
+-- TOC entry 4069 (class 2606 OID 16988)
+-- Name: detalles_produccion fk_detalles_produccion_produccion; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.detalles_produccion
+    ADD CONSTRAINT fk_detalles_produccion_produccion FOREIGN KEY (produccion_id) REFERENCES public.producciones(id);
+
+
+--
+-- TOC entry 4070 (class 2606 OID 16983)
+-- Name: detalles_produccion fk_detalles_produccion_receta; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.detalles_produccion
+    ADD CONSTRAINT fk_detalles_produccion_receta FOREIGN KEY (receta_id) REFERENCES public.recetas(id);
+
+
+--
+-- TOC entry 4065 (class 2606 OID 16922)
+-- Name: detalles_receta fk_detalles_receta_producto_insumo; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.detalles_receta
+    ADD CONSTRAINT fk_detalles_receta_producto_insumo FOREIGN KEY (producto_insumo_id) REFERENCES public.productos(id);
+
+
+--
+-- TOC entry 4066 (class 2606 OID 16917)
+-- Name: detalles_receta fk_detalles_receta_receta; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.detalles_receta
+    ADD CONSTRAINT fk_detalles_receta_receta FOREIGN KEY (receta_id) REFERENCES public.recetas(id);
+
+
+--
+-- TOC entry 4053 (class 2606 OID 16686)
+-- Name: movimientos_caja fk_mov_caja; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.movimientos_caja
+    ADD CONSTRAINT fk_mov_caja FOREIGN KEY (caja_id) REFERENCES public.cajas(id);
+
+
+--
+-- TOC entry 4054 (class 2606 OID 16696)
+-- Name: movimientos_caja fk_mov_tipo; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.movimientos_caja
+    ADD CONSTRAINT fk_mov_tipo FOREIGN KEY (tipo_movimiento_id) REFERENCES public.tipos_movimiento_caja(id);
+
+
+--
+-- TOC entry 4055 (class 2606 OID 16691)
+-- Name: movimientos_caja fk_mov_usuario; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.movimientos_caja
+    ADD CONSTRAINT fk_mov_usuario FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id);
+
+
+--
+-- TOC entry 4060 (class 2606 OID 16848)
+-- Name: movimientos_stock_producto fk_movimientos_stock_producto_producto; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.movimientos_stock_producto
+    ADD CONSTRAINT fk_movimientos_stock_producto_producto FOREIGN KEY (producto_id) REFERENCES public.productos(id);
+
+
+--
+-- TOC entry 4061 (class 2606 OID 16853)
+-- Name: movimientos_stock_producto fk_movimientos_stock_producto_tipo_movimiento; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.movimientos_stock_producto
+    ADD CONSTRAINT fk_movimientos_stock_producto_tipo_movimiento FOREIGN KEY (tipo_movimiento_id) REFERENCES public.tipos_movimiento_stock(id);
+
+
+--
+-- TOC entry 4062 (class 2606 OID 16858)
+-- Name: movimientos_stock_producto fk_movimientos_stock_producto_usuarios; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.movimientos_stock_producto
+    ADD CONSTRAINT fk_movimientos_stock_producto_usuarios FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id);
+
+
+--
+-- TOC entry 4071 (class 2606 OID 17014)
+-- Name: pasos_receta fk_pasos_receta_receta; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.pasos_receta
+    ADD CONSTRAINT fk_pasos_receta_receta FOREIGN KEY (receta_id) REFERENCES public.recetas(id);
+
+
+--
+-- TOC entry 4067 (class 2606 OID 16965)
+-- Name: producciones fk_producciones_estado; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.producciones
+    ADD CONSTRAINT fk_producciones_estado FOREIGN KEY (estado_produccion_id) REFERENCES public.estados_produccion(id);
+
+
+--
+-- TOC entry 4068 (class 2606 OID 16960)
+-- Name: producciones fk_producciones_usuario; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.producciones
+    ADD CONSTRAINT fk_producciones_usuario FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id);
+
+
+--
+-- TOC entry 4056 (class 2606 OID 16776)
+-- Name: productos fk_producto_categoria; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.productos
+    ADD CONSTRAINT fk_producto_categoria FOREIGN KEY (categoria_id) REFERENCES public.categorias_producto(id);
+
+
+--
+-- TOC entry 4057 (class 2606 OID 16781)
+-- Name: productos fk_producto_tipo_producto; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.productos
+    ADD CONSTRAINT fk_producto_tipo_producto FOREIGN KEY (tipo_producto_id) REFERENCES public.tipos_producto(id);
+
+
+--
+-- TOC entry 4058 (class 2606 OID 16786)
+-- Name: productos fk_producto_unidad_medida; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.productos
+    ADD CONSTRAINT fk_producto_unidad_medida FOREIGN KEY (unidad_medida_id) REFERENCES public.unidades_medida(id);
+
+
+--
+-- TOC entry 4063 (class 2606 OID 16895)
+-- Name: recetas fk_recetas_producto_resultado; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.recetas
+    ADD CONSTRAINT fk_recetas_producto_resultado FOREIGN KEY (producto_resultado_id) REFERENCES public.productos(id);
+
+
+--
+-- TOC entry 4064 (class 2606 OID 16900)
+-- Name: recetas fk_recetas_unidad_medida_resultado; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.recetas
+    ADD CONSTRAINT fk_recetas_unidad_medida_resultado FOREIGN KEY (unidad_medida_resultado_id) REFERENCES public.unidades_medida(id);
+
+
+--
+-- TOC entry 4059 (class 2606 OID 16806)
+-- Name: stock_producto fk_stock_producto_producto; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.stock_producto
+    ADD CONSTRAINT fk_stock_producto_producto FOREIGN KEY (producto_id) REFERENCES public.productos(id);
+
+
+--
+-- TOC entry 4042 (class 2606 OID 16466)
+-- Name: usuarios fk_usuario_empleado; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.usuarios
+    ADD CONSTRAINT fk_usuario_empleado FOREIGN KEY (empleado_id) REFERENCES public.empleados(id);
+
+
+--
+-- TOC entry 4043 (class 2606 OID 16476)
+-- Name: usuarios fk_usuario_estado; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.usuarios
+    ADD CONSTRAINT fk_usuario_estado FOREIGN KEY (estado_id) REFERENCES public.estados_usuarios(id);
+
+
+--
+-- TOC entry 4044 (class 2606 OID 16471)
+-- Name: usuarios fk_usuario_rol; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.usuarios
+    ADD CONSTRAINT fk_usuario_rol FOREIGN KEY (rol_id) REFERENCES public.roles(id);
+
+
+--
+-- TOC entry 4047 (class 2606 OID 16605)
+-- Name: ventas fk_ventas_caja; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.ventas
+    ADD CONSTRAINT fk_ventas_caja FOREIGN KEY (caja_id) REFERENCES public.cajas(id);
+
+
+--
+-- TOC entry 4048 (class 2606 OID 16595)
+-- Name: ventas fk_ventas_metodo_pago; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.ventas
+    ADD CONSTRAINT fk_ventas_metodo_pago FOREIGN KEY (metodo_pago_id) REFERENCES public.metodos_pago(id);
+
+
+--
+-- TOC entry 4049 (class 2606 OID 16600)
+-- Name: ventas fk_ventas_tipo_venta; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.ventas
+    ADD CONSTRAINT fk_ventas_tipo_venta FOREIGN KEY (tipo_venta_id) REFERENCES public.tipos_venta(id);
+
+
+--
+-- TOC entry 4050 (class 2606 OID 16590)
+-- Name: ventas fk_ventas_usuario; Type: FK CONSTRAINT; Schema: public; Owner: daniel
+--
+
+ALTER TABLE ONLY public.ventas
+    ADD CONSTRAINT fk_ventas_usuario FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id);
+
+
+-- Completed on 2026-04-27 15:22:55 -05
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict Q3aS2b7xdEIzzNKhkuasqS7hb7hFsJ1uJmXZvpyovX7pwp0c3aGSf356ExGqwyE
+

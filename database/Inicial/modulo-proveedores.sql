@@ -1,0 +1,586 @@
+
+
+-- =====================================================
+-- TABLA ESTADOS_SOLICITUD_COMPRA
+-- Ej: PENDIENTE, COTIZANDO, APROBADA, RECHAZADA, COMPLETADA
+-- =====================================================
+ 
+CREATE TABLE estados_solicitud_compra (
+    id              SMALLSERIAL PRIMARY KEY,
+    nombre          VARCHAR(50) UNIQUE NOT NULL,
+    descripcion     TEXT,
+    activo          BOOLEAN NOT NULL DEFAULT TRUE,
+    fecha_creacion  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+ 
+ 
+-- =====================================================
+-- TABLA SOLICITUDES_COMPRA
+-- La crea cualquier empleado o el sistema por stock bajo
+-- =====================================================
+ 
+CREATE TABLE solicitudes_compra (
+    id              BIGSERIAL PRIMARY KEY,
+    estado_id       BIGINT NOT NULL,
+    origen          VARCHAR(20) NOT NULL DEFAULT 'MANUAL',
+    usuario_id      BIGINT,
+    observaciones   TEXT,
+    fecha_creacion  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ 
+    CONSTRAINT chk_solicitudes_compra_origen
+        CHECK (origen IN ('MANUAL', 'SISTEMA')),
+ 
+    CONSTRAINT fk_solicitudes_compra_estado
+        FOREIGN KEY (estado_id)
+        REFERENCES estados_solicitud_compra(id),
+ 
+    CONSTRAINT fk_solicitudes_compra_usuario
+        FOREIGN KEY (usuario_id)
+        REFERENCES usuarios(id)
+);
+ 
+CREATE INDEX idx_solicitudes_compra_estado_id
+ON solicitudes_compra(estado_id);
+ 
+CREATE INDEX idx_solicitudes_compra_usuario_id
+ON solicitudes_compra(usuario_id);
+ 
+CREATE INDEX idx_solicitudes_compra_origen
+ON solicitudes_compra(origen);
+ 
+CREATE INDEX idx_solicitudes_compra_fecha_creacion
+ON solicitudes_compra(fecha_creacion);
+ 
+ 
+-- =====================================================
+-- TABLA DETALLES_SOLICITUD_COMPRA
+-- unidad_medida la hereda del producto
+-- =====================================================
+ 
+CREATE TABLE detalles_solicitud_compra (
+    id                   BIGSERIAL PRIMARY KEY,
+    solicitud_id         BIGINT NOT NULL,
+    producto_id          BIGINT NOT NULL,
+    cantidad_solicitada  NUMERIC(12,2) NOT NULL,
+    observaciones        VARCHAR(200),
+ 
+    CONSTRAINT chk_detalles_solicitud_cantidad
+        CHECK (cantidad_solicitada > 0),
+ 
+    CONSTRAINT fk_detalles_solicitud_solicitud
+        FOREIGN KEY (solicitud_id)
+        REFERENCES solicitudes_compra(id),
+ 
+    CONSTRAINT fk_detalles_solicitud_producto
+        FOREIGN KEY (producto_id)
+        REFERENCES productos(id)
+);
+ 
+CREATE INDEX idx_detalles_solicitud_solicitud_id
+ON detalles_solicitud_compra(solicitud_id);
+ 
+CREATE INDEX idx_detalles_solicitud_producto_id
+ON detalles_solicitud_compra(producto_id);
+ 
+ 
+-- =====================================================
+-- TABLA ESTADOS_COTIZACION
+-- Ej: PENDIENTE, ACEPTADA, RECHAZADA
+-- =====================================================
+ 
+CREATE TABLE estados_cotizacion (
+    id              SMALLSERIAL PRIMARY KEY,
+    nombre          VARCHAR(50) UNIQUE NOT NULL,
+    descripcion     TEXT,
+    activo          BOOLEAN NOT NULL DEFAULT TRUE,
+    fecha_creacion  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+ 
+ 
+-- =====================================================
+-- TABLA COTIZACIONES
+-- Una cotizacion por proveedor consultado
+-- Una solicitud puede tener varias cotizaciones
+-- =====================================================
+ 
+CREATE TABLE cotizaciones (
+    id              BIGSERIAL PRIMARY KEY,
+    solicitud_id    BIGINT NOT NULL,
+    proveedor_id    BIGINT NOT NULL,
+    estado_id       BIGINT NOT NULL,
+    canal           VARCHAR(20) NOT NULL,
+    observaciones   TEXT,
+    fecha_creacion  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ 
+    CONSTRAINT chk_cotizaciones_canal
+        CHECK (canal IN ('VERBAL', 'MENSAJE', 'CORREO', 'OTRO')),
+ 
+    CONSTRAINT fk_cotizaciones_solicitud
+        FOREIGN KEY (solicitud_id)
+        REFERENCES solicitudes_compra(id),
+ 
+    CONSTRAINT fk_cotizaciones_proveedor
+        FOREIGN KEY (proveedor_id)
+        REFERENCES proveedores(id),
+ 
+    CONSTRAINT fk_cotizaciones_estado
+        FOREIGN KEY (estado_id)
+        REFERENCES estados_cotizacion(id)
+);
+ 
+CREATE INDEX idx_cotizaciones_solicitud_id
+ON cotizaciones(solicitud_id);
+ 
+CREATE INDEX idx_cotizaciones_proveedor_id
+ON cotizaciones(proveedor_id);
+ 
+CREATE INDEX idx_cotizaciones_estado_id
+ON cotizaciones(estado_id);
+ 
+CREATE INDEX idx_cotizaciones_fecha_creacion
+ON cotizaciones(fecha_creacion);
+ 
+ 
+-- =====================================================
+-- TABLA DETALLES_COTIZACION
+-- Productos con precio cotizado por proveedor
+-- =====================================================
+ 
+CREATE TABLE detalles_cotizacion (
+    id               BIGSERIAL PRIMARY KEY,
+    cotizacion_id    BIGINT NOT NULL,
+    producto_id      BIGINT NOT NULL,
+    cantidad         NUMERIC(12,2) NOT NULL,
+    precio_unitario  NUMERIC(12,2) NOT NULL,
+    subtotal         NUMERIC(12,2) NOT NULL,
+ 
+    CONSTRAINT chk_detalles_cotizacion_cantidad
+        CHECK (cantidad > 0),
+ 
+    CONSTRAINT chk_detalles_cotizacion_precio_unitario
+        CHECK (precio_unitario >= 0),
+ 
+    CONSTRAINT chk_detalles_cotizacion_subtotal
+        CHECK (subtotal >= 0),
+ 
+    CONSTRAINT fk_detalles_cotizacion_cotizacion
+        FOREIGN KEY (cotizacion_id)
+        REFERENCES cotizaciones(id),
+ 
+    CONSTRAINT fk_detalles_cotizacion_producto
+        FOREIGN KEY (producto_id)
+        REFERENCES productos(id)
+);
+ 
+CREATE INDEX idx_detalles_cotizacion_cotizacion_id
+ON detalles_cotizacion(cotizacion_id);
+ 
+CREATE INDEX idx_detalles_cotizacion_producto_id
+ON detalles_cotizacion(producto_id);
+ 
+ 
+-- =====================================================
+-- TABLA ESTADOS_ORDEN_COMPRA
+-- Ej: PENDIENTE, RECIBIDA, RECHAZADA, ANULADA
+-- =====================================================
+ 
+CREATE TABLE estados_orden_compra (
+    id              SMALLSERIAL PRIMARY KEY,
+    nombre          VARCHAR(50) UNIQUE NOT NULL,
+    descripcion     TEXT,
+    activo          BOOLEAN NOT NULL DEFAULT TRUE,
+    fecha_creacion  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+ 
+ 
+-- =====================================================
+-- TABLA ORDENES_COMPRA
+-- El admin aprueba y genera la orden formal al proveedor
+-- =====================================================
+ 
+CREATE TABLE ordenes_compra (
+    id                      BIGSERIAL PRIMARY KEY,
+    solicitud_id            BIGINT NOT NULL,
+    cotizacion_id           BIGINT,
+    proveedor_id            BIGINT NOT NULL,
+    usuario_aprobacion_id   BIGINT NOT NULL,
+    estado_id               BIGINT NOT NULL,
+    total                   NUMERIC(12,2) NOT NULL,
+    es_credito              BOOLEAN NOT NULL DEFAULT FALSE,
+    fecha_entrega_esperada  TIMESTAMPTZ,
+    observaciones           TEXT,
+    fecha_creacion          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ 
+    CONSTRAINT chk_ordenes_compra_total
+        CHECK (total >= 0),
+ 
+    CONSTRAINT fk_ordenes_compra_solicitud
+        FOREIGN KEY (solicitud_id)
+        REFERENCES solicitudes_compra(id),
+ 
+    CONSTRAINT fk_ordenes_compra_cotizacion
+        FOREIGN KEY (cotizacion_id)
+        REFERENCES cotizaciones(id),
+ 
+    CONSTRAINT fk_ordenes_compra_proveedor
+        FOREIGN KEY (proveedor_id)
+        REFERENCES proveedores(id),
+ 
+    CONSTRAINT fk_ordenes_compra_usuario_aprobacion
+        FOREIGN KEY (usuario_aprobacion_id)
+        REFERENCES usuarios(id),
+ 
+    CONSTRAINT fk_ordenes_compra_estado
+        FOREIGN KEY (estado_id)
+        REFERENCES estados_orden_compra(id)
+);
+ 
+CREATE INDEX idx_ordenes_compra_solicitud_id
+ON ordenes_compra(solicitud_id);
+ 
+CREATE INDEX idx_ordenes_compra_cotizacion_id
+ON ordenes_compra(cotizacion_id);
+ 
+CREATE INDEX idx_ordenes_compra_proveedor_id
+ON ordenes_compra(proveedor_id);
+ 
+CREATE INDEX idx_ordenes_compra_usuario_aprobacion_id
+ON ordenes_compra(usuario_aprobacion_id);
+ 
+CREATE INDEX idx_ordenes_compra_estado_id
+ON ordenes_compra(estado_id);
+ 
+CREATE INDEX idx_ordenes_compra_fecha_creacion
+ON ordenes_compra(fecha_creacion);
+ 
+CREATE INDEX idx_ordenes_compra_es_credito
+ON ordenes_compra(es_credito);
+ 
+ 
+-- =====================================================
+-- TABLA DETALLES_ORDEN_COMPRA
+-- Productos de la orden con cantidad y precio acordado
+-- =====================================================
+ 
+CREATE TABLE detalles_orden_compra (
+    id               BIGSERIAL PRIMARY KEY,
+    orden_compra_id  BIGINT NOT NULL,
+    producto_id      BIGINT NOT NULL,
+    cantidad_esperada NUMERIC(12,2) NOT NULL,
+    precio_unitario  NUMERIC(12,2) NOT NULL,
+    subtotal         NUMERIC(12,2) NOT NULL,
+ 
+    CONSTRAINT chk_detalles_orden_compra_cantidad
+        CHECK (cantidad_esperada > 0),
+ 
+    CONSTRAINT chk_detalles_orden_compra_precio
+        CHECK (precio_unitario >= 0),
+ 
+    CONSTRAINT chk_detalles_orden_compra_subtotal
+        CHECK (subtotal >= 0),
+ 
+    CONSTRAINT fk_detalles_orden_compra_orden
+        FOREIGN KEY (orden_compra_id)
+        REFERENCES ordenes_compra(id),
+ 
+    CONSTRAINT fk_detalles_orden_compra_producto
+        FOREIGN KEY (producto_id)
+        REFERENCES productos(id)
+);
+ 
+CREATE INDEX idx_detalles_orden_compra_orden_id
+ON detalles_orden_compra(orden_compra_id);
+ 
+CREATE INDEX idx_detalles_orden_compra_producto_id
+ON detalles_orden_compra(producto_id);
+ 
+ 
+-- =====================================================
+-- TABLA ESTADOS_RECEPCION_COMPRA
+-- Ej: PENDIENTE, APROBADA, RECHAZADA
+-- =====================================================
+ 
+CREATE TABLE estados_recepcion_compra (
+    id              SMALLSERIAL PRIMARY KEY,
+    nombre          VARCHAR(50) UNIQUE NOT NULL,
+    descripcion     TEXT,
+    activo          BOOLEAN NOT NULL DEFAULT TRUE,
+    fecha_creacion  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+ 
+ 
+-- =====================================================
+-- TABLA RECEPCIONES_COMPRA
+-- Cuando llega la mercancia del proveedor
+-- =====================================================
+ 
+CREATE TABLE recepciones_compra (
+    id               BIGSERIAL PRIMARY KEY,
+    orden_compra_id  BIGINT NOT NULL,
+    usuario_id       BIGINT NOT NULL,
+    estado_id        BIGINT NOT NULL,
+    numero_factura   VARCHAR(50),
+    observaciones    TEXT,
+    fecha_recepcion  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_creacion   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ 
+    CONSTRAINT fk_recepciones_compra_orden
+        FOREIGN KEY (orden_compra_id)
+        REFERENCES ordenes_compra(id),
+ 
+    CONSTRAINT fk_recepciones_compra_usuario
+        FOREIGN KEY (usuario_id)
+        REFERENCES usuarios(id),
+ 
+    CONSTRAINT fk_recepciones_compra_estado
+        FOREIGN KEY (estado_id)
+        REFERENCES estados_recepcion_compra(id)
+);
+ 
+CREATE INDEX idx_recepciones_compra_orden_id
+ON recepciones_compra(orden_compra_id);
+ 
+CREATE INDEX idx_recepciones_compra_usuario_id
+ON recepciones_compra(usuario_id);
+ 
+CREATE INDEX idx_recepciones_compra_estado_id
+ON recepciones_compra(estado_id);
+ 
+CREATE INDEX idx_recepciones_compra_fecha_recepcion
+ON recepciones_compra(fecha_recepcion);
+ 
+ 
+-- =====================================================
+-- TABLA DETALLES_RECEPCION_COMPRA
+-- Que llego vs que se esperaba + validacion de calidad
+-- =====================================================
+ 
+CREATE TABLE detalles_recepcion_compra (
+    id                  BIGSERIAL PRIMARY KEY,
+    recepcion_id        BIGINT NOT NULL,
+    producto_id         BIGINT NOT NULL,
+    cantidad_esperada   NUMERIC(12,2) NOT NULL,
+    cantidad_recibida   NUMERIC(12,2) NOT NULL,
+    calidad_aprobada    BOOLEAN NOT NULL DEFAULT TRUE,
+    observaciones       VARCHAR(200),
+ 
+    CONSTRAINT chk_detalles_recepcion_cantidad_esperada
+        CHECK (cantidad_esperada > 0),
+ 
+    CONSTRAINT chk_detalles_recepcion_cantidad_recibida
+        CHECK (cantidad_recibida >= 0),
+ 
+    CONSTRAINT fk_detalles_recepcion_recepcion
+        FOREIGN KEY (recepcion_id)
+        REFERENCES recepciones_compra(id),
+ 
+    CONSTRAINT fk_detalles_recepcion_producto
+        FOREIGN KEY (producto_id)
+        REFERENCES productos(id)
+);
+ 
+CREATE INDEX idx_detalles_recepcion_recepcion_id
+ON detalles_recepcion_compra(recepcion_id);
+ 
+CREATE INDEX idx_detalles_recepcion_producto_id
+ON detalles_recepcion_compra(producto_id);
+ 
+ 
+-- =====================================================
+-- TABLA ESTADOS_CUENTA_POR_PAGAR
+-- Ej: PENDIENTE, PAGADA, VENCIDA, ANULADA
+-- =====================================================
+ 
+CREATE TABLE estados_cuenta_por_pagar (
+    id              SMALLSERIAL PRIMARY KEY,
+    nombre          VARCHAR(50) UNIQUE NOT NULL,
+    descripcion     TEXT,
+    activo          BOOLEAN NOT NULL DEFAULT TRUE,
+    fecha_creacion  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+ 
+ 
+-- =====================================================
+-- TABLA CUENTAS_POR_PAGAR
+-- Solo se crea si la orden es a credito (es_credito = TRUE)
+-- =====================================================
+ 
+CREATE TABLE cuentas_por_pagar (
+    id               BIGSERIAL PRIMARY KEY,
+    orden_compra_id  BIGINT NOT NULL,
+    proveedor_id     BIGINT NOT NULL,
+    estado_id        BIGINT NOT NULL,
+    monto_total      NUMERIC(12,2) NOT NULL,
+    fecha_vencimiento TIMESTAMPTZ NOT NULL,
+    fecha_creacion   TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ 
+    CONSTRAINT chk_cuentas_por_pagar_monto
+        CHECK (monto_total >= 0),
+ 
+    CONSTRAINT fk_cuentas_por_pagar_orden
+        FOREIGN KEY (orden_compra_id)
+        REFERENCES ordenes_compra(id),
+ 
+    CONSTRAINT fk_cuentas_por_pagar_proveedor
+        FOREIGN KEY (proveedor_id)
+        REFERENCES proveedores(id),
+ 
+    CONSTRAINT fk_cuentas_por_pagar_estado
+        FOREIGN KEY (estado_id)
+        REFERENCES estados_cuenta_por_pagar(id)
+);
+ 
+CREATE INDEX idx_cuentas_por_pagar_orden_id
+ON cuentas_por_pagar(orden_compra_id);
+ 
+CREATE INDEX idx_cuentas_por_pagar_proveedor_id
+ON cuentas_por_pagar(proveedor_id);
+ 
+CREATE INDEX idx_cuentas_por_pagar_estado_id
+ON cuentas_por_pagar(estado_id);
+ 
+CREATE INDEX idx_cuentas_por_pagar_fecha_vencimiento
+ON cuentas_por_pagar(fecha_vencimiento);
+ 
+ 
+-- =====================================================
+-- TABLA PAGOS_PROVEEDOR
+-- Registro del pago cuando se cancela la deuda
+-- =====================================================
+ 
+CREATE TABLE pagos_proveedor (
+    id                   BIGSERIAL PRIMARY KEY,
+    cuenta_por_pagar_id  BIGINT NOT NULL,
+    usuario_id           BIGINT NOT NULL,
+    metodo_pago_id       BIGINT NOT NULL,
+    monto                NUMERIC(12,2) NOT NULL,
+    observaciones        VARCHAR(200),
+    fecha_pago           TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_creacion       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ 
+    CONSTRAINT chk_pagos_proveedor_monto
+        CHECK (monto > 0),
+ 
+    CONSTRAINT fk_pagos_proveedor_cuenta
+        FOREIGN KEY (cuenta_por_pagar_id)
+        REFERENCES cuentas_por_pagar(id),
+ 
+    CONSTRAINT fk_pagos_proveedor_usuario
+        FOREIGN KEY (usuario_id)
+        REFERENCES usuarios(id),
+ 
+    CONSTRAINT fk_pagos_proveedor_metodo_pago
+        FOREIGN KEY (metodo_pago_id)
+        REFERENCES metodos_pago(id)
+);
+ 
+CREATE INDEX idx_pagos_proveedor_cuenta_id
+ON pagos_proveedor(cuenta_por_pagar_id);
+ 
+CREATE INDEX idx_pagos_proveedor_usuario_id
+ON pagos_proveedor(usuario_id);
+ 
+CREATE INDEX idx_pagos_proveedor_metodo_pago_id
+ON pagos_proveedor(metodo_pago_id);
+ 
+CREATE INDEX idx_pagos_proveedor_fecha_pago
+ON pagos_proveedor(fecha_pago);
+ 
+ 
+-- =====================================================
+-- TABLAS PUENTE - TRAZABILIDAD DE MOVIMIENTOS DE STOCK
+-- =====================================================
+-- Estas tablas conectan cada movimiento de stock con
+-- su origen exacto: una venta, una compra o una producción.
+-- Se complementan con tipo_movimiento_id (clasificación rápida)
+-- y añaden trazabilidad precisa para auditoría y anulaciones.
+-- =====================================================
+
+
+-- =====================================================
+-- TABLA PUENTE: PRODUCCION → MOVIMIENTOS DE STOCK
+-- =====================================================
+-- Registra qué movimientos de stock generó cada producción.
+-- Una producción genera mínimo dos movimientos:
+--   - Salidas por cada insumo consumido
+--   - Entrada del producto terminado resultante
+
+CREATE TABLE produccion_movimientos_stock (
+    produccion_id       BIGINT NOT NULL,
+    movimiento_stock_id BIGINT NOT NULL,
+
+    PRIMARY KEY (produccion_id, movimiento_stock_id),
+
+    CONSTRAINT fk_prod_mov_stock_produccion
+        FOREIGN KEY (produccion_id)
+        REFERENCES producciones(id),
+
+    CONSTRAINT fk_prod_mov_stock_movimiento
+        FOREIGN KEY (movimiento_stock_id)
+        REFERENCES movimientos_stock_producto(id)
+);
+
+CREATE INDEX idx_prod_mov_stock_produccion_id
+ON produccion_movimientos_stock(produccion_id);
+
+CREATE INDEX idx_prod_mov_stock_movimiento_id
+ON produccion_movimientos_stock(movimiento_stock_id);
+
+
+-- =====================================================
+-- TABLA PUENTE: COMPRA → MOVIMIENTOS DE STOCK
+-- =====================================================
+-- Registra qué movimientos de stock generó cada compra.
+-- Una compra genera entradas de stock por cada producto
+-- o insumo incluido en el detalle de la compra.
+
+CREATE TABLE recepcion_movimientos_stock (
+    recepcion_id BIGINT NOT NULL,
+    movimiento_stock_id BIGINT NOT NULL,
+
+    PRIMARY KEY (recepcion_id, movimiento_stock_id),
+
+    CONSTRAINT fk_compra_mov_stock_recepcion
+        FOREIGN KEY (recepcion_id)
+        REFERENCES recepciones_compra(id),
+
+    CONSTRAINT fk_compra_mov_stock_movimiento
+        FOREIGN KEY (movimiento_stock_id)
+        REFERENCES movimientos_stock_producto(id)
+);
+
+CREATE INDEX idx_compra_mov_stock_recepcion_id
+ON recepcion_movimientos_stock(recepcion_id);
+
+CREATE INDEX idx_compra_mov_stock_movimiento_id
+ON recepcion_movimientos_stock(movimiento_stock_id);
+
+
+-- =====================================================
+-- TABLA PUENTE: VENTA → MOVIMIENTOS DE STOCK
+-- =====================================================
+-- Registra qué movimientos de stock generó cada venta.
+-- Una venta genera salidas de stock por cada producto
+-- vendido en el detalle de la venta.
+-- Clave para revertir stock en caso de anulación de venta.
+
+CREATE TABLE venta_movimientos_stock (
+    venta_id            BIGINT NOT NULL,
+    movimiento_stock_id BIGINT NOT NULL,
+
+    PRIMARY KEY (venta_id, movimiento_stock_id),
+
+    CONSTRAINT fk_venta_mov_stock_venta
+        FOREIGN KEY (venta_id)
+        REFERENCES ventas(id),
+
+    CONSTRAINT fk_venta_mov_stock_movimiento
+        FOREIGN KEY (movimiento_stock_id)
+        REFERENCES movimientos_stock_producto(id)
+);
+
+CREATE INDEX idx_venta_mov_stock_venta_id
+ON venta_movimientos_stock(venta_id);
+
+CREATE INDEX idx_venta_mov_stock_movimiento_id
+ON venta_movimientos_stock(movimiento_stock_id);

@@ -1,0 +1,6 @@
+PySide6
+fastapi
+uvicorn
+httpx
+pytest
+pytest-qt

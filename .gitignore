@@ -1,11 +1,13 @@
 # Entorno virtual
 venv/
 env/
+.venv/
 
 # Python
 __pycache__/
 *.pyc
 *.pyo
+.pytest_cache/
 
 # Variables sensibles
 .env
@@ -25,5 +27,4 @@ __pycache__/
 
 backend/venv/
 __pycache__/
-.idea/
 .env

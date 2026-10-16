@@ -30,7 +30,7 @@ Leer también: `AGENTS.md`, `docs/product-requirements.md`, `docs/architecture.m
 | 3 | UI pad, AGREGAR, Borrar, C, vista Compra | Hecha |
 | 4 | Navegación Volver | Hecha |
 | 5 | Popup venta guardada | Hecha |
-| 6 | Preparación visual | Pendiente |
+| 6 | Preparación visual | Hecha |
 | 7 | Regresión completa | Pendiente |
 
 El detalle de objetivos, archivos, pruebas y criterios de aceptación está en el plan de desarrollo de Beta 1.1.

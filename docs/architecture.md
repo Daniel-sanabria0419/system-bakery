@@ -127,9 +127,13 @@ No debe existir un endpoint de calculadora ni peticiones por cada tecla.
 
 ## Personalización visual
 
-La apariencia se controla en la capa desktop (`bakery/desktop/ui.py` y, si se introduce, constantes/helpers de estilo).
+La apariencia se controla en la capa desktop:
 
-No hay un framework de temas obligatorio. Los widgets usan `objectName` para poder aplicar estilos o tamaños después, sin cambiar la arquitectura.
+- Constantes de tamaño/márgenes/espaciado: [`bakery/desktop/style.py`](../bakery/desktop/style.py)
+- Widgets y `objectName`: [`bakery/desktop/ui.py`](../bakery/desktop/ui.py)
+- Guía práctica: [`docs/beta-1.1/visual-guide.md`](beta-1.1/visual-guide.md)
+
+No hay un framework de temas obligatorio ni paleta de marca fijada. Los widgets usan `objectName` para poder aplicar `setStyleSheet` después, sin cambiar la arquitectura.
 
 ## Principios que se mantienen
 

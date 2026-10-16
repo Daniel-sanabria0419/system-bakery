@@ -18,7 +18,23 @@ from PySide6.QtWidgets import (
 
 from bakery.app.money import format_cop
 from bakery.app.purchase import SaleDraft
+from bakery.desktop import style
 from bakery.desktop.client import ApiClient
+
+
+def _apply_page_layout(layout: QVBoxLayout) -> None:
+    layout.setContentsMargins(
+        style.PAGE_MARGIN_LEFT,
+        style.PAGE_MARGIN_TOP,
+        style.PAGE_MARGIN_RIGHT,
+        style.PAGE_MARGIN_BOTTOM,
+    )
+    layout.setSpacing(style.PAGE_SPACING)
+
+
+def _apply_pad_button_size(button: QPushButton) -> None:
+    if style.PAD_BUTTON_MIN_WIDTH > 0 or style.PAD_BUTTON_MIN_HEIGHT > 0:
+        button.setMinimumSize(style.PAD_BUTTON_MIN_WIDTH, style.PAD_BUTTON_MIN_HEIGHT)
 
 
 class ConfirmSaleDialog(QDialog):
@@ -67,6 +83,7 @@ class MenuPage(QWidget):
     def __init__(self, on_register) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
+        _apply_page_layout(layout)
         layout.setAlignment(Qt.AlignCenter)
         button = QPushButton("Registrar venta")
         button.setObjectName("menu_register_button")
@@ -82,6 +99,7 @@ class RegisterSalePage(QWidget):
         self._payment_methods: List[Mapping] = []
 
         layout = QVBoxLayout(self)
+        _apply_page_layout(layout)
 
         back = QPushButton("Volver")
         back.setObjectName("back_button")
@@ -109,6 +127,7 @@ class RegisterSalePage(QWidget):
         layout.addWidget(self._purchase_total)
 
         pad = QGridLayout()
+        pad.setSpacing(style.PAD_SPACING)
         buttons = [
             ("7", 0, 0),
             ("8", 0, 1),
@@ -126,6 +145,7 @@ class RegisterSalePage(QWidget):
         ]
         for text, row, column in buttons:
             button = QPushButton(text)
+            _apply_pad_button_size(button)
             if text.isdigit():
                 button.setObjectName(f"digit_{text}")
                 button.clicked.connect(lambda checked=False, d=text: self._digit(d))
@@ -231,7 +251,7 @@ class MainWindow(QMainWindow):
     def __init__(self, api_client: ApiClient) -> None:
         super().__init__()
         self.setWindowTitle("Panadería")
-        self.resize(420, 560)
+        self.resize(style.WINDOW_WIDTH, style.WINDOW_HEIGHT)
         self._api = api_client
 
         self._stack = QStackedWidget()

@@ -22,7 +22,7 @@ todos:
     status: completed
   - id: stage6-visual-hooks
     content: "Etapa 6: constantes/objectNames para personalización manual"
-    status: pending
+    status: completed
   - id: stage7-regression
     content: "Etapa 7: suite completa y verificación de regresión"
     status: pending

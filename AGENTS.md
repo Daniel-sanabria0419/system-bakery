@@ -110,3 +110,11 @@ El agente debe priorizar:
 No se debe optimizar para construir muchas funcionalidades.
 
 Se debe optimizar para construir correctamente una Beta pequeña y funcional.
+
+## Cursor Cloud specific instructions
+
+Las dependencias de Python se instalan con `python3 -m pip install --user -r requirements.txt`. PySide6 además necesita bibliotecas de sistema (libEGL y XCB); el entorno ya las instala.
+
+- Pruebas: `python3 -m pytest` desde la raíz del repositorio. Sin pantalla, usar `QT_QPA_PLATFORM=offscreen python3 -m pytest`.
+- Aplicación: `python3 -m bakery.desktop`. Arranca la ventana y la API local en `http://127.0.0.1:8765`. La base SQLite queda en `data/bakery.sqlite3`.
+- No hay un servidor que deba quedar en marcha por separado: la ventana inicia uvicorn en un hilo.

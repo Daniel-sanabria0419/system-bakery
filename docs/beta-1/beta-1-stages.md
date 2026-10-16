@@ -31,6 +31,8 @@ requirements.txt
 
 ## Estado
 
+Beta 1 está completada como base funcional (registro de ventas con calculadora de expresión `+`/`−`). La evolución del flujo de registro continúa en **Beta 1.1**: ver `docs/beta-1.1/stages.md` y el plan en `docs/beta-1.1/`.
+
 | Etapa | Nombre | Estado |
 |---|---|---|
 | 0 | Entorno | Hecha |
@@ -38,7 +40,7 @@ requirements.txt
 | 2 | Lógica de aplicación | Hecha |
 | 3 | FastAPI | Hecha |
 | 4 | Desktop | Hecha |
-| 5 | Integración y cierre | Pendiente |
+| 5 | Integración y cierre | Hecha (arranque unificado uvicorn + Qt) |
 
 ---
 

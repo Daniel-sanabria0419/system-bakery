@@ -16,8 +16,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from bakery.app.calculator import Calculator
 from bakery.app.money import format_cop
+from bakery.app.purchase import SaleDraft
 from bakery.desktop.client import ApiClient
 
 
@@ -45,6 +45,24 @@ class ConfirmSaleDialog(QDialog):
         layout.addWidget(buttons)
 
 
+class SaleSavedDialog(QDialog):
+    def __init__(self, parent: QWidget = None) -> None:
+        super().__init__(parent)
+        self.setObjectName("sale_saved_dialog")
+        self.setWindowTitle("Venta guardada")
+
+        layout = QVBoxLayout(self)
+        message = QLabel("Venta guardada correctamente")
+        message.setObjectName("sale_saved_message")
+        layout.addWidget(message)
+
+        buttons = QDialogButtonBox()
+        ok = buttons.addButton("Aceptar", QDialogButtonBox.AcceptRole)
+        ok.setObjectName("sale_saved_ok_button")
+        buttons.accepted.connect(self.accept)
+        layout.addWidget(buttons)
+
+
 class MenuPage(QWidget):
     def __init__(self, on_register) -> None:
         super().__init__()
@@ -57,30 +75,45 @@ class MenuPage(QWidget):
 
 
 class RegisterSalePage(QWidget):
-    def __init__(self, api_client: ApiClient) -> None:
+    def __init__(self, api_client: ApiClient, on_back=None) -> None:
         super().__init__()
         self._api = api_client
-        self._calculator = Calculator()
+        self._draft = SaleDraft()
         self._payment_methods: List[Mapping] = []
 
         layout = QVBoxLayout(self)
+
+        back = QPushButton("Volver")
+        back.setObjectName("back_button")
+        if on_back is not None:
+            back.clicked.connect(on_back)
+        layout.addWidget(back)
 
         self._display = QLabel("")
         self._display.setObjectName("sale_display")
         self._display.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         layout.addWidget(self._display)
 
-        self._expression = QLabel("")
-        self._expression.setObjectName("sale_expression")
-        self._expression.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        layout.addWidget(self._expression)
+        purchase_title = QLabel("Compra")
+        purchase_title.setObjectName("purchase_title")
+        layout.addWidget(purchase_title)
+
+        self._purchase_list = QLabel("")
+        self._purchase_list.setObjectName("purchase_list")
+        self._purchase_list.setAlignment(Qt.AlignRight | Qt.AlignTop)
+        layout.addWidget(self._purchase_list)
+
+        self._purchase_total = QLabel("")
+        self._purchase_total.setObjectName("purchase_total")
+        self._purchase_total.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        layout.addWidget(self._purchase_total)
 
         pad = QGridLayout()
         buttons = [
             ("7", 0, 0),
             ("8", 0, 1),
             ("9", 0, 2),
-            ("⌫", 0, 3),
+            ("Borrar", 0, 3),
             ("4", 1, 0),
             ("5", 1, 1),
             ("6", 1, 2),
@@ -88,27 +121,23 @@ class RegisterSalePage(QWidget):
             ("1", 2, 0),
             ("2", 2, 1),
             ("3", 2, 2),
-            ("+", 2, 3),
+            ("AGREGAR", 2, 3),
             ("0", 3, 0),
-            ("-", 3, 3),
         ]
         for text, row, column in buttons:
             button = QPushButton(text)
             if text.isdigit():
                 button.setObjectName(f"digit_{text}")
                 button.clicked.connect(lambda checked=False, d=text: self._digit(d))
-            elif text == "+":
-                button.setObjectName("add_button")
-                button.clicked.connect(lambda: self._action("add"))
-            elif text == "-":
-                button.setObjectName("subtract_button")
-                button.clicked.connect(lambda: self._action("subtract"))
+            elif text == "AGREGAR":
+                button.setObjectName("agregar_button")
+                button.clicked.connect(lambda: self._action("agregar"))
             elif text == "C":
                 button.setObjectName("clear_button")
                 button.clicked.connect(lambda: self._action("clear"))
-            elif text == "⌫":
-                button.setObjectName("backspace_button")
-                button.clicked.connect(lambda: self._action("backspace"))
+            elif text == "Borrar":
+                button.setObjectName("borrar_button")
+                button.clicked.connect(lambda: self._action("borrar"))
             pad.addWidget(button, row, column)
         layout.addLayout(pad)
 
@@ -126,46 +155,50 @@ class RegisterSalePage(QWidget):
         self._refresh_submit()
 
     def load_payment_methods(self) -> None:
+        selected_id = self._selected_payment_id()
         self._payment_methods = list(self._api.list_payment_methods())
         self._payment_combo.blockSignals(True)
         self._payment_combo.clear()
         self._payment_combo.addItem("Seleccione medio de pago", None)
         for method in self._payment_methods:
             self._payment_combo.addItem(method["nombre"], method["id_medio_pago"])
+        if selected_id is not None:
+            index = self._payment_combo.findData(selected_id)
+            if index >= 0:
+                self._payment_combo.setCurrentIndex(index)
         self._payment_combo.blockSignals(False)
         self._refresh_submit()
 
     def reset_form(self) -> None:
-        self._calculator.clear()
+        self._draft.clear_purchase()
         self._payment_combo.setCurrentIndex(0)
         self._refresh_display()
         self._refresh_submit()
 
     def _digit(self, digit: str) -> None:
-        self._calculator.press_digit(digit)
+        self._draft.entry.press_digit(digit)
         self._refresh_display()
         self._refresh_submit()
 
     def _action(self, name: str) -> None:
-        if name == "add":
-            self._calculator.press_add()
-        elif name == "subtract":
-            self._calculator.press_subtract()
+        if name == "agregar":
+            self._draft.add_to_purchase()
         elif name == "clear":
-            self._calculator.clear()
-        elif name == "backspace":
-            self._calculator.backspace()
+            self._draft.clear_purchase()
+        elif name == "borrar":
+            self._draft.entry.backspace()
         self._refresh_display()
         self._refresh_submit()
 
     def _refresh_display(self) -> None:
-        value = self._calculator.value()
-        expression = self._calculator.expression()
-        self._expression.setText(expression)
-        if value is None:
-            self._display.setText("")
+        self._display.setText(self._draft.entry.display_text())
+        items = self._draft.purchase.items()
+        self._purchase_list.setText("\n".join(format_cop(amount) for amount in items))
+        total = self._draft.total()
+        if total > 0:
+            self._purchase_total.setText(f"Total: {format_cop(total)}")
         else:
-            self._display.setText(format_cop(value))
+            self._purchase_total.setText("")
 
     def _selected_payment_id(self) -> Optional[int]:
         return self._payment_combo.currentData()
@@ -174,16 +207,13 @@ class RegisterSalePage(QWidget):
         return self._payment_combo.currentText()
 
     def _refresh_submit(self) -> None:
-        ready = (
-            self._calculator.value() is not None
-            and self._selected_payment_id() is not None
-        )
+        ready = self._draft.total() > 0 and self._selected_payment_id() is not None
         self._submit.setEnabled(ready)
 
     def _on_submit(self) -> None:
-        value = self._calculator.value()
+        value = self._draft.total()
         payment_id = self._selected_payment_id()
-        if value is None or payment_id is None:
+        if value <= 0 or payment_id is None:
             return
         dialog = ConfirmSaleDialog(value, self._selected_payment_name(), self)
         if dialog.exec() != QDialog.Accepted:
@@ -193,6 +223,7 @@ class RegisterSalePage(QWidget):
         except httpx.HTTPError as error:
             QMessageBox.warning(self, "Error", f"No se pudo guardar la venta.\n{error}")
             return
+        SaleSavedDialog(self).exec()
         self.reset_form()
 
 
@@ -207,7 +238,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self._stack)
 
         self._menu = MenuPage(self.open_register_sale)
-        self._register = RegisterSalePage(api_client)
+        self._register = RegisterSalePage(api_client, on_back=self.go_back_to_menu)
         self._stack.addWidget(self._menu)
         self._stack.addWidget(self._register)
         self._stack.setCurrentWidget(self._menu)
@@ -215,3 +246,6 @@ class MainWindow(QMainWindow):
     def open_register_sale(self) -> None:
         self._register.load_payment_methods()
         self._stack.setCurrentWidget(self._register)
+
+    def go_back_to_menu(self) -> None:
+        self._stack.setCurrentWidget(self._menu)

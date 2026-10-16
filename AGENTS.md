@@ -10,7 +10,7 @@ El objetivo de esta Beta es validar la arquitectura, la experiencia de usuario y
 
 ## Alcance de Beta 1
 
-La Beta 1 solamente debe permitir:
+La Beta 1 (completada como base) solamente debía permitir:
 
 1. Abrir la aplicación.
 2. Entrar a "Registrar venta".
@@ -20,9 +20,23 @@ La Beta 1 solamente debe permitir:
 6. Guardar la venta localmente en SQLite.
 7. Volver a la pantalla de registro después de guardar.
 
+## Versión activa: Beta 1.1
+
+El desarrollo activo continúa en **Beta 1.1** (lista de compra en memoria, nueva interacción de calculadora, popup de éxito, navegación atrás).
+
+Requisitos y arquitectura actualizados:
+
+- `docs/product-requirements.md`
+- `docs/architecture.md`
+- `docs/database.md`
+- `docs/sync.md`
+- `docs/beta-1.1/stages.md`
+
+No implementar funcionalidades de Beta 1.1 fuera del plan de etapas. Preservar lo que ya funciona de Beta 1.
+
 ## Fuera del alcance
 
-NO implementar en Beta 1:
+NO implementar en Beta 1 ni anticipar fuera de Beta 1.1:
 
 - Productos.
 - Inventario.

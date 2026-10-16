@@ -4,97 +4,27 @@ import pytest
 
 from bakery.app.calculator import Calculator
 from bakery.app.money import format_cop
+from bakery.app.purchase import Purchase, SaleDraft
 from bakery.app.sales import SaleValidationError, register_sale
 from bakery.persistence import initialize
 from bakery.persistence.connection import connect
 
 
-def _enter(calculator: Calculator, expression: str) -> None:
-    for character in expression:
-        if character == " ":
-            continue
-        if character == "+":
-            calculator.press_add()
-        elif character == "-":
-            calculator.press_subtract()
-        elif character.isdigit():
-            calculator.press_digit(character)
+def _enter_digits(calculator: Calculator, digits: str) -> None:
+    for character in digits:
+        calculator.press_digit(character)
 
 
-def test_valid_expressions() -> None:
-    cases = {
-        "5000": 5000,
-        "5000 + 2000": 7000,
-        "5000 + 2000 - 1000": 6000,
-    }
-    for expression, expected in cases.items():
-        calculator = Calculator()
-        _enter(calculator, expression)
-        assert calculator.expression() == expression
-        assert calculator.value() == expected
+def test_empty_entry_has_no_amount() -> None:
+    assert Calculator().current_amount() is None
+    assert Calculator().digits() == ""
 
 
-def test_incomplete_operations_have_no_value() -> None:
-    for expression in ("5000 +", "5000 -", "5000 + 2000 -"):
-        calculator = Calculator()
-        _enter(calculator, expression)
-        assert calculator.value() is None
-
-
-def test_negative_result_has_no_value() -> None:
+def test_enter_single_amount() -> None:
     calculator = Calculator()
-    _enter(calculator, "5000 - 6000")
-    assert calculator.value() is None
-
-
-def test_zero_result_has_no_value() -> None:
-    calculator = Calculator()
-    _enter(calculator, "5000 - 5000")
-    assert calculator.value() is None
-
-
-def test_empty_calculator_has_no_value() -> None:
-    assert Calculator().value() is None
-
-
-def test_consecutive_operators_are_ignored() -> None:
-    calculator = Calculator()
-    _enter(calculator, "5000")
-    calculator.press_add()
-    calculator.press_add()
-    calculator.press_subtract()
-    assert calculator.expression() == "5000 +"
-    assert calculator.value() is None
-
-
-def test_operator_at_start_is_ignored() -> None:
-    calculator = Calculator()
-    calculator.press_subtract()
-    calculator.press_add()
-    assert calculator.expression() == ""
-
-
-def test_clear_resets_expression() -> None:
-    calculator = Calculator()
-    _enter(calculator, "5000 + 2000")
-    calculator.clear()
-    assert calculator.expression() == ""
-    assert calculator.value() is None
-
-
-def test_backspace_deletes_last_digit() -> None:
-    calculator = Calculator()
-    _enter(calculator, "5000")
-    calculator.backspace()
-    assert calculator.expression() == "500"
-    assert calculator.value() == 500
-
-
-def test_backspace_does_not_delete_operator() -> None:
-    calculator = Calculator()
-    _enter(calculator, "5000 +")
-    calculator.backspace()
-    assert calculator.expression() == "5000 +"
+    _enter_digits(calculator, "5000")
+    assert calculator.digits() == "5000"
+    assert calculator.current_amount() == 5000
 
 
 def test_leading_zero_is_replaced() -> None:
@@ -102,15 +32,168 @@ def test_leading_zero_is_replaced() -> None:
     calculator.press_digit("0")
     calculator.press_digit("0")
     calculator.press_digit("5")
-    assert calculator.expression() == "5"
-    assert calculator.value() == 5
+    assert calculator.digits() == "5"
+    assert calculator.current_amount() == 5
 
 
 def test_non_digit_is_ignored() -> None:
     calculator = Calculator()
     calculator.press_digit(".")
     calculator.press_digit("/")
-    assert calculator.expression() == ""
+    assert calculator.digits() == ""
+    assert calculator.current_amount() is None
+
+
+def test_backspace_deletes_last_digit() -> None:
+    calculator = Calculator()
+    _enter_digits(calculator, "5000")
+    calculator.backspace()
+    assert calculator.digits() == "500"
+    assert calculator.current_amount() == 500
+
+
+def test_backspace_until_empty() -> None:
+    calculator = Calculator()
+    _enter_digits(calculator, "12")
+    calculator.backspace()
+    calculator.backspace()
+    assert calculator.digits() == ""
+    assert calculator.current_amount() is None
+    calculator.backspace()
+    assert calculator.digits() == ""
+
+
+def test_clear_entry_resets_digits() -> None:
+    calculator = Calculator()
+    _enter_digits(calculator, "5000")
+    calculator.clear_entry()
+    assert calculator.digits() == ""
+    assert calculator.current_amount() is None
+
+
+def test_display_text_empty_when_no_digits() -> None:
+    assert Calculator().display_text() == ""
+
+
+def test_display_text_formats_while_typing() -> None:
+    calculator = Calculator()
+    cases = [
+        ("1", "$ 1"),
+        ("10", "$ 10"),
+        ("100", "$ 100"),
+        ("1000", "$ 1.000"),
+        ("10000", "$ 10.000"),
+        ("12500", "$ 12.500"),
+    ]
+    for digits, expected in cases:
+        calculator.clear_entry()
+        _enter_digits(calculator, digits)
+        assert calculator.display_text() == expected
+
+    calculator.clear_entry()
+    for digit, expected in [
+        ("1", "$ 1"),
+        ("2", "$ 12"),
+        ("5", "$ 125"),
+        ("0", "$ 1.250"),
+        ("0", "$ 12.500"),
+    ]:
+        calculator.press_digit(digit)
+        assert calculator.display_text() == expected
+
+
+def test_display_text_updates_on_backspace() -> None:
+    calculator = Calculator()
+    _enter_digits(calculator, "12500")
+    assert calculator.display_text() == "$ 12.500"
+    expected_after_backspace = [
+        "$ 1.250",
+        "$ 125",
+        "$ 12",
+        "$ 1",
+        "",
+    ]
+    for expected in expected_after_backspace:
+        calculator.backspace()
+        assert calculator.display_text() == expected
+
+
+def test_display_text_zero_entry() -> None:
+    calculator = Calculator()
+    calculator.press_digit("0")
+    assert calculator.display_text() == "$ 0"
+
+
+def test_purchase_add_and_total() -> None:
+    purchase = Purchase()
+    assert purchase.add(5000) is True
+    assert purchase.add(3000) is True
+    assert purchase.items() == [5000, 3000]
+    assert purchase.total() == 8000
+
+
+def test_purchase_rejects_invalid_amounts() -> None:
+    purchase = Purchase()
+    for amount in (0, -1000, True, 25.0):
+        assert purchase.add(amount) is False  # type: ignore[arg-type]
+    assert purchase.items() == []
+    assert purchase.total() == 0
+
+
+def test_purchase_clear() -> None:
+    purchase = Purchase()
+    purchase.add(5000)
+    purchase.add(3000)
+    purchase.clear()
+    assert purchase.items() == []
+    assert purchase.total() == 0
+
+
+def test_add_to_purchase_accumulates_and_clears_entry() -> None:
+    draft = SaleDraft()
+    _enter_digits(draft.entry, "5000")
+    assert draft.add_to_purchase() is True
+    assert draft.entry.current_amount() is None
+    assert draft.purchase.items() == [5000]
+    assert draft.total() == 5000
+
+    _enter_digits(draft.entry, "3000")
+    assert draft.add_to_purchase() is True
+    assert draft.entry.digits() == ""
+    assert draft.purchase.items() == [5000, 3000]
+    assert draft.total() == 8000
+
+
+def test_add_to_purchase_invalid_is_noop() -> None:
+    draft = SaleDraft()
+    assert draft.add_to_purchase() is False
+    assert draft.purchase.items() == []
+    assert draft.total() == 0
+
+    draft.entry.press_digit("0")
+    assert draft.add_to_purchase() is False
+    assert draft.entry.digits() == "0"
+    assert draft.purchase.items() == []
+
+
+def test_add_to_purchase_keeps_previous_items_on_invalid() -> None:
+    draft = SaleDraft()
+    _enter_digits(draft.entry, "5000")
+    draft.add_to_purchase()
+    assert draft.add_to_purchase() is False
+    assert draft.purchase.items() == [5000]
+    assert draft.total() == 5000
+
+
+def test_clear_purchase_resets_entry_and_items() -> None:
+    draft = SaleDraft()
+    _enter_digits(draft.entry, "5000")
+    draft.add_to_purchase()
+    _enter_digits(draft.entry, "3000")
+    draft.clear_purchase()
+    assert draft.entry.digits() == ""
+    assert draft.purchase.items() == []
+    assert draft.total() == 0
 
 
 def test_format_cop() -> None:

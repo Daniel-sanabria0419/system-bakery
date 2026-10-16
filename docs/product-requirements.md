@@ -1,10 +1,23 @@
-# Product Requirements — Beta 1
+# Product Requirements
 
-## Objetivo
+## Objetivo general
 
 Crear una aplicación de escritorio para registrar ventas de una panadería.
 
-Beta 1 tendrá únicamente la funcionalidad necesaria para registrar una venta y almacenarla localmente.
+## Versiones
+
+| Versión | Estado | Objetivo |
+|---|---|---|
+| Beta 1 | Completada (referencia) | Registrar una venta y almacenarla localmente |
+| Beta 1.1 | Activa | Mejorar el flujo de registro con lista de compra en memoria y UX de calculadora |
+
+---
+
+# Beta 1.1 (activa)
+
+## Objetivo
+
+Evolucionar el registro de venta para que funcione como una pequeña lista de compra acumulada, sin productos ni catálogo, preservando la arquitectura y la persistencia de Beta 1.
 
 ## Pantallas
 
@@ -14,26 +27,31 @@ Debe mostrar:
 
 - Botón "Registrar venta".
 
-No debe contener otras funcionalidades en Beta 1.
+No debe contener otras funcionalidades en Beta 1.1.
 
 ### 2. Registrar venta
 
 Debe permitir:
 
-- Introducir el valor mediante una calculadora numérica.
-- Realizar operaciones de suma y resta.
-- Limpiar la operación.
-- Borrar el último dígito.
+- Introducir un valor monetario mediante una calculadora numérica local.
+- Ver el valor de la entrada actual con formato monetario mientras se escribe.
+- Agregar el valor actual a una lista de compra con el botón **AGREGAR**.
+- Ver la lista de valores agregados y el total acumulado.
+- Borrar un dígito a la vez de la entrada actual (**Borrar**).
+- Limpiar completamente la compra y la entrada actual (**C**).
 - Seleccionar un medio de pago.
-- Registrar la venta.
+- Registrar la venta con el total acumulado.
+- Volver al menú anterior conservando el estado de la compra pendiente.
 
-### 3. Confirmación
+No debe mostrar botones `+` ni `−`.
+
+### 3. Confirmación previa al guardado
 
 Al presionar "Registrar venta", debe aparecer una confirmación.
 
 Debe mostrar:
 
-- Valor total.
+- Valor total (total de la compra).
 - Medio de pago seleccionado.
 
 Debe contener:
@@ -41,116 +59,195 @@ Debe contener:
 - Botón "Confirmar".
 - Botón "No".
 
-La venta solamente se guarda después de presionar "Confirmar".
+La venta solamente se envía a la API después de presionar "Confirmar".
 
-## Calculadora
+### 4. Confirmación de venta guardada
 
-La calculadora debe permitir:
+Después de un `POST /ventas` exitoso, debe mostrarse un popup indicando que la venta fue guardada correctamente.
+
+Si el registro falla:
+
+- no debe mostrarse el mensaje de éxito;
+- debe mostrarse un comportamiento de error apropiado;
+- el estado de la compra debe permanecer coherente (no limpiarse como si hubiera tenido éxito).
+
+## Calculadora y compra
+
+### Entrada actual (calculadora)
+
+La calculadora es local (sin HTTP por tecla) y solo maneja la entrada en curso:
 
 - Números enteros.
-- Suma (+).
-- Resta (-).
-- Limpiar (C).
-- Borrar último dígito (⌫).
+- Formato monetario en tiempo real (ej. `1000` → `$ 1.000`).
+- **Borrar**: elimina un dígito de la entrada actual.
+- No opera sobre los valores ya agregados a la compra.
 
-No debe permitir:
+### Lista de compra
 
-- División.
-- Decimales.
-- Números negativos.
-- Operadores consecutivos.
-- Operaciones incompletas.
-- Registrar una venta con valor 0.
-- Registrar una venta sin valor.
+Cada elemento de la compra es únicamente un valor monetario entero.
 
-Toda operación debe terminar en un número entero válido.
+Ejemplo de flujo:
 
-Ejemplos válidos:
+1. Usuario escribe `5000` → se muestra `$ 5.000`.
+2. Pulsa **AGREGAR** → la compra muestra `$ 5.000`, total `$ 5.000`; la entrada queda lista para el siguiente valor.
+3. Usuario escribe `3000` → se muestra `$ 3.000`.
+4. Pulsa **AGREGAR** → la compra muestra `$ 5.000` y `$ 3.000`, total `$ 8.000`.
 
-5000
-5000 + 2000
-5000 + 2000 - 1000
+### Botón AGREGAR
 
-Ejemplos inválidos:
+Debe:
 
-5000 +
-5000 -
-5000 + 2000 -
-5000 - 6000
+1. Tomar el valor actual de la calculadora.
+2. Validar que sea válido para agregar (entero mayor que 0).
+3. Añadirlo a la lista de compra.
+4. Actualizar el total acumulado.
+5. Limpiar solo la entrada actual.
+6. Mantener intactos los valores previamente agregados.
+
+Si el valor no es válido (vacío o no positivo): no agregar nada (no-op silencioso).
+
+### Botón Borrar
+
+- Elimina un dígito a la vez de la entrada actual.
+- No borra la compra.
+- No elimina valores ya agregados.
+
+### Botón C
+
+- Limpia completamente la compra (todos los valores agregados).
+- Deja la calculadora lista para una nueva entrada.
+- No es equivalente a Borrar.
+
+### Botones eliminados
+
+Los botones `+` y `−` no existen en Beta 1.1 y no se reemplazan por otra funcionalidad de operadores.
 
 ## Formato monetario
 
-El valor mostrado al usuario debe utilizar pesos colombianos.
+El valor mostrado al usuario debe utilizar pesos colombianos, con el formato ya usado en Beta 1:
 
-Ejemplos:
-
-5000 → $ 5.000
-25000 → $ 25.000
-1250000 → $ 1.250.000
+```text
+1       → $ 1
+10      → $ 10
+100     → $ 100
+1000    → $ 1.000
+10000   → $ 10.000
+12500   → $ 12.500
+5000    → $ 5.000
+25000   → $ 25.000
+```
 
 El símbolo `$` y los separadores de miles son solamente visuales.
 
 El valor almacenado debe ser un número entero.
 
+La interacción de escritura no debe realizar peticiones HTTP.
+
+## Navegación
+
+- Desde el menú se entra a "Registrar venta".
+- Desde "Registrar venta" debe existir un botón para volver al menú.
+- Si hay una compra pendiente (valores agregados o entrada en curso), al volver y reentrar se conserva ese estado.
+- No se exige diálogo de confirmación al abandonar una compra pendiente en Beta 1.1.
+
 ## Medios de pago
 
-Los medios de pago deben obtenerse desde la base de datos.
+Sin cambios respecto a Beta 1:
 
-Solo deben mostrarse medios de pago activos.
-
-El usuario debe seleccionar obligatoriamente un medio de pago.
+- Se obtienen desde la base de datos.
+- Solo medios activos.
+- Selección obligatoria para registrar.
 
 ## Registro
 
-Al confirmar:
+Al confirmar y guardar con éxito:
 
 1. Validar nuevamente los datos.
-2. Crear la venta.
-3. Guardarla localmente.
-4. Limpiar el estado actual.
-5. Regresar a la pantalla "Registrar venta".
+2. Crear la venta con el **total acumulado**.
+3. Guardarla localmente vía API.
+4. Mostrar popup de venta guardada.
+5. Limpiar el estado de entrada y compra.
+6. Permanecer en la pantalla "Registrar venta", listo para una nueva venta.
 
 ## Ventas confirmadas
 
-En Beta 1 una venta confirmada:
+Igual que Beta 1:
 
-- No puede editarse.
-- No puede eliminarse.
-- No puede modificarse.
-
-La corrección de errores se estudiará en una versión futura.
+- No pueden editarse.
+- No pueden eliminarse.
+- No pueden modificarse.
 
 ## Caja y tendero
-
-En Beta 1:
 
 - caja = 1
 - tendero = 1
 
-No existe todavía administración de cajas ni tenderos.
-
 ## Internet
 
-Beta 1 debe funcionar sin conexión a Internet.
+Debe funcionar sin conexión a Internet.
 
-La sincronización con una base de datos en la nube está fuera del alcance de Beta 1.
+La sincronización con la nube sigue fuera del alcance.
 
-## Fuera del alcance
+## Fuera del alcance de Beta 1.1
 
 No implementar:
 
-- productos;
+- nombres de productos;
+- catálogo de productos;
+- cantidades por ítem;
 - inventario;
 - recetas;
 - producción;
 - clientes;
 - proveedores;
-- compras;
+- compras a proveedores;
 - usuarios;
 - roles;
 - login;
 - reportes;
-- edición;
-- eliminación;
+- edición o eliminación de ventas;
+- tablas o columnas para líneas de detalle de venta;
+- endpoints nuevos innecesarios;
+- endpoint de calculadora;
 - sincronización;
-- PostgreSQL funcional.
+- PostgreSQL funcional;
+- decisiones concretas de colores, tipografías o layout visual (ajustes manuales posteriores).
+
+---
+
+# Beta 1 (referencia histórica)
+
+Esta sección describe el alcance original de Beta 1. Sigue siendo la base del sistema; Beta 1.1 la evoluciona en la interfaz de registro.
+
+## Objetivo
+
+Registrar una venta y almacenarla localmente.
+
+## Pantallas (Beta 1)
+
+### Menú principal
+
+- Botón "Registrar venta".
+
+### Registrar venta
+
+- Introducir el valor mediante calculadora numérica.
+- Operaciones de suma y resta.
+- Limpiar la operación.
+- Borrar el último dígito.
+- Seleccionar medio de pago.
+- Registrar la venta.
+
+### Confirmación
+
+- Valor total y medio de pago.
+- Botones "Confirmar" y "No".
+- La venta solo se guarda tras "Confirmar".
+
+## Calculadora (Beta 1)
+
+Permitía enteros, `+`, `−`, `C` y borrar último dígito (`⌫`).
+
+Ejemplos válidos de esa versión: `5000`, `5000 + 2000`, `5000 + 2000 - 1000`.
+
+En Beta 1.1 este modelo de operadores queda reemplazado por la lista de compra y el botón AGREGAR.

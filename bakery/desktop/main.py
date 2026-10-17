@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QApplication
 
 from bakery.api.app import API_HOST, API_PORT, create_app
 from bakery.desktop.client import ApiClient
+from bakery.desktop.style import load_theme_qss
 from bakery.desktop.ui import MainWindow
 
 _WAIT_ATTEMPTS = 50
@@ -43,6 +44,9 @@ def start_api_in_background() -> threading.Thread:
 
 
 def create_window(api_client: ApiClient = None) -> MainWindow:
+    app = QApplication.instance()
+    if app is not None:
+        app.setStyleSheet(load_theme_qss())
     client = api_client or ApiClient()
     return MainWindow(client)
 
@@ -50,6 +54,7 @@ def create_window(api_client: ApiClient = None) -> MainWindow:
 def main() -> None:
     start_api_in_background()
     qt_app = QApplication([])
+    qt_app.setStyleSheet(load_theme_qss())
     window = create_window()
     window.show()
     qt_app.exec()

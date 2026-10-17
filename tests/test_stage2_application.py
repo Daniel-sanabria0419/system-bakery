@@ -71,8 +71,31 @@ def test_clear_entry_resets_digits() -> None:
     assert calculator.current_amount() is None
 
 
+def test_press_zeros_appends_on_nonzero_entry() -> None:
+    calculator = Calculator()
+    calculator.press_digit("5")
+    calculator.press_zeros()
+    assert calculator.digits() == "500"
+    assert calculator.current_amount() == 500
+
+
+def test_press_zeros_on_empty_becomes_zero() -> None:
+    calculator = Calculator()
+    calculator.press_zeros()
+    assert calculator.digits() == "0"
+    assert calculator.current_amount() == 0
+
+
+def test_press_zeros_on_single_zero_stays_zero() -> None:
+    calculator = Calculator()
+    calculator.press_digit("0")
+    calculator.press_zeros()
+    assert calculator.digits() == "0"
+    assert calculator.current_amount() == 0
+
+
 def test_display_text_empty_when_no_digits() -> None:
-    assert Calculator().display_text() == ""
+    assert Calculator().display_text() == "$ 0.00"
 
 
 def test_display_text_formats_while_typing() -> None:
@@ -111,7 +134,7 @@ def test_display_text_updates_on_backspace() -> None:
         "$ 125",
         "$ 12",
         "$ 1",
-        "",
+        "$ 0.00",
     ]
     for expected in expected_after_backspace:
         calculator.backspace()

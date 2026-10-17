@@ -1,0 +1,53 @@
+/* Tema visual del desktop — edita colores y tipografía aquí. */
+
+QMainWindow {
+    background-color: #F5F0E8;
+}
+
+QWidget#purchase_panel {
+    background-color: #FFFFFF;
+}
+
+QFrame#entry_separator,
+QFrame#total_separator {
+    color: #000000;
+    background-color: #000000;
+    min-height: 2px;
+    max-height: 2px;
+}
+
+QPushButton[class="pad-button"] {
+    background-color: #D0D0D0;
+    color:rgb(0, 0, 0);
+    margin:  10px 3px;
+}
+
+QPushButton[class="back-button"] {
+    background-color: #1A1A1A;
+    color: #FFFFFF;
+}
+
+QPushButton[class="menu-button"] {
+    background-color: #1A1A1A;
+    color: #FFFFFF;
+    padding: 12px 24px;
+}
+
+
+QComboBox[class="combo-box"] {
+    background-color: #1A1A1A;
+    color: #FFFFFF;
+   padding: 12px;
+   max-width: 200px;
+}
+
+
+QLabel[class="money-text"] {
+    color: #1A1A1A;
+}
+
+QLabel#sale_display[class="money-text"],
+QLabel#purchase_total[class="money-text"] {
+    font-size: 36px;
+    font-weight: bold;
+}

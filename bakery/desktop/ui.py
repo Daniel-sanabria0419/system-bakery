@@ -6,11 +6,14 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
+    QFrame,
     QGridLayout,
+    QHBoxLayout,
     QLabel,
     QMainWindow,
     QMessageBox,
     QPushButton,
+    QSizePolicy,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -24,10 +27,10 @@ from bakery.desktop.client import ApiClient
 
 def _apply_page_layout(layout: QVBoxLayout) -> None:
     layout.setContentsMargins(
-        style.PAGE_MARGIN_LEFT,
-        style.PAGE_MARGIN_TOP,
-        style.PAGE_MARGIN_RIGHT,
-        style.PAGE_MARGIN_BOTTOM,
+        style.PAGE_MARGIN,
+        style.PAGE_MARGIN,
+        style.PAGE_MARGIN,
+        style.PAGE_MARGIN,
     )
     layout.setSpacing(style.PAGE_SPACING)
 
@@ -35,6 +38,15 @@ def _apply_page_layout(layout: QVBoxLayout) -> None:
 def _apply_pad_button_size(button: QPushButton) -> None:
     if style.PAD_BUTTON_MIN_WIDTH > 0 or style.PAD_BUTTON_MIN_HEIGHT > 0:
         button.setMinimumSize(style.PAD_BUTTON_MIN_WIDTH, style.PAD_BUTTON_MIN_HEIGHT)
+
+
+def _make_separator(object_name: str) -> QFrame:
+    line = QFrame()
+    line.setObjectName(object_name)
+    line.setFrameShape(QFrame.HLine)
+    line.setFrameShadow(QFrame.Plain)
+    line.setFixedHeight(2)
+    return line
 
 
 class ConfirmSaleDialog(QDialog):
@@ -87,6 +99,7 @@ class MenuPage(QWidget):
         layout.setAlignment(Qt.AlignCenter)
         button = QPushButton("Registrar venta")
         button.setObjectName("menu_register_button")
+        style.apply_class(button, "menu-button")
         button.clicked.connect(on_register)
         layout.addWidget(button)
 
@@ -98,78 +111,123 @@ class RegisterSalePage(QWidget):
         self._draft = SaleDraft()
         self._payment_methods: List[Mapping] = []
 
-        layout = QVBoxLayout(self)
-        _apply_page_layout(layout)
+        root = QVBoxLayout(self)
+        _apply_page_layout(root)
 
+        top_bar = QHBoxLayout()
+        top_bar.addStretch(1)
         back = QPushButton("Volver")
         back.setObjectName("back_button")
+        style.apply_class(back, "back-button")
         if on_back is not None:
             back.clicked.connect(on_back)
-        layout.addWidget(back)
+        top_bar.addWidget(back)
+        root.addLayout(top_bar)
+
+        columns = QHBoxLayout()
+        columns.setSpacing(style.PAGE_SPACING)
+
+        left = QWidget()
+        left.setObjectName("left_column")
+        left_layout = QVBoxLayout(left)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.setSpacing(style.PAGE_SPACING)
+
+        purchase_panel = QWidget()
+        purchase_panel.setObjectName("purchase_panel")
+        panel_layout = QVBoxLayout(purchase_panel)
+        panel_layout.setContentsMargins(12, 12, 12, 12)
+        panel_layout.setSpacing(8)
 
         self._display = QLabel("")
         self._display.setObjectName("sale_display")
         self._display.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        layout.addWidget(self._display)
+        style.apply_class(self._display, "money-text")
+        panel_layout.addWidget(self._display)
 
-        purchase_title = QLabel("Compra")
-        purchase_title.setObjectName("purchase_title")
-        layout.addWidget(purchase_title)
+        panel_layout.addWidget(_make_separator("entry_separator"))
 
         self._purchase_list = QLabel("")
         self._purchase_list.setObjectName("purchase_list")
         self._purchase_list.setAlignment(Qt.AlignRight | Qt.AlignTop)
-        layout.addWidget(self._purchase_list)
+        self._purchase_list.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        style.apply_class(self._purchase_list, "money-text")
+        panel_layout.addWidget(self._purchase_list, stretch=1)
+
+        panel_layout.addWidget(_make_separator("total_separator"))
+
+        footer = QHBoxLayout()
+        self._payment_combo = QComboBox()
+        self._payment_combo.setObjectName("payment_combo")
+        style.apply_class(self._payment_combo, "combo-box")
+    
+        self._payment_combo.currentIndexChanged.connect(self._refresh_submit)
+        footer.addWidget(self._payment_combo, stretch=1)
 
         self._purchase_total = QLabel("")
         self._purchase_total.setObjectName("purchase_total")
         self._purchase_total.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        layout.addWidget(self._purchase_total)
+        style.apply_class(self._purchase_total, "money-text")
+        footer.addWidget(self._purchase_total)
+        panel_layout.addLayout(footer)
+
+        left_layout.addWidget(purchase_panel, stretch=1)
 
         pad = QGridLayout()
         pad.setSpacing(style.PAD_SPACING)
-        buttons = [
-            ("7", 0, 0),
-            ("8", 0, 1),
-            ("9", 0, 2),
-            ("Borrar", 0, 3),
-            ("4", 1, 0),
-            ("5", 1, 1),
-            ("6", 1, 2),
-            ("C", 1, 3),
-            ("1", 2, 0),
-            ("2", 2, 1),
-            ("3", 2, 2),
-            ("AGREGAR", 2, 3),
-            ("0", 3, 0),
+        pad_buttons = [
+            ("1", 0, 0, 1, 1, "digit"),
+            ("2", 0, 1, 1, 1, "digit"),
+            ("3", 0, 2, 1, 1, "digit"),
+            ("Borrar", 0, 3, 1, 1, "borrar"),
+            ("4", 1, 0, 1, 1, "digit"),
+            ("5", 1, 1, 1, 1, "digit"),
+            ("6", 1, 2, 1, 1, "digit"),
+            ("C", 1, 3, 1, 1, "clear"),
+            ("7", 2, 0, 1, 1, "digit"),
+            ("8", 2, 1, 1, 1, "digit"),
+            ("9", 2, 2, 1, 1, "digit"),
+            ("Pago", 2, 3, 2, 1, "pago"),
+            ("0", 3, 0, 1, 1, "digit"),
+            ("00", 3, 1, 1, 1, "zeros"),
+            ("Agregar", 3, 2, 1, 1, "agregar"),
         ]
-        for text, row, column in buttons:
+        for text, row, column, row_span, col_span, kind in pad_buttons:
             button = QPushButton(text)
             _apply_pad_button_size(button)
-            if text.isdigit():
+            style.apply_class(button, "pad-button")
+            if kind == "digit":
                 button.setObjectName(f"digit_{text}")
                 button.clicked.connect(lambda checked=False, d=text: self._digit(d))
-            elif text == "AGREGAR":
+            elif kind == "zeros":
+                button.setObjectName("digit_00")
+                button.clicked.connect(lambda: self._action("zeros"))
+            elif kind == "agregar":
                 button.setObjectName("agregar_button")
                 button.clicked.connect(lambda: self._action("agregar"))
-            elif text == "C":
+            elif kind == "clear":
                 button.setObjectName("clear_button")
                 button.clicked.connect(lambda: self._action("clear"))
-            elif text == "Borrar":
+            elif kind == "borrar":
                 button.setObjectName("borrar_button")
                 button.clicked.connect(lambda: self._action("borrar"))
-            pad.addWidget(button, row, column)
-        layout.addLayout(pad)
+            elif kind == "pago":
+                button.setObjectName("submit_sale_button")
+                button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+                button.clicked.connect(self._on_submit)
+                
+                self._submit = button
+            pad.addWidget(button, row, column, row_span, col_span)
 
-        self._payment_combo = QComboBox()
-        self._payment_combo.setObjectName("payment_combo")
-        self._payment_combo.currentIndexChanged.connect(self._refresh_submit)
-        layout.addWidget(self._payment_combo)
+        left_layout.addLayout(pad)
 
-        self._submit = QPushButton("Registrar venta")
-        self._submit.setObjectName("submit_sale_button")
-        self._submit.clicked.connect(self._on_submit)
-        layout.addWidget(self._submit)
+        future = QWidget()
+        future.setObjectName("future_panel")
+        future.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        columns.addWidget(left, style.LEFT_COLUMN_STRETCH)
+        columns.addWidget(future, style.RIGHT_COLUMN_STRETCH)
+        root.addLayout(columns, stretch=1)
 
         self._refresh_display()
         self._refresh_submit()
@@ -207,6 +265,8 @@ class RegisterSalePage(QWidget):
             self._draft.clear_purchase()
         elif name == "borrar":
             self._draft.entry.backspace()
+        elif name == "zeros":
+            self._draft.entry.press_zeros()
         self._refresh_display()
         self._refresh_submit()
 
@@ -218,7 +278,7 @@ class RegisterSalePage(QWidget):
         if total > 0:
             self._purchase_total.setText(f"Total: {format_cop(total)}")
         else:
-            self._purchase_total.setText("")
+            self._purchase_total.setText("Total: $0.00")
 
     def _selected_payment_id(self) -> Optional[int]:
         return self._payment_combo.currentData()
@@ -251,7 +311,7 @@ class MainWindow(QMainWindow):
     def __init__(self, api_client: ApiClient) -> None:
         super().__init__()
         self.setWindowTitle("Panadería")
-        self.resize(style.WINDOW_WIDTH, style.WINDOW_HEIGHT)
+        self.showFullScreen()
         self._api = api_client
 
         self._stack = QStackedWidget()

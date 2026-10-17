@@ -17,6 +17,13 @@ class Calculator:
             return
         self._digits += digit
 
+    def press_zeros(self) -> None:
+        """Append two zeros (button 00), preserving leading-zero rules."""
+        if not self._digits or self._digits == "0":
+            self._digits = "0"
+            return
+        self._digits += "00"
+
     def backspace(self) -> None:
         if not self._digits:
             return
@@ -37,8 +44,8 @@ class Calculator:
         return int(self._digits)
 
     def display_text(self) -> str:
-        """Presentación monetaria de la entrada. Vacío si no hay dígitos."""
+        """Presentación monetaria de la entrada. Placeholder si no hay dígitos."""
         amount = self.current_amount()
         if amount is None:
-            return ""
+            return "$ 0.00"
         return format_cop(amount)

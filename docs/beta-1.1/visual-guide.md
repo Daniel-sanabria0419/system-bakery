@@ -1,72 +1,113 @@
 # Guía de personalización visual — Beta 1.1
 
-Esta guía indica **dónde** cambiar la apariencia. No impone colores, tipografías ni un diseño concreto.
+Esta guía indica **dónde** cambiar la apariencia.
 
-## Constantes centralizadas
+- **Colores y tipografía:** archivo QSS [`bakery/desktop/theme.qss`](../../bakery/desktop/theme.qss).
+- **Márgenes / espaciados / tamaños mínimos de layout:** [`bakery/desktop/style.py`](../../bakery/desktop/style.py).
 
-Archivo: [`bakery/desktop/style.py`](../../bakery/desktop/style.py)
+## Clases QSS
+
+En Qt las clases se asignan con la propiedad dinámica `class` (`style.apply_class(widget, "...")`).
+
+| Clase | Widgets | Qué editar en `theme.qss` |
+|---|---|---|
+| `pad-button` | Dígitos, `00`, Borrar, C, Agregar, Pago | `QPushButton[class="pad-button"]` |
+| `money-text` | `sale_display`, `purchase_list`, `purchase_total` | `QLabel[class="money-text"]` (entrada grande: `#sale_display`) |
+| `back-button` | Volver | `QPushButton[class="back-button"]` |
+| `menu-button` | Registrar venta (menú) | `QPushButton[class="menu-button"]` |
+
+También en `theme.qss` (por `#objectName`):
+
+- Fondo de ventana: `QMainWindow`
+- Panel de compra: `#purchase_panel`
+- Separadores: `#entry_separator`, `#total_separator`
+
+El QSS se carga en la `QApplication` desde [`bakery/desktop/main.py`](../../bakery/desktop/main.py) (`load_theme_qss()`).
+
+## Layout metrics (`style.py`)
 
 | Constante | Controla |
 |---|---|
-| `WINDOW_WIDTH` / `WINDOW_HEIGHT` | Tamaño inicial de la ventana |
-| `PAGE_MARGIN_*` | Márgenes de las pantallas |
-| `PAGE_SPACING` | Espacio vertical entre bloques |
+| `PAGE_MARGIN` | Márgenes de las pantallas |
+| `PAGE_SPACING` | Espacio vertical / entre columnas |
+| `LEFT_COLUMN_STRETCH` / `RIGHT_COLUMN_STRETCH` | Proporción columnas |
 | `PAD_SPACING` | Espacio entre teclas del pad |
 | `PAD_BUTTON_MIN_WIDTH` / `PAD_BUTTON_MIN_HEIGHT` | Tamaño mínimo de teclas (0 = sin forzar) |
 
-Ejemplo: para botones del pad más grandes, pon `PAD_BUTTON_MIN_WIDTH = 64` y `PAD_BUTTON_MIN_HEIGHT = 48`.
+Helpers:
+
+- `load_theme_qss()` — lee `theme.qss`
+- `apply_class(widget, name)` — asigna la clase QSS
+
+## Modo de ventana
+
+Pantalla completa en [`bakery/desktop/ui.py`](../../bakery/desktop/ui.py) (`MainWindow` → `showFullScreen()`).
+
+## Layout Registrar venta
+
+```text
+[ Volver ]
+[ panel compra + pad ]  [ future_panel vacío ]
+```
+
+Pad:
+
+| | Col0 | Col1 | Col2 | Col3 |
+|---|---|---|---|---|
+| R0 | 1 | 2 | 3 | Borrar |
+| R1 | 4 | 5 | 6 | C |
+| R2 | 7 | 8 | 9 | Pago (2 filas) |
+| R3 | 0 | 00 | Agregar | (Pago) |
+
+Texto del botón de cobro: **Pago** (`objectName` = `submit_sale_button`, clase `pad-button`).
 
 ## Widgets y objectName
 
 Archivo principal: [`bakery/desktop/ui.py`](../../bakery/desktop/ui.py)
 
-| objectName | Widget | Uso típico |
+| objectName | Widget | Clase QSS |
 |---|---|---|
-| `menu_register_button` | Botón menú | Texto, tamaño, color |
-| `back_button` | Volver | Posición/estilo |
-| `sale_display` | Entrada con formato | Tipografía grande, alineación |
-| `purchase_title` | Título "Compra" | Tipografía |
-| `purchase_list` | Líneas agregadas | Tipografía, altura |
-| `purchase_total` | Total acumulado | Tipografía, énfasis |
-| `digit_0` … `digit_9` | Teclas numéricas | Tamaño/color |
-| `borrar_button` | Borrar | Estilo |
-| `clear_button` | C | Estilo |
-| `agregar_button` | AGREGAR | Estilo destacado |
-| `payment_combo` | Medio de pago | Ancho |
-| `submit_sale_button` | Registrar venta | Estilo CTA |
-| `confirm_dialog` | Diálogo previo al POST | Contenedor |
-| `confirm_value_label` / `confirm_payment_label` | Textos del diálogo | Tipografía |
-| `confirm_button` / `cancel_button` | Botones confirmar/no | Estilo |
-| `sale_saved_dialog` | Popup post-éxito | Contenedor |
-| `sale_saved_message` | Mensaje de éxito | Tipografía |
-| `sale_saved_ok_button` | Aceptar del popup | Estilo |
+| `menu_register_button` | Botón menú | `menu-button` |
+| `back_button` | Volver | `back-button` |
+| `left_column` | Columna operativa | — |
+| `purchase_panel` | Panel blanco | `#purchase_panel` en QSS |
+| `sale_display` | Entrada actual | `money-text` |
+| `entry_separator` | Separador bajo la entrada | `#entry_separator` |
+| `purchase_list` | Líneas agregadas | `money-text` |
+| `total_separator` | Separador sobre total/medio | `#total_separator` |
+| `purchase_total` | Total acumulado | `money-text` |
+| `payment_combo` | Medio de pago | — |
+| `digit_0` … `digit_9`, `digit_00` | Teclas | `pad-button` |
+| `borrar_button`, `clear_button`, `agregar_button` | Teclas | `pad-button` |
+| `submit_sale_button` | Pago | `pad-button` |
+| `future_panel` | Espacio derecho vacío | — |
+| `confirm_*` / `sale_saved_*` | Diálogos | (sin clase por ahora) |
 
 ## Cómo cambiar cada aspecto
 
-| Qué | Dónde | Cómo |
-|---|---|---|
-| Tamaño ventana | `style.py` → `WINDOW_*` | Enteros en píxeles |
-| Márgenes / espaciado | `style.py` → `PAGE_*`, `PAD_SPACING` | Enteros |
-| Tamaño botones del pad | `style.py` → `PAD_BUTTON_MIN_*` | Enteros (> 0 aplica `setMinimumSize`) |
-| Posición de teclas | `RegisterSalePage` en `ui.py` | Tuplas `(texto, fila, columna)` del pad |
-| Orden de bloques | `RegisterSalePage.__init__` | Orden de `layout.addWidget(...)` |
-| Textos de botones | Literales en `ui.py` | p. ej. `"AGREGAR"`, `"Volver"` |
-| Colores / tipografía | Cualquier widget con `objectName` | `widget.setStyleSheet(...)` o QSS por `#objectName` |
+| Qué | Dónde |
+|---|---|
+| Colores / tipografía / fondos | `theme.qss` |
+| Márgenes / espaciado / min size pad | `style.py` |
+| Pantalla completa / ventana | `MainWindow` en `ui.py` |
+| Posición de teclas | Lista `pad_buttons` en `ui.py` |
 
-Ejemplo de estilo por objectName (opcional, tú decides los valores):
+Ejemplo en `theme.qss`:
 
-```python
-self._display.setStyleSheet("#sale_display { font-size: 28px; }")
-```
+```css
+QMainWindow {
+    background-color: #2B2B2B;
+}
 
-o a nivel de ventana:
-
-```python
-self.setStyleSheet("#agregar_button { font-weight: bold; }")
+QPushButton[class="pad-button"] {
+    background-color: #E8E8E8;
+    color: #111111;
+}
 ```
 
 ## Qué no hace Beta 1.1
 
-- No define una paleta de marca.
-- No introduce un framework de temas.
-- No cambia el comportamiento funcional al editar solo `style.py`.
+- No define una paleta de marca definitiva (solo valores iniciales editables en QSS).
+- No introduce un framework de temas múltiples (dark/light).
+- No llena el `future_panel` con funcionalidades nuevas.
+- Cambiar solo `theme.qss` / métricas de `style.py` no altera la lógica de negocio.

@@ -25,6 +25,11 @@ QPushButton[class="pad-button"] {
 QPushButton[class="back-button"] {
     background-color: #1A1A1A;
     color: #FFFFFF;
+    font-size: 32px;
+    font-weight: bold;
+    min-width: 96px;
+    min-height: 72px;
+    padding: 8px 16px;
 }
 
 QPushButton[class="menu-button"] {

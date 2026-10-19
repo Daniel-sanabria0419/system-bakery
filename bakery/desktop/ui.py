@@ -25,6 +25,7 @@ from bakery.desktop.client import ApiClient
 
 _PAYMENT_BUTTON_PLACEHOLDER = "Seleccionar medio de pago"
 _PAYMENT_METHODS_PER_ROW = 5
+_BACK_BUTTON_ARROW = "←"
 
 
 def _apply_page_layout(layout: QVBoxLayout) -> None:
@@ -204,9 +205,14 @@ class RegisterSalePage(QWidget):
 
         top_bar = QHBoxLayout()
         top_bar.addStretch(1)
-        back = QPushButton("Volver")
+        back = QPushButton(_BACK_BUTTON_ARROW)
         back.setObjectName("back_button")
         style.apply_class(back, "back-button")
+        back.setMinimumSize(
+            style.BACK_BUTTON_MIN_WIDTH,
+            style.BACK_BUTTON_MIN_HEIGHT,
+        )
+        back.setToolTip("Volver")
         if on_back is not None:
             back.clicked.connect(on_back)
         top_bar.addWidget(back)

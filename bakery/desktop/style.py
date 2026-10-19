@@ -34,6 +34,10 @@ DIALOG_MIN_HEIGHT = 240
 DIALOG_CONTENT_MARGIN = 28
 DIALOG_CONTENT_SPACING = 20
 
+# Botón volver (Beta 1.2 etapa 2): rectángulo un poco más ancho que alto
+BACK_BUTTON_MIN_WIDTH = 96
+BACK_BUTTON_MIN_HEIGHT = 72
+
 _THEME_PATH = Path(__file__).with_name("theme.qss")
 
 

@@ -15,7 +15,7 @@ En Qt las clases se asignan con la propiedad dinámica `class` (`style.apply_cla
 |---|---|---|
 | `pad-button` | Dígitos, `00`, Borrar, C, Agregar, Pago | `QPushButton[class="pad-button"]` |
 | `money-text` | `sale_display`, `purchase_list`, `purchase_total` | `QLabel[class="money-text"]` (entrada grande: `#sale_display`) |
-| `back-button` | Volver | `QPushButton[class="back-button"]` |
+| `back-button` | Flecha atrás (sin texto «Volver») | `QPushButton[class="back-button"]` |
 | `menu-button` | Registrar venta (menú) | `QPushButton[class="menu-button"]` |
 | `payment-button` | Botón de medio de pago en registrar venta | `QPushButton[class="payment-button"]` |
 | `payment-method-button` | Botones del popup de medios | `QPushButton[class="payment-method-button"]` |
@@ -45,6 +45,7 @@ Ya no se usa `QComboBox` / clase `combo-box` para medios de pago.
 | `DIALOG_ACTION_BUTTON_MIN_HEIGHT` / `DIALOG_ACTION_BUTTON_MIN_WIDTH` | Botones Confirmar / No / Aceptar (~80 px de alto) |
 | `DIALOG_MIN_WIDTH` / `DIALOG_MIN_HEIGHT` | Área mínima de diálogos confirmar / éxito |
 | `DIALOG_CONTENT_MARGIN` / `DIALOG_CONTENT_SPACING` | Márgenes y espaciado internos de esos diálogos |
+| `BACK_BUTTON_MIN_WIDTH` / `BACK_BUTTON_MIN_HEIGHT` | Botón volver: rectángulo un poco más ancho que alto |
 
 Helpers:
 
@@ -58,9 +59,15 @@ Pantalla completa en [`bakery/desktop/ui.py`](../../bakery/desktop/ui.py) (`Main
 ## Layout Registrar venta
 
 ```text
-[ Volver ]
+[ ←  ]   (flecha atrás; objectName back_button)
 [ panel compra + pad ]  [ future_panel vacío ]
 ```
+
+### Botón volver (Etapa 2)
+
+- Visible: ícono Unicode `←` (no el texto «Volver»).
+- Forma: rectángulo un poco más ancho que alto (`BACK_BUTTON_MIN_WIDTH` = 96, `BACK_BUTTON_MIN_HEIGHT` = 72).
+- Tooltip «Volver»; misma acción: regresar al menú conservando estado.
 
 Pad:
 
@@ -97,7 +104,7 @@ Archivo principal: [`bakery/desktop/ui.py`](../../bakery/desktop/ui.py)
 | objectName | Widget | Clase QSS |
 |---|---|---|
 | `menu_register_button` | Botón menú | `menu-button` |
-| `back_button` | Volver | `back-button` |
+| `back_button` | Flecha atrás `←` | `back-button` |
 | `left_column` | Columna operativa | — |
 | `purchase_panel` | Panel blanco | `#purchase_panel` en QSS |
 | `sale_display` | Entrada actual | `money-text` |
@@ -143,7 +150,7 @@ QPushButton[class="pad-button"] {
 
 ## Qué no hace Beta 1.2 (todavía / nunca en esta versión)
 
-- Etapas 2–5 pendientes: ícono volver, proporciones 1/3–2/3, menú verde, regresión.
+- Etapas 3–5 pendientes: proporciones 1/3–2/3, menú verde, regresión.
 - No define una paleta de marca definitiva más allá de los ajustes acordados.
 - No introduce un framework de temas múltiples (dark/light).
 - No llena el `future_panel` con funcionalidades nuevas.

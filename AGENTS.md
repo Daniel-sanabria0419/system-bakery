@@ -38,7 +38,7 @@ Preservar lo que ya funciona de Beta 1 y de Beta 1.1.
 
 **Beta 1.2 está en curso.** Solo cambios estéticos / UX táctil sobre 1.1. Sin lógica de negocio nueva; mismos contratos API y SQLite.
 
-Etapas 0–1 hechas: medio de pago con botón + popup (sin `QComboBox`); popups confirmar/éxito más grandes (botones ~80 px). Etapas 2–5 pendientes.
+Etapas 0–2 hechas: medio de pago con botón + popup; popups confirmar/éxito más grandes; botón volver con flecha `←` (sin texto «Volver»). Etapas 3–5 pendientes.
 
 Requisitos y etapas:
 

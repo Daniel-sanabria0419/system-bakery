@@ -51,7 +51,7 @@ Registrar venta
   - lista de compra (memoria)
   - total acumulado
   - medio de pago (botón → popup de medios; sin QComboBox)
-  - Volver → menú (conserva estado)
+  - Volver (ícono ←) → menú (conserva estado)
       |
       | Pago (habilitado si total > 0 y hay medio)
       v
@@ -105,7 +105,7 @@ La UI desktop debe consumir este texto; no debe recalcular el formato por su cue
 | **C** | Limpia la compra completa y deja la entrada lista para empezar de nuevo; no cambia el medio de pago |
 | Medio de pago | Abre el popup de medios; al elegir, actualiza el botón; no hace HTTP salvo la carga inicial de medios |
 | **Pago** | Usa el total de la compra + medio de pago; abre confirmación; luego POST |
-| Volver | Cambia a la pantalla de menú **sin** limpiar entrada ni compra |
+| Volver (`←`, sin texto «Volver») | Cambia a la pantalla de menú **sin** limpiar entrada ni compra |
 
 Los botones `+` y `−` de Beta 1 dejan de existir; no hay evaluación de expresiones con operadores.
 

@@ -188,7 +188,14 @@ def test_back_button_returns_to_menu_without_pending_purchase(qtbot) -> None:
     _click(qtbot, _find(window, "menu_register_button"))
     assert window.centralWidget().currentWidget() is window._register
 
-    _click(qtbot, _find(window, "back_button"))
+    back = _find(window, "back_button")
+    assert back.text() != "Volver"
+    assert back.text() == "←"
+    assert back.minimumWidth() >= style.BACK_BUTTON_MIN_WIDTH
+    assert back.minimumHeight() >= style.BACK_BUTTON_MIN_HEIGHT
+    assert back.minimumWidth() > back.minimumHeight()
+
+    _click(qtbot, back)
     assert window.centralWidget().currentWidget() is window._menu
     assert _find(window, "sale_display").text() == "$ 0.00"
     assert _find(window, "purchase_list").text() == ""

@@ -97,6 +97,32 @@ def _accept_confirm_then_saved(assertions=None) -> None:
             return
 
 
+def test_menu_button_top_left_green_and_opens_register(qtbot) -> None:
+    api = FakeApiClient()
+    window = create_window(api)
+    qtbot.addWidget(window)
+    window.resize(800, 600)
+    window.show()
+
+    assert _find(window, "menu_grid") is not None
+    button = _find(window, "menu_register_button")
+    assert button.text() == "Registrar venta"
+    assert button.property("class") == "menu-button"
+    assert "#2E7D32" in style.load_theme_qss()
+    assert style.MENU_BUTTON_COLOR == "#2E7D32"
+    assert style.MENU_MARGIN == 20
+
+    # Arriba a la izquierda respecto a MenuPage, con margen ~20 px.
+    pos = button.mapTo(window._menu, button.rect().topLeft())
+    assert pos.x() <= style.MENU_MARGIN + 5
+    assert pos.y() <= style.MENU_MARGIN + 5
+
+    assert api.request_count == 0
+    _click(qtbot, button)
+    assert window.centralWidget().currentWidget() is window._register
+    assert api.request_count == 1
+
+
 def test_menu_opens_register_and_loads_payment_methods(qtbot) -> None:
     api = FakeApiClient()
     window = create_window(api)

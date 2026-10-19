@@ -16,7 +16,7 @@ En Qt las clases se asignan con la propiedad dinámica `class` (`style.apply_cla
 | `pad-button` | Dígitos, `00`, Borrar, C, Agregar, Pago | `QPushButton[class="pad-button"]` |
 | `money-text` | `sale_display`, `purchase_list`, `purchase_total` | `QLabel[class="money-text"]` (entrada grande: `#sale_display`) |
 | `back-button` | Flecha atrás (sin texto «Volver») | `QPushButton[class="back-button"]` |
-| `menu-button` | Registrar venta (menú) | `QPushButton[class="menu-button"]` |
+| `menu-button` | Registrar venta (menú; fondo `#2E7D32`) | `QPushButton[class="menu-button"]` |
 | `payment-button` | Botón de medio de pago en registrar venta | `QPushButton[class="payment-button"]` |
 | `payment-method-button` | Botones del popup de medios | `QPushButton[class="payment-method-button"]` |
 | `dialog-text` | Etiquetas de confirmar / venta guardada | `QLabel[class="dialog-text"]` |
@@ -36,7 +36,9 @@ Ya no se usa `QComboBox` / clase `combo-box` para medios de pago.
 
 | Constante | Controla |
 |---|---|
-| `PAGE_MARGIN` | Márgenes de las pantallas |
+| `PAGE_MARGIN` | Márgenes de las pantallas (registrar venta) |
+| `MENU_MARGIN` | Márgenes del menú (~20 px) |
+| `MENU_BUTTON_COLOR` | Color acordado del botón menú (`#2E7D32`) |
 | `PAGE_SPACING` | Espacio vertical / entre columnas |
 | `LEFT_COLUMN_STRETCH` / `RIGHT_COLUMN_STRETCH` | Proporción columnas |
 | `PURCHASE_PANEL_STRETCH` / `PAD_PANEL_STRETCH` | Detalle ~1/3 vs pad ~2/3 en registrar venta |
@@ -98,6 +100,12 @@ Texto del botón de cobro: **Pago** (`objectName` = `submit_sale_button`, clase 
 - El diálogo solo se cierra al tocar un medio (Escape / rechazo del sistema no cierran; sin botón de cerrar en la barra).
 - Se puede reabrir para cambiar el medio.
 
+### Menú principal (Etapa 4)
+
+- Botón «Registrar venta» arriba a la izquierda con margen `MENU_MARGIN` (~20 px).
+- Fondo `#2E7D32` (clase `menu-button`).
+- Contenedor `menu_grid` (`QGridLayout`) con stretch en fila/columna 1: preparado para una grilla futura; no se añaden más botones en esta etapa.
+
 ### Diálogos confirmar / éxito (Etapa 1)
 
 - `ConfirmSaleDialog` (`confirm_dialog`) y `SaleSavedDialog` (`sale_saved_dialog`) son más grandes que en 1.1.
@@ -111,7 +119,8 @@ Archivo principal: [`bakery/desktop/ui.py`](../../bakery/desktop/ui.py)
 
 | objectName | Widget | Clase QSS |
 |---|---|---|
-| `menu_register_button` | Botón menú | `menu-button` |
+| `menu_grid` | Contenedor grilla del menú (listo para más botones) | — |
+| `menu_register_button` | Registrar venta (arriba-izquierda, `#2E7D32`) | `menu-button` |
 | `back_button` | Flecha atrás `←` | `back-button` |
 | `left_column` | Columna operativa | — |
 | `purchase_panel` | Panel blanco | `#purchase_panel` en QSS |
@@ -160,7 +169,7 @@ QPushButton[class="pad-button"] {
 
 ## Qué no hace Beta 1.2 (todavía / nunca en esta versión)
 
-- Etapas 4–5 pendientes: menú verde, regresión.
+- Etapa 5 pendiente: regresión completa.
 - No define una paleta de marca definitiva más allá de los ajustes acordados.
 - No introduce un framework de temas múltiples (dark/light).
 - No llena el `future_panel` con funcionalidades nuevas.

@@ -12,6 +12,10 @@ from PySide6.QtWidgets import QWidget
 PAGE_MARGIN = 5
 PAGE_SPACING = 5
 
+# Menú principal (Beta 1.2 etapa 4): margen ~20 px arriba-izquierda
+MENU_MARGIN = 20
+MENU_BUTTON_COLOR = "#2E7D32"
+
 # Columna izquierda (operativa) vs derecha (futuro)
 LEFT_COLUMN_STRETCH = 2
 RIGHT_COLUMN_STRETCH = 3

@@ -35,7 +35,7 @@ Comportamientos de Beta 1.1 que **no** cambian:
 | 1 | Popups confirmar y éxito más grandes | Hecha |
 | 2 | Botón volver con ícono | Hecha |
 | 3 | Layout registrar venta (proporciones, scroll, fuente) | Hecha |
-| 4 | Menú: posición y color | Pendiente |
+| 4 | Menú: posición y color | Hecha |
 | 5 | Regresión completa (+ doc final) | Pendiente |
 
 ## Etapa 0 — Medio de pago: botón + popup
@@ -73,5 +73,13 @@ Comportamientos de Beta 1.1 que **no** cambian:
 - Stretch `PURCHASE_PANEL_STRETCH = 1` y `PAD_PANEL_STRETCH = 2` (`pad_panel`).
 - Lista de líneas en `QScrollArea` (`purchase_list_scroll`) para muchas líneas.
 - Fuente mayor solo en `QLabel#purchase_list` (28 px); `sale_display` y `purchase_total` siguen en 36 px.
+
+## Etapa 4 — Menú: posición y color
+
+**Hecha.** Reubicó «Registrar venta» arriba a la izquierda:
+
+- Margen `MENU_MARGIN = 20` px; contenedor `menu_grid` (`QGridLayout`) con stretch en fila/columna 1 para una grilla futura (sin botones extra).
+- Color de fondo `#2E7D32` (`menu-button` en QSS / `MENU_BUTTON_COLOR`).
+- Sigue siendo el único botón del menú; misma navegación a registrar venta.
 
 El detalle de objetivos, archivos y criterios está en el plan de Beta 1.2 del Project.

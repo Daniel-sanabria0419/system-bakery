@@ -11,7 +11,7 @@ Leer también: `AGENTS.md`, `docs/product-requirements.md`, `docs/architecture.m
 - Lista de compra en memoria; sin cambios de esquema SQLite.
 - Separación: entrada actual ≠ líneas de compra ≠ total.
 - Sin botones `+` / `−`; botón **AGREGAR**.
-- **Borrar** = un dígito de la entrada; **C** = limpiar compra + entrada.
+- **Borrar** = un dígito de la entrada; **C** = limpiar compra + entrada, sin cambiar el medio de pago.
 - Formato COP existente: `5000` → `$ 5.000` (sin cambiar el contrato de `format_cop`).
 - Calculadora local; HTTP solo al cargar medios y al confirmar venta.
 - `POST /ventas` sin cambios de contrato: `{ valor_total, id_medio_pago }` con el total acumulado.
@@ -31,6 +31,8 @@ Leer también: `AGENTS.md`, `docs/product-requirements.md`, `docs/architecture.m
 | 4 | Navegación Volver | Hecha |
 | 5 | Popup venta guardada | Hecha |
 | 6 | Preparación visual | Hecha |
-| 7 | Regresión completa | Pendiente |
+| 7 | Regresión completa | Hecha |
 
 El detalle de objetivos, archivos, pruebas y criterios de aceptación está en el plan de desarrollo de Beta 1.1.
+
+La etapa 7 quedó cerrada con la suite completa en verde: 61 pruebas (`QT_QPA_PLATFORM=offscreen python3 -m pytest`, 2026-10-19).

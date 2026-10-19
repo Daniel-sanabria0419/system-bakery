@@ -25,11 +25,13 @@ todos:
     status: completed
   - id: stage7-regression
     content: "Etapa 7: suite completa y verificación de regresión"
-    status: pending
+    status: completed
 isProject: false
 ---
 
 # Plan Beta 1.1 — Documentación y desarrollo
+
+Este archivo se escribió **antes** de implementar Beta 1.1 y se fue marcando por etapas. La sección 1 (diagnóstico) y la sección 7 (guía visual de entonces) describen el código de ese momento: calculadora con `+` y `−`, sin botón Volver, sin popup de éxito y ventana pequeña con `resize`. Eso ya no es el estado del programa. El estado actual está en `docs/architecture.md` y `docs/beta-1.1/visual-guide.md`. Las etapas 0 a 7 quedaron hechas.
 
 ## Respuesta rápida a tus decisiones
 
@@ -220,8 +222,8 @@ Solo estos archivos; sin inventar sync ni BD:
 - **Aceptación:** guía en docs/plan (sección 6 abajo); cero cambio visual obligatorio.
 
 ### Etapa 7 — Regresión completa
-- Ejecutar suite completa; documentar tests actualizados vs nuevos.
-- Meta: suite verde; no borrar tests “para que pase” — solo adaptar los de comportamiento intencionalmente cambiado.
+- Hecha el 2026-10-19. Suite completa en verde: 61 pruebas (`QT_QPA_PLATFORM=offscreen python3 -m pytest`).
+- No se borraron tests para que pasara; solo se adaptaron los de comportamiento cambiado a propósito en las etapas anteriores.
 
 ---
 

@@ -32,7 +32,7 @@ SQLite
 | Capa | Paquete | Responsabilidad |
 |---|---|---|
 | Desktop | `bakery/desktop` | Pantallas, navegación, diálogos; sin reglas de negocio |
-| Cliente HTTP | `bakery/desktop/client.py` | `GET /medios-pago`, `POST /ventas` |
+| Cliente HTTP | `bakery/desktop/client.py` | `GET /medios-pago`, `POST /ventas`; `GET /health` solo comprueba la API |
 | API | `bakery/api` | Rutas delgadas; validación HTTP |
 | Aplicación | `bakery/app` | Entrada/calculadora, compra en memoria, registro de venta, formato COP |
 | Persistencia | `bakery/persistence` | Schema SQLite, repositorios |
@@ -51,7 +51,7 @@ Registrar venta
   - medio de pago
   - Volver → menú (conserva estado)
       |
-      | Registrar venta (habilitado si total > 0 y hay medio)
+      | Pago (habilitado si total > 0 y hay medio)
       v
 Diálogo confirmar (antes del POST)
       |
@@ -94,8 +94,8 @@ La UI desktop debe consumir este texto; no debe recalcular el formato por su cue
 | Dígitos | Actualizan solo la entrada actual (local, sin HTTP) |
 | **AGREGAR** | Si la entrada es un entero > 0, la añade a la compra, actualiza el total y limpia solo la entrada |
 | **Borrar** | Elimina un dígito de la entrada actual; no modifica la compra |
-| **C** | Limpia la compra completa y deja la entrada lista para empezar de nuevo |
-| Registrar venta | Usa el total de la compra + medio de pago; abre confirmación; luego POST |
+| **C** | Limpia la compra completa y deja la entrada lista para empezar de nuevo; no cambia el medio de pago |
+| **Pago** | Usa el total de la compra + medio de pago; abre confirmación; luego POST |
 | Volver | Cambia a la pantalla de menú **sin** limpiar entrada ni compra |
 
 Los botones `+` y `−` de Beta 1 dejan de existir; no hay evaluación de expresiones con operadores.
@@ -104,11 +104,12 @@ Los botones `+` y `−` de Beta 1 dejan de existir; no hay evaluación de expres
 
 La calculadora y la compra son locales.
 
-Solo hay comunicación HTTP cuando corresponde a:
+La API nombra dos rutas de negocio:
 
 - cargar medios de pago (`GET /medios-pago`);
-- registrar la venta confirmada (`POST /ventas` con el total acumulado);
-- comprobación de salud en arranque (`GET /health`), si aplica.
+- registrar la venta confirmada (`POST /ventas` con el total acumulado).
+
+Hay una ruta adicional, `GET /health`, solo para comprobar que la API está en funcionamiento. Se usa en el arranque.
 
 No debe existir un endpoint de calculadora ni peticiones por cada tecla.
 

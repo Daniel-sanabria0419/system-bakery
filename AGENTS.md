@@ -38,7 +38,7 @@ Preservar lo que ya funciona de Beta 1 y de Beta 1.1.
 
 **Beta 1.2 está en curso.** Solo cambios estéticos / UX táctil sobre 1.1. Sin lógica de negocio nueva; mismos contratos API y SQLite.
 
-Etapas 0–3 hechas: medio de pago con botón + popup; popups confirmar/éxito más grandes; botón volver con flecha `←`; layout registrar venta (~1/3 detalle, ~2/3 pad, scroll, fuente solo en líneas). Etapas 4–5 pendientes.
+Etapas 0–4 hechas: medio de pago con botón + popup; popups confirmar/éxito más grandes; botón volver con flecha `←`; layout registrar venta (~1/3 detalle, ~2/3 pad, scroll, fuente solo en líneas); menú arriba-izquierda con margen ~20 px y color `#2E7D32`. Etapa 5 (regresión) pendiente.
 
 Requisitos y etapas:
 

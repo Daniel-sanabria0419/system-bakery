@@ -33,7 +33,7 @@ QPushButton[class="back-button"] {
 }
 
 QPushButton[class="menu-button"] {
-    background-color: #1A1A1A;
+    background-color: #2E7D32;
     color: #FFFFFF;
     padding: 12px 24px;
 }

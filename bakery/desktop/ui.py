@@ -182,14 +182,31 @@ class SaleSavedDialog(QDialog):
 class MenuPage(QWidget):
     def __init__(self, on_register) -> None:
         super().__init__()
-        layout = QVBoxLayout(self)
-        _apply_page_layout(layout)
-        layout.setAlignment(Qt.AlignCenter)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(
+            style.MENU_MARGIN,
+            style.MENU_MARGIN,
+            style.MENU_MARGIN,
+            style.MENU_MARGIN,
+        )
+        root.setSpacing(style.PAGE_SPACING)
+
+        # Contenedor en grilla: hoy solo (0,0); stretch deja sitio para botones futuros.
+        menu_grid = QWidget()
+        menu_grid.setObjectName("menu_grid")
+        grid = QGridLayout(menu_grid)
+        grid.setContentsMargins(0, 0, 0, 0)
+        grid.setSpacing(style.PAGE_SPACING)
+
         button = QPushButton("Registrar venta")
         button.setObjectName("menu_register_button")
         style.apply_class(button, "menu-button")
         button.clicked.connect(on_register)
-        layout.addWidget(button)
+        grid.addWidget(button, 0, 0, Qt.AlignLeft | Qt.AlignTop)
+        grid.setColumnStretch(1, 1)
+        grid.setRowStretch(1, 1)
+
+        root.addWidget(menu_grid, stretch=1)
 
 
 class RegisterSalePage(QWidget):

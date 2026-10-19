@@ -26,7 +26,7 @@ Mejorar la usabilidad táctil y la apariencia del flujo de registro de ventas, s
 2. **Popups confirmar / éxito:** texto y diálogo más grandes; botones ~80 px de alto.
 3. **Volver:** ícono de flecha atrás (sin texto); rectángulo un poco más ancho que alto.
 4. **Layout registrar venta:** detalle ~1/3, pad ~2/3; scroll en el detalle; solo subir fuente de líneas agregadas.
-5. **Menú:** «Registrar venta» arriba a la izquierda, margen ~20 px; color `#2E7D32`. (Pendiente)
+5. **Menú:** «Registrar venta» arriba a la izquierda, margen ~20 px; color `#2E7D32`.
 6. **Alcance:** solo esos cambios; sin productos, sync, login ni lógica de negocio nueva.
 
 ## Estado de implementación
@@ -37,7 +37,8 @@ Mejorar la usabilidad táctil y la apariencia del flujo de registro de ventas, s
 | 1 Popups confirmar y éxito más grandes | Hecha |
 | 2 Botón volver con ícono | Hecha |
 | 3 Layout registrar venta | Hecha |
-| 4–5 | Pendientes |
+| 4 Menú: posición y color | Hecha |
+| 5 | Pendiente |
 
 Detalle: `docs/beta-1.2/stages.md`. Guía visual: `docs/beta-1.2/visual-guide.md`.
 
@@ -70,7 +71,9 @@ Debe mostrar:
 
 - Botón "Registrar venta".
 
-No debe contener otras funcionalidades en Beta 1.1.
+En Beta 1.2: arriba a la izquierda, margen ~20 px, color de fondo `#2E7D32`; layout preparado para una grilla futura sin añadir más botones ahora.
+
+No debe contener otras funcionalidades en Beta 1.1 / 1.2.
 
 ### 2. Registrar venta
 

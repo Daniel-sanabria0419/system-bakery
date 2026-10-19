@@ -10,11 +10,11 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 |---|---|---|
 | Beta 1 | Completada (referencia) | Registrar una venta y almacenarla localmente |
 | Beta 1.1 | Completada | Mejorar el flujo de registro con lista de compra en memoria y UX de calculadora |
-| Beta 1.2 | En curso | Ajustes estéticos / UX táctil; sin lógica de negocio nueva |
+| Beta 1.2 | Completada | Ajustes estéticos / UX táctil; sin lógica de negocio nueva |
 
 ---
 
-# Beta 1.2 (en curso)
+# Beta 1.2 (completada)
 
 ## Objetivo
 
@@ -38,9 +38,9 @@ Mejorar la usabilidad táctil y la apariencia del flujo de registro de ventas, s
 | 2 Botón volver con ícono | Hecha |
 | 3 Layout registrar venta | Hecha |
 | 4 Menú: posición y color | Hecha |
-| 5 | Pendiente |
+| 5 Regresión completa (+ doc final) | Hecha |
 
-Detalle: `docs/beta-1.2/stages.md`. Guía visual: `docs/beta-1.2/visual-guide.md`.
+**Beta 1.2 está cerrada** a nivel de alcance implementado (regresión en verde; 67 pruebas). Detalle: `docs/beta-1.2/stages.md`. Guía visual: `docs/beta-1.2/visual-guide.md`.
 
 ## Medio de pago (vigente tras Etapa 0)
 

@@ -32,8 +32,8 @@ Comportamientos de Beta 1.1 que **no** cambian:
 | Etapa | Nombre | Estado |
 |---|---|---|
 | 0 | Medio de pago: botón + popup (+ docs iniciales 1.2) | Hecha |
-| 1 | Popups confirmar y éxito más grandes | Pendiente |
-| 2 | Botón volver con ícono | Pendiente |
+| 1 | Popups confirmar y éxito más grandes | Hecha |
+| 2 | Botón volver con ícono | Hecha |
 | 3 | Layout registrar venta (proporciones, scroll, fuente) | Pendiente |
 | 4 | Menú: posición y color | Pendiente |
 | 5 | Regresión completa (+ doc final) | Pendiente |
@@ -47,5 +47,23 @@ Comportamientos de Beta 1.1 que **no** cambian:
 - Cierre solo al elegir un medio (`reject` / Escape no cierran; sin botón de cerrar en la barra).
 - Misma semántica que 1.1 para Pago, volver y reset post-éxito.
 - Sin cambios en API, SQLite ni capa `app`.
+
+## Etapa 1 — Popups confirmar y éxito más grandes
+
+**Hecha.** Agrandó `ConfirmSaleDialog` y `SaleSavedDialog` para uso táctil:
+
+- Texto de diálogo con clase `dialog-text` (fuente mayor en QSS).
+- Botones de acción (`confirm_button`, `cancel_button`, `sale_saved_ok_button`) con clase `dialog-action-button` y altura mínima ~80 px (`DIALOG_ACTION_BUTTON_MIN_HEIGHT`).
+- Área mínima del diálogo vía `DIALOG_MIN_WIDTH` / `DIALOG_MIN_HEIGHT` y márgenes de contenido.
+- Flujo funcional idéntico (Confirmar/No; Aceptar tras éxito; mismo momento del POST).
+
+## Etapa 2 — Botón volver con ícono
+
+**Hecha.** Reemplazó el texto «Volver» por un ícono de flecha atrás (`←`):
+
+- `objectName` estable: `back_button`; clase `back-button`.
+- Forma rectangular un poco más ancha que alta (`BACK_BUTTON_MIN_WIDTH` > `BACK_BUTTON_MIN_HEIGHT`); un poco más grande que el control de texto anterior.
+- Misma navegación: vuelve al menú sin limpiar compra, entrada ni medio.
+- Tooltip «Volver» para accesibilidad; la etiqueta visible no es «Volver».
 
 El detalle de objetivos, archivos y criterios está en el plan de Beta 1.2 del Project.

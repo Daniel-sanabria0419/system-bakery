@@ -15,10 +15,12 @@ En Qt las clases se asignan con la propiedad dinámica `class` (`style.apply_cla
 |---|---|---|
 | `pad-button` | Dígitos, `00`, Borrar, C, Agregar, Pago | `QPushButton[class="pad-button"]` |
 | `money-text` | `sale_display`, `purchase_list`, `purchase_total` | `QLabel[class="money-text"]` (entrada grande: `#sale_display`) |
-| `back-button` | Volver | `QPushButton[class="back-button"]` |
+| `back-button` | Flecha atrás (sin texto «Volver») | `QPushButton[class="back-button"]` |
 | `menu-button` | Registrar venta (menú) | `QPushButton[class="menu-button"]` |
 | `payment-button` | Botón de medio de pago en registrar venta | `QPushButton[class="payment-button"]` |
 | `payment-method-button` | Botones del popup de medios | `QPushButton[class="payment-method-button"]` |
+| `dialog-text` | Etiquetas de confirmar / venta guardada | `QLabel[class="dialog-text"]` |
+| `dialog-action-button` | Confirmar, No, Aceptar | `QPushButton[class="dialog-action-button"]` (min-height ~80 px) |
 
 También en `theme.qss` (por `#objectName`):
 
@@ -40,6 +42,10 @@ Ya no se usa `QComboBox` / clase `combo-box` para medios de pago.
 | `PAD_SPACING` | Espacio entre teclas del pad |
 | `PAD_BUTTON_MIN_WIDTH` / `PAD_BUTTON_MIN_HEIGHT` | Tamaño mínimo de teclas (0 = sin forzar) |
 | `PAYMENT_METHOD_BUTTON_MIN_WIDTH` / `PAYMENT_METHOD_BUTTON_MIN_HEIGHT` | Tamaño mínimo de botones del popup de medios |
+| `DIALOG_ACTION_BUTTON_MIN_HEIGHT` / `DIALOG_ACTION_BUTTON_MIN_WIDTH` | Botones Confirmar / No / Aceptar (~80 px de alto) |
+| `DIALOG_MIN_WIDTH` / `DIALOG_MIN_HEIGHT` | Área mínima de diálogos confirmar / éxito |
+| `DIALOG_CONTENT_MARGIN` / `DIALOG_CONTENT_SPACING` | Márgenes y espaciado internos de esos diálogos |
+| `BACK_BUTTON_MIN_WIDTH` / `BACK_BUTTON_MIN_HEIGHT` | Botón volver: rectángulo un poco más ancho que alto |
 
 Helpers:
 
@@ -53,9 +59,15 @@ Pantalla completa en [`bakery/desktop/ui.py`](../../bakery/desktop/ui.py) (`Main
 ## Layout Registrar venta
 
 ```text
-[ Volver ]
+[ ←  ]   (flecha atrás; objectName back_button)
 [ panel compra + pad ]  [ future_panel vacío ]
 ```
+
+### Botón volver (Etapa 2)
+
+- Visible: ícono Unicode `←` (no el texto «Volver»).
+- Forma: rectángulo un poco más ancho que alto (`BACK_BUTTON_MIN_WIDTH` = 96, `BACK_BUTTON_MIN_HEIGHT` = 72).
+- Tooltip «Volver»; misma acción: regresar al menú conservando estado.
 
 Pad:
 
@@ -78,6 +90,13 @@ Texto del botón de cobro: **Pago** (`objectName` = `submit_sale_button`, clase 
 - El diálogo solo se cierra al tocar un medio (Escape / rechazo del sistema no cierran; sin botón de cerrar en la barra).
 - Se puede reabrir para cambiar el medio.
 
+### Diálogos confirmar / éxito (Etapa 1)
+
+- `ConfirmSaleDialog` (`confirm_dialog`) y `SaleSavedDialog` (`sale_saved_dialog`) son más grandes que en 1.1.
+- Texto: clase `dialog-text` (fuente ~28 px en QSS).
+- Botones de acción: clase `dialog-action-button`, altura mínima ~80 px (`style.DIALOG_ACTION_BUTTON_MIN_HEIGHT` y `min-height: 80px` en QSS).
+- objectNames estables: `confirm_value_label`, `confirm_payment_label`, `confirm_button`, `cancel_button`, `sale_saved_message`, `sale_saved_ok_button`.
+
 ## Widgets y objectName
 
 Archivo principal: [`bakery/desktop/ui.py`](../../bakery/desktop/ui.py)
@@ -85,7 +104,7 @@ Archivo principal: [`bakery/desktop/ui.py`](../../bakery/desktop/ui.py)
 | objectName | Widget | Clase QSS |
 |---|---|---|
 | `menu_register_button` | Botón menú | `menu-button` |
-| `back_button` | Volver | `back-button` |
+| `back_button` | Flecha atrás `←` | `back-button` |
 | `left_column` | Columna operativa | — |
 | `purchase_panel` | Panel blanco | `#purchase_panel` en QSS |
 | `sale_display` | Entrada actual | `money-text` |
@@ -100,7 +119,12 @@ Archivo principal: [`bakery/desktop/ui.py`](../../bakery/desktop/ui.py)
 | `borrar_button`, `clear_button`, `agregar_button` | Teclas | `pad-button` |
 | `submit_sale_button` | Pago | `pad-button` |
 | `future_panel` | Espacio derecho vacío | — |
-| `confirm_*` / `sale_saved_*` | Diálogos | (sin clase por ahora) |
+| `confirm_dialog` | Popup confirmar venta | — |
+| `confirm_value_label`, `confirm_payment_label` | Texto del confirmar | `dialog-text` |
+| `confirm_button`, `cancel_button` | Confirmar / No | `dialog-action-button` |
+| `sale_saved_dialog` | Popup venta guardada | — |
+| `sale_saved_message` | Mensaje de éxito | `dialog-text` |
+| `sale_saved_ok_button` | Aceptar | `dialog-action-button` |
 
 ## Cómo cambiar cada aspecto
 
@@ -126,7 +150,7 @@ QPushButton[class="pad-button"] {
 
 ## Qué no hace Beta 1.2 (todavía / nunca en esta versión)
 
-- Etapas 1–5 pendientes: popups más grandes, ícono volver, proporciones 1/3–2/3, menú verde, regresión.
+- Etapas 3–5 pendientes: proporciones 1/3–2/3, menú verde, regresión.
 - No define una paleta de marca definitiva más allá de los ajustes acordados.
 - No introduce un framework de temas múltiples (dark/light).
 - No llena el `future_panel` con funcionalidades nuevas.

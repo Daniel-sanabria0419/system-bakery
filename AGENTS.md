@@ -20,11 +20,11 @@ La Beta 1 (completada como base) solamente debía permitir:
 6. Guardar la venta localmente en SQLite.
 7. Volver a la pantalla de registro después de guardar.
 
-## Versión activa: Beta 1.1
+## Beta 1.1
 
-El desarrollo activo continúa en **Beta 1.1** (lista de compra en memoria, nueva interacción de calculadora, popup de éxito, navegación atrás).
+**Beta 1.1 está terminada.** Cubre la lista de compra en memoria, la interacción de la calculadora, el popup de éxito y la navegación atrás. Las etapas 0 a 7 están hechas; la etapa 7 es la regresión completa.
 
-Requisitos y arquitectura actualizados:
+Requisitos y arquitectura:
 
 - `docs/product-requirements.md`
 - `docs/architecture.md`
@@ -32,11 +32,13 @@ Requisitos y arquitectura actualizados:
 - `docs/sync.md`
 - `docs/beta-1.1/stages.md`
 
-No implementar funcionalidades de Beta 1.1 fuera del plan de etapas. Preservar lo que ya funciona de Beta 1.
+Preservar lo que ya funciona de Beta 1 y de Beta 1.1.
+
+Beta 1.2 y Beta 2 no tienen requisitos: Daniel todavía no los ha planteado. No implementar una versión siguiente hasta que esté escrita en los documentos.
 
 ## Fuera del alcance
 
-NO implementar en Beta 1 ni anticipar fuera de Beta 1.1:
+NO implementar, ni anticipar en una versión que todavía no está especificada:
 
 - Productos.
 - Inventario.
@@ -57,7 +59,7 @@ NO implementar en Beta 1 ni anticipar fuera de Beta 1.1:
 - IA dentro de la aplicación.
 - Funcionalidades no especificadas en los documentos de requisitos.
 
-Si una funcionalidad no está especificada y no es necesaria para que Beta 1 funcione, NO debe implementarse.
+Si una funcionalidad no está especificada en los documentos de requisitos, NO debe implementarse.
 
 ## Stack
 
@@ -95,7 +97,7 @@ IDE / agente:
 - La aplicación debe poder funcionar completamente sin Internet.
 - No utilizar floats para representar dinero.
 - Las ventas deben tener identificadores únicos.
-- Mantener el código simple y proporcional al alcance de Beta 1.
+- Mantener el código simple y proporcional al alcance especificado.
 - No introducir abstracciones innecesarias.
 - No implementar funcionalidades futuras anticipadamente.
 

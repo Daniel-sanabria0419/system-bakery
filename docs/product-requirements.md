@@ -9,11 +9,11 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Versión | Estado | Objetivo |
 |---|---|---|
 | Beta 1 | Completada (referencia) | Registrar una venta y almacenarla localmente |
-| Beta 1.1 | Activa | Mejorar el flujo de registro con lista de compra en memoria y UX de calculadora |
+| Beta 1.1 | Completada | Mejorar el flujo de registro con lista de compra en memoria y UX de calculadora |
 
 ---
 
-# Beta 1.1 (activa)
+# Beta 1.1 (completada)
 
 ## Objetivo
 
@@ -40,14 +40,14 @@ Debe permitir:
 - Borrar un dígito a la vez de la entrada actual (**Borrar**).
 - Limpiar completamente la compra y la entrada actual (**C**).
 - Seleccionar un medio de pago.
-- Registrar la venta con el total acumulado.
+- Registrar la venta con el total acumulado mediante el botón **Pago**.
 - Volver al menú anterior conservando el estado de la compra pendiente.
 
 No debe mostrar botones `+` ni `−`.
 
 ### 3. Confirmación previa al guardado
 
-Al presionar "Registrar venta", debe aparecer una confirmación.
+Al presionar **Pago**, debe aparecer una confirmación.
 
 Debe mostrar:
 
@@ -117,6 +117,7 @@ Si el valor no es válido (vacío o no positivo): no agregar nada (no-op silenci
 - Limpia completamente la compra (todos los valores agregados).
 - Deja la calculadora lista para una nueva entrada.
 - No es equivalente a Borrar.
+- No cambia el medio de pago seleccionado.
 
 ### Botones eliminados
 

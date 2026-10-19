@@ -1,6 +1,6 @@
 # Etapas de implementación — Beta 1.2
 
-Documento de referencia para implementar Beta 1.2 por etapas.
+Documento de referencia de Beta 1.2. **Todas las etapas 0–5 están hechas; la versión está cerrada.**
 
 Beta 1.2 es una versión de ajustes estéticos y UX táctil sobre Beta 1.1.
 Preserva contratos de API y SQLite. No añade lógica de negocio nueva.
@@ -36,7 +36,7 @@ Comportamientos de Beta 1.1 que **no** cambian:
 | 2 | Botón volver con ícono | Hecha |
 | 3 | Layout registrar venta (proporciones, scroll, fuente) | Hecha |
 | 4 | Menú: posición y color | Hecha |
-| 5 | Regresión completa (+ doc final) | Pendiente |
+| 5 | Regresión completa (+ doc final) | Hecha |
 
 ## Etapa 0 — Medio de pago: botón + popup
 
@@ -82,4 +82,13 @@ Comportamientos de Beta 1.1 que **no** cambian:
 - Color de fondo `#2E7D32` (`menu-button` en QSS / `MENU_BUTTON_COLOR`).
 - Sigue siendo el único botón del menú; misma navegación a registrar venta.
 
-El detalle de objetivos, archivos y criterios está en el plan de Beta 1.2 del Project.
+## Etapa 5 — Regresión completa (+ doc final)
+
+**Hecha.** Cierre de Beta 1.2:
+
+- Suite `QT_QPA_PLATFORM=offscreen python3 -m pytest`: **67 passed**.
+- Contratos API (`GET /medios-pago`, `POST /ventas`) y esquema SQLite intactos; sin endpoints ni tablas nuevas.
+- Documentación del repo alineada con el estado final (esta página, visual-guide, AGENTS, PRD, architecture).
+- Smoke del flujo de venta (menú → registro → líneas → medio → Pago → confirmar → éxito).
+
+**Beta 1.2 queda cerrada** a nivel de alcance implementado. Beta 2 no tiene requisitos; no anticiparla.

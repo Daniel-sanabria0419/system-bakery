@@ -6,7 +6,7 @@ La arquitectura debe permitir construir una aplicación de escritorio sencilla y
 
 Beta 1 estableció las capas. Beta 1.1 las reutiliza: solo cambia el flujo de registro en desktop y la lógica local de entrada/compra.
 
-Beta 1.2 reutiliza las mismas capas y contratos; solo ajusta UX/estética en desktop (sin cambios de API, `app` ni SQLite).
+Beta 1.2 (terminada) reutiliza las mismas capas y contratos; solo ajusta UX/estética en desktop (sin cambios de API, `app` ni SQLite).
 
 ## Arquitectura general
 

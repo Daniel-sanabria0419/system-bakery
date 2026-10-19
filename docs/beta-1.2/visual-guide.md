@@ -1,8 +1,8 @@
 # Guía de personalización visual — Beta 1.2
 
-Esta guía indica **dónde** cambiar la apariencia en el estado actual del desktop (Beta 1.2 en curso).
+Esta guía indica **dónde** cambiar la apariencia del desktop con **Beta 1.2 terminada**.
 
-Parte de la guía de Beta 1.1 y sustituye el select de medio de pago por botón + popup.
+Parte de la guía de Beta 1.1 y documenta los seis ajustes UX/estéticos de 1.2 (medio de pago, diálogos, volver, layout, menú).
 
 - **Colores y tipografía:** archivo QSS [`bakery/desktop/theme.qss`](../../bakery/desktop/theme.qss).
 - **Márgenes / espaciados / tamaños mínimos de layout:** [`bakery/desktop/style.py`](../../bakery/desktop/style.py).
@@ -167,10 +167,10 @@ QPushButton[class="pad-button"] {
 }
 ```
 
-## Qué no hace Beta 1.2 (todavía / nunca en esta versión)
+## Qué no hace Beta 1.2
 
-- Etapa 5 pendiente: regresión completa.
-- No define una paleta de marca definitiva más allá de los ajustes acordados.
+- No define una paleta de marca definitiva más allá de los seis ajustes acordados.
 - No introduce un framework de temas múltiples (dark/light).
 - No llena el `future_panel` con funcionalidades nuevas.
+- No añade productos, sync, login ni lógica de negocio nueva.
 - Cambiar solo `theme.qss` / métricas de `style.py` no altera la lógica de negocio.

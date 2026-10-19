@@ -74,3 +74,9 @@ QLabel#purchase_total[class="money-text"] {
     font-size: 36px;
     font-weight: bold;
 }
+
+/* Solo líneas agregadas (etapa 3); no subir sale_display ni purchase_total. */
+QLabel#purchase_list[class="money-text"] {
+    font-size: 28px;
+    font-weight: bold;
+}

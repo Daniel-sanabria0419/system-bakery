@@ -39,6 +39,7 @@ Ya no se usa `QComboBox` / clase `combo-box` para medios de pago.
 | `PAGE_MARGIN` | Márgenes de las pantallas |
 | `PAGE_SPACING` | Espacio vertical / entre columnas |
 | `LEFT_COLUMN_STRETCH` / `RIGHT_COLUMN_STRETCH` | Proporción columnas |
+| `PURCHASE_PANEL_STRETCH` / `PAD_PANEL_STRETCH` | Detalle ~1/3 vs pad ~2/3 en registrar venta |
 | `PAD_SPACING` | Espacio entre teclas del pad |
 | `PAD_BUTTON_MIN_WIDTH` / `PAD_BUTTON_MIN_HEIGHT` | Tamaño mínimo de teclas (0 = sin forzar) |
 | `PAYMENT_METHOD_BUTTON_MIN_WIDTH` / `PAYMENT_METHOD_BUTTON_MIN_HEIGHT` | Tamaño mínimo de botones del popup de medios |
@@ -60,7 +61,8 @@ Pantalla completa en [`bakery/desktop/ui.py`](../../bakery/desktop/ui.py) (`Main
 
 ```text
 [ ←  ]   (flecha atrás; objectName back_button)
-[ panel compra + pad ]  [ future_panel vacío ]
+[ purchase_panel ~1/3 ]  [ future_panel vacío ]
+[ pad_panel ~2/3      ]
 ```
 
 ### Botón volver (Etapa 2)
@@ -68,6 +70,12 @@ Pantalla completa en [`bakery/desktop/ui.py`](../../bakery/desktop/ui.py) (`Main
 - Visible: ícono Unicode `←` (no el texto «Volver»).
 - Forma: rectángulo un poco más ancho que alto (`BACK_BUTTON_MIN_WIDTH` = 96, `BACK_BUTTON_MIN_HEIGHT` = 72).
 - Tooltip «Volver»; misma acción: regresar al menú conservando estado.
+
+### Layout detalle / pad (Etapa 3)
+
+- Proporción vertical en la columna izquierda: `purchase_panel` stretch 1, `pad_panel` stretch 2 (~1/3 y ~2/3).
+- Líneas agregadas dentro de `purchase_list_scroll` (`QScrollArea`); scroll vertical si hay muchas líneas.
+- Tipografía: solo `#purchase_list` a 28 px; `#sale_display` y `#purchase_total` permanecen en 36 px.
 
 Pad:
 
@@ -109,7 +117,9 @@ Archivo principal: [`bakery/desktop/ui.py`](../../bakery/desktop/ui.py)
 | `purchase_panel` | Panel blanco | `#purchase_panel` en QSS |
 | `sale_display` | Entrada actual | `money-text` |
 | `entry_separator` | Separador bajo la entrada | `#entry_separator` |
-| `purchase_list` | Líneas agregadas | `money-text` |
+| `purchase_list_scroll` | Scroll de líneas agregadas | — |
+| `purchase_list` | Líneas agregadas (fuente 28 px) | `money-text` |
+| `pad_panel` | Contenedor del teclado (~2/3) | — |
 | `total_separator` | Separador sobre total/medio | `#total_separator` |
 | `purchase_total` | Total acumulado | `money-text` |
 | `payment_button` | Medio de pago (abre popup) | `payment-button` |
@@ -150,7 +160,7 @@ QPushButton[class="pad-button"] {
 
 ## Qué no hace Beta 1.2 (todavía / nunca en esta versión)
 
-- Etapas 3–5 pendientes: proporciones 1/3–2/3, menú verde, regresión.
+- Etapas 4–5 pendientes: menú verde, regresión.
 - No define una paleta de marca definitiva más allá de los ajustes acordados.
 - No introduce un framework de temas múltiples (dark/light).
 - No llena el `future_panel` con funcionalidades nuevas.

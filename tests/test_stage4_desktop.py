@@ -160,6 +160,29 @@ def test_register_layout_has_panel_pad_and_future_space(qtbot) -> None:
     assert submit.text() == "Pago"
 
 
+def test_register_layout_detail_scroll_and_pad_stretch(qtbot) -> None:
+    api = FakeApiClient()
+    window = create_window(api)
+    qtbot.addWidget(window)
+    window.show()
+    _click(qtbot, _find(window, "menu_register_button"))
+
+    assert _find(window, "purchase_list_scroll") is not None
+    assert _find(window, "pad_panel") is not None
+    assert _find(window, "purchase_list") is not None
+
+    left = _find(window, "left_column")
+    left_layout = left.layout()
+    assert left_layout.stretch(0) == style.PURCHASE_PANEL_STRETCH
+    assert left_layout.stretch(1) == style.PAD_PANEL_STRETCH
+    assert style.PAD_PANEL_STRETCH == 2 * style.PURCHASE_PANEL_STRETCH
+
+    for amount in ("1000", "2000", "3000", "4000", "5000", "6000", "7000", "8000"):
+        _enter_amount_and_agregar(qtbot, window, amount)
+    assert _find(window, "purchase_list").text().count("\n") == 7
+    assert _find(window, "purchase_total").text() == "Total: $ 36.000"
+
+
 def test_digit_00_appends_without_http(qtbot) -> None:
     api = FakeApiClient()
     window = create_window(api)

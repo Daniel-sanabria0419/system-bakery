@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
+    QScrollArea,
     QSizePolicy,
     QStackedWidget,
     QVBoxLayout,
@@ -244,9 +245,18 @@ class RegisterSalePage(QWidget):
         self._purchase_list = QLabel("")
         self._purchase_list.setObjectName("purchase_list")
         self._purchase_list.setAlignment(Qt.AlignRight | Qt.AlignTop)
-        self._purchase_list.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        self._purchase_list.setWordWrap(False)
+        self._purchase_list.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
         style.apply_class(self._purchase_list, "money-text")
-        panel_layout.addWidget(self._purchase_list, stretch=1)
+
+        self._purchase_list_scroll = QScrollArea()
+        self._purchase_list_scroll.setObjectName("purchase_list_scroll")
+        self._purchase_list_scroll.setWidgetResizable(False)
+        self._purchase_list_scroll.setFrameShape(QFrame.NoFrame)
+        self._purchase_list_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self._purchase_list_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self._purchase_list_scroll.setWidget(self._purchase_list)
+        panel_layout.addWidget(self._purchase_list_scroll, stretch=1)
 
         panel_layout.addWidget(_make_separator("total_separator"))
 
@@ -264,9 +274,12 @@ class RegisterSalePage(QWidget):
         footer.addWidget(self._purchase_total)
         panel_layout.addLayout(footer)
 
-        left_layout.addWidget(purchase_panel, stretch=1)
+        left_layout.addWidget(purchase_panel, style.PURCHASE_PANEL_STRETCH)
 
-        pad = QGridLayout()
+        pad_panel = QWidget()
+        pad_panel.setObjectName("pad_panel")
+        pad = QGridLayout(pad_panel)
+        pad.setContentsMargins(0, 0, 0, 0)
         pad.setSpacing(style.PAD_SPACING)
         pad_buttons = [
             ("1", 0, 0, 1, 1, "digit"),
@@ -312,7 +325,7 @@ class RegisterSalePage(QWidget):
                 self._submit = button
             pad.addWidget(button, row, column, row_span, col_span)
 
-        left_layout.addLayout(pad)
+        left_layout.addWidget(pad_panel, style.PAD_PANEL_STRETCH)
 
         future = QWidget()
         future.setObjectName("future_panel")
@@ -396,6 +409,11 @@ class RegisterSalePage(QWidget):
         self._display.setText(self._draft.entry.display_text())
         items = self._draft.purchase.items()
         self._purchase_list.setText("\n".join(format_cop(amount) for amount in items))
+        viewport_width = self._purchase_list_scroll.viewport().width()
+        if viewport_width > 0:
+            self._purchase_list.setFixedWidth(viewport_width)
+        self._purchase_list.adjustSize()
+        self._purchase_list.setMinimumHeight(self._purchase_list.sizeHint().height())
         total = self._draft.total()
         if total > 0:
             self._purchase_total.setText(f"Total: {format_cop(total)}")

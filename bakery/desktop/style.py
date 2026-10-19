@@ -16,6 +16,10 @@ PAGE_SPACING = 5
 LEFT_COLUMN_STRETCH = 2
 RIGHT_COLUMN_STRETCH = 3
 
+# Registrar venta: detalle ~1/3, pad ~2/3 de la columna operativa (Beta 1.2 etapa 3)
+PURCHASE_PANEL_STRETCH = 1
+PAD_PANEL_STRETCH = 2
+
 # Teclado numérico
 PAD_SPACING = 6
 PAD_BUTTON_MIN_WIDTH = 64

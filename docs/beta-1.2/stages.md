@@ -34,7 +34,7 @@ Comportamientos de Beta 1.1 que **no** cambian:
 | 0 | Medio de pago: botón + popup (+ docs iniciales 1.2) | Hecha |
 | 1 | Popups confirmar y éxito más grandes | Hecha |
 | 2 | Botón volver con ícono | Hecha |
-| 3 | Layout registrar venta (proporciones, scroll, fuente) | Pendiente |
+| 3 | Layout registrar venta (proporciones, scroll, fuente) | Hecha |
 | 4 | Menú: posición y color | Pendiente |
 | 5 | Regresión completa (+ doc final) | Pendiente |
 
@@ -65,5 +65,13 @@ Comportamientos de Beta 1.1 que **no** cambian:
 - Forma rectangular un poco más ancha que alta (`BACK_BUTTON_MIN_WIDTH` > `BACK_BUTTON_MIN_HEIGHT`); un poco más grande que el control de texto anterior.
 - Misma navegación: vuelve al menú sin limpiar compra, entrada ni medio.
 - Tooltip «Volver» para accesibilidad; la etiqueta visible no es «Volver».
+
+## Etapa 3 — Layout registrar venta (proporciones, scroll, fuente)
+
+**Hecha.** Repartió la columna operativa ~1/3 detalle / ~2/3 pad:
+
+- Stretch `PURCHASE_PANEL_STRETCH = 1` y `PAD_PANEL_STRETCH = 2` (`pad_panel`).
+- Lista de líneas en `QScrollArea` (`purchase_list_scroll`) para muchas líneas.
+- Fuente mayor solo en `QLabel#purchase_list` (28 px); `sale_display` y `purchase_total` siguen en 36 px.
 
 El detalle de objetivos, archivos y criterios está en el plan de Beta 1.2 del Project.

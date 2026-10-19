@@ -10,6 +10,46 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 |---|---|---|
 | Beta 1 | Completada (referencia) | Registrar una venta y almacenarla localmente |
 | Beta 1.1 | Completada | Mejorar el flujo de registro con lista de compra en memoria y UX de calculadora |
+| Beta 1.2 | En curso | Ajustes estéticos / UX táctil; sin lógica de negocio nueva |
+
+---
+
+# Beta 1.2 (en curso)
+
+## Objetivo
+
+Mejorar la usabilidad táctil y la apariencia del flujo de registro de ventas, sin cambiar qué se guarda ni cómo se calcula. Preserva API y SQLite de Beta 1.1.
+
+## Decisiones (lista cerrada)
+
+1. **Medio de pago:** botón «Seleccionar medio de pago» / «Medio de pago: {nombre}»; popup con botones grandes (máx. 5 por fila); cierra solo al elegir; se puede reabrir para cambiar. Sin `QComboBox`.
+2. **Popups confirmar / éxito:** texto y diálogo más grandes; botones ~80 px de alto. (Pendiente)
+3. **Volver:** ícono de flecha atrás (sin texto); rectángulo un poco más ancho que alto. (Pendiente)
+4. **Layout registrar venta:** detalle ~1/3, pad ~2/3; scroll en el detalle; solo subir fuente de líneas agregadas. (Pendiente)
+5. **Menú:** «Registrar venta» arriba a la izquierda, margen ~20 px; color `#2E7D32`. (Pendiente)
+6. **Alcance:** solo esos cambios; sin productos, sync, login ni lógica de negocio nueva.
+
+## Estado de implementación
+
+| Etapa | Estado |
+|---|---|
+| 0 Medio de pago: botón + popup | Hecha |
+| 1–5 | Pendientes |
+
+Detalle: `docs/beta-1.2/stages.md`. Guía visual: `docs/beta-1.2/visual-guide.md`.
+
+## Medio de pago (vigente tras Etapa 0)
+
+En registrar venta:
+
+- Un botón abre un popup con los medios activos (`GET /medios-pago`).
+- Texto inicial del botón: «Seleccionar medio de pago».
+- Tras elegir: «Medio de pago: {nombre}».
+- El popup solo se cierra al tocar un medio; se puede reabrir para cambiar.
+- **Pago** sigue habilitado solo si el total es mayor que 0 y hay medio seleccionado.
+- Volver al menú conserva el medio; tras venta exitosa se limpia la selección.
+
+No hay select / combo de medios de pago.
 
 ---
 
@@ -39,7 +79,7 @@ Debe permitir:
 - Ver la lista de valores agregados y el total acumulado.
 - Borrar un dígito a la vez de la entrada actual (**Borrar**).
 - Limpiar completamente la compra y la entrada actual (**C**).
-- Seleccionar un medio de pago.
+- Seleccionar un medio de pago (en Beta 1.2: botón + popup; ver sección Beta 1.2).
 - Registrar la venta con el total acumulado mediante el botón **Pago**.
 - Volver al menú anterior conservando el estado de la compra pendiente.
 

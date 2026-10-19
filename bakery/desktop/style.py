@@ -1,7 +1,7 @@
 """Layout metrics and QSS helpers for the desktop.
 
 Colores y tipografía viven en theme.qss.
-objectName y clases QSS: docs/beta-1.1/visual-guide.md.
+objectName y clases QSS: docs/beta-1.2/visual-guide.md.
 """
 
 from pathlib import Path
@@ -21,6 +21,10 @@ PAD_SPACING = 6
 PAD_BUTTON_MIN_WIDTH = 64
 PAD_BUTTON_MIN_HEIGHT = 90
 # Si PAD_BUTTON_MIN_* es 0, no se fuerza tamaño mínimo (comportamiento Qt por defecto).
+
+# Botones del popup de medio de pago (Beta 1.2)
+PAYMENT_METHOD_BUTTON_MIN_WIDTH = 120
+PAYMENT_METHOD_BUTTON_MIN_HEIGHT = 72
 
 _THEME_PATH = Path(__file__).with_name("theme.qss")
 

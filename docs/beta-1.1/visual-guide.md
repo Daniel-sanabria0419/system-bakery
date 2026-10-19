@@ -1,6 +1,8 @@
 # Guía de personalización visual — Beta 1.1
 
-Esta guía indica **dónde** cambiar la apariencia.
+Documento histórico de Beta 1.1. Para el estado actual del desktop (Beta 1.2), ver [`docs/beta-1.2/visual-guide.md`](../beta-1.2/visual-guide.md). En 1.2 el medio de pago ya no usa `payment_combo` / `QComboBox`.
+
+Esta guía indica **dónde** cambiar la apariencia en el estado de Beta 1.1.
 
 - **Colores y tipografía:** archivo QSS [`bakery/desktop/theme.qss`](../../bakery/desktop/theme.qss).
 - **Márgenes / espaciados / tamaños mínimos de layout:** [`bakery/desktop/style.py`](../../bakery/desktop/style.py).

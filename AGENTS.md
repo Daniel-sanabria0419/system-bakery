@@ -34,7 +34,20 @@ Requisitos y arquitectura:
 
 Preservar lo que ya funciona de Beta 1 y de Beta 1.1.
 
-Beta 1.2 y Beta 2 no tienen requisitos: Daniel todavía no los ha planteado. No implementar una versión siguiente hasta que esté escrita en los documentos.
+## Beta 1.2
+
+**Beta 1.2 está en curso.** Solo cambios estéticos / UX táctil sobre 1.1. Sin lógica de negocio nueva; mismos contratos API y SQLite.
+
+Etapa 0 hecha: medio de pago con botón + popup (sin `QComboBox`). Etapas 1–5 pendientes.
+
+Requisitos y etapas:
+
+- `docs/product-requirements.md` (sección Beta 1.2)
+- `docs/architecture.md`
+- `docs/beta-1.2/stages.md`
+- `docs/beta-1.2/visual-guide.md`
+
+Beta 2 no tiene requisitos: Daniel todavía no los ha planteado. No implementar una versión siguiente hasta que esté escrita en los documentos.
 
 ## Fuera del alcance
 

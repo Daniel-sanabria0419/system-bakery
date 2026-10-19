@@ -6,6 +6,8 @@ La arquitectura debe permitir construir una aplicación de escritorio sencilla y
 
 Beta 1 estableció las capas. Beta 1.1 las reutiliza: solo cambia el flujo de registro en desktop y la lógica local de entrada/compra.
 
+Beta 1.2 reutiliza las mismas capas y contratos; solo ajusta UX/estética en desktop (sin cambios de API, `app` ni SQLite).
+
 ## Arquitectura general
 
 ```text
@@ -37,7 +39,7 @@ SQLite
 | Aplicación | `bakery/app` | Entrada/calculadora, compra en memoria, registro de venta, formato COP |
 | Persistencia | `bakery/persistence` | Schema SQLite, repositorios |
 
-## Flujo desktop (Beta 1.1)
+## Flujo desktop (Beta 1.1 / 1.2)
 
 ```text
 Menú principal
@@ -48,7 +50,7 @@ Registrar venta
   - entrada actual (calculadora local)
   - lista de compra (memoria)
   - total acumulado
-  - medio de pago
+  - medio de pago (botón → popup de medios; sin QComboBox)
   - Volver → menú (conserva estado)
       |
       | Pago (habilitado si total > 0 y hay medio)
@@ -65,6 +67,12 @@ POST /ventas  { valor_total = total compra, id_medio_pago }
                 → limpiar entrada + compra (+ selección de medio)
                 → permanecer en Registrar venta
 ```
+
+### Selección de medio de pago (Beta 1.2)
+
+- Desktop: botón `payment_button` abre `SelectPaymentMethodDialog`.
+- Los medios siguen viniendo de `GET /medios-pago` vía `ApiClient.list_payment_methods()`.
+- Sin endpoint nuevo; la capa `app` y la persistencia no participan en la UI de selección.
 
 ## Separación de estado (Beta 1.1)
 
@@ -95,6 +103,7 @@ La UI desktop debe consumir este texto; no debe recalcular el formato por su cue
 | **AGREGAR** | Si la entrada es un entero > 0, la añade a la compra, actualiza el total y limpia solo la entrada |
 | **Borrar** | Elimina un dígito de la entrada actual; no modifica la compra |
 | **C** | Limpia la compra completa y deja la entrada lista para empezar de nuevo; no cambia el medio de pago |
+| Medio de pago | Abre el popup de medios; al elegir, actualiza el botón; no hace HTTP salvo la carga inicial de medios |
 | **Pago** | Usa el total de la compra + medio de pago; abre confirmación; luego POST |
 | Volver | Cambia a la pantalla de menú **sin** limpiar entrada ni compra |
 
@@ -132,7 +141,7 @@ La apariencia se controla en la capa desktop:
 
 - Constantes de tamaño/márgenes/espaciado: [`bakery/desktop/style.py`](../bakery/desktop/style.py)
 - Widgets y `objectName`: [`bakery/desktop/ui.py`](../bakery/desktop/ui.py)
-- Guía práctica: [`docs/beta-1.1/visual-guide.md`](beta-1.1/visual-guide.md)
+- Guía práctica vigente: [`docs/beta-1.2/visual-guide.md`](beta-1.2/visual-guide.md) (histórico 1.1: [`docs/beta-1.1/visual-guide.md`](beta-1.1/visual-guide.md))
 
 No hay un framework de temas obligatorio ni paleta de marca fijada. Los widgets usan `objectName` para poder aplicar `setStyleSheet` después, sin cambiar la arquitectura.
 
@@ -145,7 +154,7 @@ No hay un framework de temas obligatorio ni paleta de marca fijada. Los widgets 
 - Las ventas tienen identificadores únicos (UUID).
 - No introducir abstracciones innecesarias ni funcionalidades fuera de alcance.
 
-## Fuera de alcance arquitectónico (Beta 1.1)
+## Fuera de alcance arquitectónico (Beta 1.1 / 1.2)
 
 - Nuevas tablas para líneas de venta.
 - Nuevos endpoints innecesarios.

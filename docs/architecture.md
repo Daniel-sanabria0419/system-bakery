@@ -134,6 +134,7 @@ No debe existir un endpoint de calculadora ni peticiones por cada tecla.
 - Solo tras respuesta exitosa del `POST /ventas`.
 - Distinto del diálogo de confirmación *previa* al POST.
 - El diálogo de confirmación decide si se intenta guardar; el popup de éxito informa que el guardado ocurrió.
+- En Beta 1.2 (etapa 1), ambos diálogos son más grandes para uso táctil: texto con clase `dialog-text`, botones de acción ~80 px (`dialog-action-button`). Sin cambio de cuándo se hace el POST.
 
 ## Personalización visual
 

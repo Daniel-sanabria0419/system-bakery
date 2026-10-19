@@ -42,6 +42,29 @@ def _apply_pad_button_size(button: QPushButton) -> None:
         button.setMinimumSize(style.PAD_BUTTON_MIN_WIDTH, style.PAD_BUTTON_MIN_HEIGHT)
 
 
+def _apply_dialog_action_button_size(button: QPushButton) -> None:
+    if (
+        style.DIALOG_ACTION_BUTTON_MIN_WIDTH > 0
+        or style.DIALOG_ACTION_BUTTON_MIN_HEIGHT > 0
+    ):
+        button.setMinimumSize(
+            style.DIALOG_ACTION_BUTTON_MIN_WIDTH,
+            style.DIALOG_ACTION_BUTTON_MIN_HEIGHT,
+        )
+
+
+def _apply_touch_dialog_layout(dialog: QDialog, layout: QVBoxLayout) -> None:
+    layout.setContentsMargins(
+        style.DIALOG_CONTENT_MARGIN,
+        style.DIALOG_CONTENT_MARGIN,
+        style.DIALOG_CONTENT_MARGIN,
+        style.DIALOG_CONTENT_MARGIN,
+    )
+    layout.setSpacing(style.DIALOG_CONTENT_SPACING)
+    if style.DIALOG_MIN_WIDTH > 0 or style.DIALOG_MIN_HEIGHT > 0:
+        dialog.setMinimumSize(style.DIALOG_MIN_WIDTH, style.DIALOG_MIN_HEIGHT)
+
+
 def _make_separator(object_name: str) -> QFrame:
     line = QFrame()
     line.setObjectName(object_name)
@@ -106,18 +129,26 @@ class ConfirmSaleDialog(QDialog):
         self.setWindowTitle("Confirmar venta")
 
         layout = QVBoxLayout(self)
+        _apply_touch_dialog_layout(self, layout)
+
         value_label = QLabel(f"Valor total: {format_cop(valor_total)}")
         value_label.setObjectName("confirm_value_label")
+        style.apply_class(value_label, "dialog-text")
         payment_label = QLabel(f"Medio de pago: {payment_name}")
         payment_label.setObjectName("confirm_payment_label")
+        style.apply_class(payment_label, "dialog-text")
         layout.addWidget(value_label)
         layout.addWidget(payment_label)
 
         buttons = QDialogButtonBox()
         confirm = buttons.addButton("Confirmar", QDialogButtonBox.AcceptRole)
         confirm.setObjectName("confirm_button")
+        style.apply_class(confirm, "dialog-action-button")
+        _apply_dialog_action_button_size(confirm)
         cancel = buttons.addButton("No", QDialogButtonBox.RejectRole)
         cancel.setObjectName("cancel_button")
+        style.apply_class(cancel, "dialog-action-button")
+        _apply_dialog_action_button_size(cancel)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -130,13 +161,18 @@ class SaleSavedDialog(QDialog):
         self.setWindowTitle("Venta guardada")
 
         layout = QVBoxLayout(self)
+        _apply_touch_dialog_layout(self, layout)
+
         message = QLabel("Venta guardada correctamente")
         message.setObjectName("sale_saved_message")
+        style.apply_class(message, "dialog-text")
         layout.addWidget(message)
 
         buttons = QDialogButtonBox()
         ok = buttons.addButton("Aceptar", QDialogButtonBox.AcceptRole)
         ok.setObjectName("sale_saved_ok_button")
+        style.apply_class(ok, "dialog-action-button")
+        _apply_dialog_action_button_size(ok)
         buttons.accepted.connect(self.accept)
         layout.addWidget(buttons)
 

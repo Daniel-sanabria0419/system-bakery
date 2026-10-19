@@ -23,7 +23,7 @@ Mejorar la usabilidad táctil y la apariencia del flujo de registro de ventas, s
 ## Decisiones (lista cerrada)
 
 1. **Medio de pago:** botón «Seleccionar medio de pago» / «Medio de pago: {nombre}»; popup con botones grandes (máx. 5 por fila); cierra solo al elegir; se puede reabrir para cambiar. Sin `QComboBox`.
-2. **Popups confirmar / éxito:** texto y diálogo más grandes; botones ~80 px de alto. (Pendiente)
+2. **Popups confirmar / éxito:** texto y diálogo más grandes; botones ~80 px de alto.
 3. **Volver:** ícono de flecha atrás (sin texto); rectángulo un poco más ancho que alto. (Pendiente)
 4. **Layout registrar venta:** detalle ~1/3, pad ~2/3; scroll en el detalle; solo subir fuente de líneas agregadas. (Pendiente)
 5. **Menú:** «Registrar venta» arriba a la izquierda, margen ~20 px; color `#2E7D32`. (Pendiente)
@@ -34,7 +34,8 @@ Mejorar la usabilidad táctil y la apariencia del flujo de registro de ventas, s
 | Etapa | Estado |
 |---|---|
 | 0 Medio de pago: botón + popup | Hecha |
-| 1–5 | Pendientes |
+| 1 Popups confirmar y éxito más grandes | Hecha |
+| 2–5 | Pendientes |
 
 Detalle: `docs/beta-1.2/stages.md`. Guía visual: `docs/beta-1.2/visual-guide.md`.
 

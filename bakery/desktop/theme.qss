@@ -46,6 +46,19 @@ QPushButton[class="payment-method-button"] {
     font-size: 18px;
 }
 
+QLabel[class="dialog-text"] {
+    color: #1A1A1A;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+QPushButton[class="dialog-action-button"] {
+    background-color: #1A1A1A;
+    color: #FFFFFF;
+    font-size: 22px;
+    padding: 12px 24px;
+    min-height: 80px;
+}
 
 QLabel[class="money-text"] {
     color: #1A1A1A;

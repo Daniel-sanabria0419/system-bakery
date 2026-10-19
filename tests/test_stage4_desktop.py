@@ -6,6 +6,7 @@ from PySide6.QtCore import QObject, QTimer, Qt
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from bakery.api.app import create_app
+from bakery.desktop import style
 from bakery.desktop.main import create_window
 from bakery.desktop.ui import (
     ConfirmSaleDialog,
@@ -441,6 +442,27 @@ def test_cancel_confirmation_does_not_save(qtbot) -> None:
     assert window.findChild(QObject, "sale_saved_dialog") is None
 
 
+def test_confirm_and_saved_dialogs_have_large_touch_controls(qtbot) -> None:
+    confirm = ConfirmSaleDialog(5000, "Efectivo")
+    qtbot.addWidget(confirm)
+    confirm.show()
+    assert confirm.minimumWidth() >= style.DIALOG_MIN_WIDTH
+    assert confirm.minimumHeight() >= style.DIALOG_MIN_HEIGHT
+    for name in ("confirm_button", "cancel_button"):
+        button = confirm.findChild(QObject, name)
+        assert button is not None
+        assert button.minimumHeight() >= style.DIALOG_ACTION_BUTTON_MIN_HEIGHT
+
+    saved = SaleSavedDialog()
+    qtbot.addWidget(saved)
+    saved.show()
+    assert saved.minimumWidth() >= style.DIALOG_MIN_WIDTH
+    assert saved.minimumHeight() >= style.DIALOG_MIN_HEIGHT
+    ok = saved.findChild(QObject, "sale_saved_ok_button")
+    assert ok is not None
+    assert ok.minimumHeight() >= style.DIALOG_ACTION_BUTTON_MIN_HEIGHT
+
+
 def test_confirm_sale_posts_and_resets_form(qtbot) -> None:
     api = FakeApiClient()
     window = create_window(api)
@@ -459,8 +481,30 @@ def test_confirm_sale_posts_and_resets_form(qtbot) -> None:
             dialog.findChild(QObject, "confirm_payment_label").text()
             == "Medio de pago: Efectivo"
         )
+        assert (
+            dialog.findChild(QObject, "confirm_button").minimumHeight()
+            >= style.DIALOG_ACTION_BUTTON_MIN_HEIGHT
+        )
 
-    QTimer.singleShot(0, lambda: _accept_confirm_then_saved(assert_confirm))
+    def assert_saved_size() -> None:
+        for widget in QApplication.topLevelWidgets():
+            if isinstance(widget, SaleSavedDialog):
+                assert (
+                    widget.findChild(QObject, "sale_saved_ok_button").minimumHeight()
+                    >= style.DIALOG_ACTION_BUTTON_MIN_HEIGHT
+                )
+                widget.accept()
+                return
+
+    def accept_confirm_then_saved() -> None:
+        for widget in QApplication.topLevelWidgets():
+            if isinstance(widget, ConfirmSaleDialog):
+                assert_confirm(widget)
+                widget.accept()
+                QTimer.singleShot(0, assert_saved_size)
+                return
+
+    QTimer.singleShot(0, accept_confirm_then_saved)
     _click(qtbot, _find(window, "submit_sale_button"))
     qtbot.waitUntil(
         lambda: len(api.sales) == 1 and _find(window, "purchase_list").text() == ""

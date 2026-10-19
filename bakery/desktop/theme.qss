@@ -33,12 +33,17 @@ QPushButton[class="menu-button"] {
     padding: 12px 24px;
 }
 
-
-QComboBox[class="combo-box"] {
+QPushButton[class="payment-button"] {
     background-color: #1A1A1A;
     color: #FFFFFF;
-   padding: 12px;
-   max-width: 200px;
+    padding: 12px;
+}
+
+QPushButton[class="payment-method-button"] {
+    background-color: #1A1A1A;
+    color: #FFFFFF;
+    padding: 16px 20px;
+    font-size: 18px;
 }
 
 

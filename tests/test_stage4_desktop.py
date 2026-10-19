@@ -7,7 +7,11 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 
 from bakery.api.app import create_app
 from bakery.desktop.main import create_window
-from bakery.desktop.ui import ConfirmSaleDialog, SaleSavedDialog
+from bakery.desktop.ui import (
+    ConfirmSaleDialog,
+    SaleSavedDialog,
+    SelectPaymentMethodDialog,
+)
 from bakery.persistence.connection import connect
 
 
@@ -54,6 +58,24 @@ def _enter_amount_and_agregar(qtbot, window, digits: str) -> None:
     _click(qtbot, _find(window, "agregar_button"))
 
 
+def _select_payment(qtbot, window, payment_id: int = 1) -> None:
+    attempts = {"n": 0}
+
+    def pick() -> None:
+        attempts["n"] += 1
+        for widget in QApplication.topLevelWidgets():
+            if isinstance(widget, SelectPaymentMethodDialog) and widget.isVisible():
+                button = widget.findChild(QObject, f"payment_method_{payment_id}")
+                if button is not None:
+                    button.click()
+                    return
+        if attempts["n"] < 50:
+            QTimer.singleShot(20, pick)
+
+    QTimer.singleShot(50, pick)
+    _click(qtbot, _find(window, "payment_button"))
+
+
 def _accept_confirm_then_saved(assertions=None) -> None:
     def accept_saved() -> None:
         for widget in QApplication.topLevelWidgets():
@@ -82,10 +104,30 @@ def test_menu_opens_register_and_loads_payment_methods(qtbot) -> None:
 
     assert api.request_count == 0
     _click(qtbot, _find(window, "menu_register_button"))
-    combo = _find(window, "payment_combo")
-    assert combo.count() == 3
-    assert combo.itemText(1) == "Efectivo"
+    payment_button = _find(window, "payment_button")
+    assert payment_button.text() == "Seleccionar medio de pago"
+    assert window.findChild(QObject, "payment_combo") is None
     assert api.request_count == 1
+
+    attempts = {"n": 0}
+
+    def inspect_and_choose() -> None:
+        attempts["n"] += 1
+        for widget in QApplication.topLevelWidgets():
+            if isinstance(widget, SelectPaymentMethodDialog) and widget.isVisible():
+                efectivo = widget.findChild(QObject, "payment_method_1")
+                assert efectivo is not None
+                assert efectivo.text() == "Efectivo"
+                assert widget.findChild(QObject, "payment_method_2") is not None
+                efectivo.click()
+                return
+        if attempts["n"] < 50:
+            QTimer.singleShot(20, inspect_and_choose)
+
+    QTimer.singleShot(50, inspect_and_choose)
+    _click(qtbot, payment_button)
+    qtbot.waitUntil(lambda: payment_button.text() == "Medio de pago: Efectivo")
+    assert payment_button.text() == "Medio de pago: Efectivo"
 
 
 def test_plus_minus_buttons_absent(qtbot) -> None:
@@ -161,7 +203,7 @@ def test_back_preserves_pending_purchase_and_payment(qtbot) -> None:
     _enter_amount_and_agregar(qtbot, window, "5000")
     for digit in "300":
         _click(qtbot, _find(window, f"digit_{digit}"))
-    _find(window, "payment_combo").setCurrentIndex(1)
+    _select_payment(qtbot, window, 1)
 
     _click(qtbot, _find(window, "back_button"))
     assert window.centralWidget().currentWidget() is window._menu
@@ -174,7 +216,7 @@ def test_back_preserves_pending_purchase_and_payment(qtbot) -> None:
     assert _find(window, "purchase_list").text() == "$ 5.000"
     assert _find(window, "purchase_total").text() == "Total: $ 5.000"
     assert _find(window, "sale_display").text() == "$ 300"
-    assert _find(window, "payment_combo").currentData() == 1
+    assert _find(window, "payment_button").text() == "Medio de pago: Efectivo"
     assert _find(window, "submit_sale_button").isEnabled()
 
 
@@ -280,15 +322,96 @@ def test_submit_disabled_without_value_or_payment(qtbot) -> None:
 
     for digit in "5000":
         _click(qtbot, _find(window, f"digit_{digit}"))
-    _find(window, "payment_combo").setCurrentIndex(1)
     assert not submit.isEnabled()
 
     _click(qtbot, _find(window, "agregar_button"))
-    assert submit.isEnabled()
-
-    _find(window, "payment_combo").setCurrentIndex(0)
     assert not submit.isEnabled()
+
+    _select_payment(qtbot, window, 1)
+    assert submit.isEnabled()
     assert api.sales == []
+
+
+def test_payment_dialog_reopen_changes_selection(qtbot) -> None:
+    api = FakeApiClient()
+    window = create_window(api)
+    qtbot.addWidget(window)
+    window.show()
+    _click(qtbot, _find(window, "menu_register_button"))
+
+    _select_payment(qtbot, window, 1)
+    assert _find(window, "payment_button").text() == "Medio de pago: Efectivo"
+
+    _select_payment(qtbot, window, 2)
+    assert _find(window, "payment_button").text() == "Medio de pago: Nequi"
+
+
+def test_payment_dialog_layouts_max_five_per_row(qtbot) -> None:
+    methods = [
+        {"id_medio_pago": i, "nombre": f"M{i}", "id_estado": 1} for i in range(1, 7)
+    ]
+    api = FakeApiClient(methods=methods)
+    window = create_window(api)
+    qtbot.addWidget(window)
+    window.show()
+    _click(qtbot, _find(window, "menu_register_button"))
+
+    result = {"ok": False}
+    attempts = {"n": 0}
+
+    def inspect_layout() -> None:
+        attempts["n"] += 1
+        for widget in QApplication.topLevelWidgets():
+            if isinstance(widget, SelectPaymentMethodDialog) and widget.isVisible():
+                assert widget.objectName() == "select_payment_dialog"
+                layout = widget.layout().itemAt(0).layout()
+                assert layout.rowCount() == 2
+                assert layout.columnCount() == 5
+                assert layout.itemAtPosition(0, 4).widget().objectName() == "payment_method_5"
+                assert layout.itemAtPosition(1, 0).widget().objectName() == "payment_method_6"
+                assert layout.itemAtPosition(0, 5) is None
+                widget.findChild(QObject, "payment_method_6").click()
+                result["ok"] = True
+                return
+        if attempts["n"] < 50:
+            QTimer.singleShot(20, inspect_layout)
+
+    QTimer.singleShot(50, inspect_layout)
+    _click(qtbot, _find(window, "payment_button"))
+    qtbot.waitUntil(
+        lambda: _find(window, "payment_button").text() == "Medio de pago: M6"
+    )
+    assert result["ok"]
+
+
+def test_payment_dialog_escape_does_not_close(qtbot) -> None:
+    api = FakeApiClient()
+    window = create_window(api)
+    qtbot.addWidget(window)
+    window.show()
+    _click(qtbot, _find(window, "menu_register_button"))
+
+    state = {"seen": False}
+    attempts = {"n": 0}
+
+    def press_escape_then_choose() -> None:
+        attempts["n"] += 1
+        for widget in QApplication.topLevelWidgets():
+            if isinstance(widget, SelectPaymentMethodDialog) and widget.isVisible():
+                state["seen"] = True
+                widget.reject()
+                assert widget.isVisible()
+                widget.findChild(QObject, "payment_method_1").click()
+                return
+        if attempts["n"] < 50:
+            QTimer.singleShot(20, press_escape_then_choose)
+
+    QTimer.singleShot(50, press_escape_then_choose)
+    _click(qtbot, _find(window, "payment_button"))
+    qtbot.waitUntil(
+        lambda: state["seen"]
+        and _find(window, "payment_button").text() == "Medio de pago: Efectivo"
+    )
 
 
 def test_cancel_confirmation_does_not_save(qtbot) -> None:
@@ -298,7 +421,7 @@ def test_cancel_confirmation_does_not_save(qtbot) -> None:
     window.show()
     _click(qtbot, _find(window, "menu_register_button"))
     _enter_amount_and_agregar(qtbot, window, "5000")
-    _find(window, "payment_combo").setCurrentIndex(1)
+    _select_payment(qtbot, window, 1)
 
     def reject_dialog() -> None:
         for widget in QApplication.topLevelWidgets():
@@ -325,7 +448,7 @@ def test_confirm_sale_posts_and_resets_form(qtbot) -> None:
     window.show()
     _click(qtbot, _find(window, "menu_register_button"))
     _enter_amount_and_agregar(qtbot, window, "25000")
-    _find(window, "payment_combo").setCurrentIndex(1)
+    _select_payment(qtbot, window, 1)
 
     def assert_confirm(dialog: ConfirmSaleDialog) -> None:
         assert (
@@ -348,7 +471,7 @@ def test_confirm_sale_posts_and_resets_form(qtbot) -> None:
     assert _find(window, "sale_display").text() == "$ 0.00"
     assert _find(window, "purchase_list").text() == ""
     assert _find(window, "purchase_total").text() == "Total: $0.00"
-    assert _find(window, "payment_combo").currentIndex() == 0
+    assert _find(window, "payment_button").text() == "Seleccionar medio de pago"
     assert not _find(window, "submit_sale_button").isEnabled()
     assert window.centralWidget().currentWidget() is window._register
 
@@ -361,7 +484,7 @@ def test_confirm_sale_posts_accumulated_total(qtbot) -> None:
     _click(qtbot, _find(window, "menu_register_button"))
     _enter_amount_and_agregar(qtbot, window, "5000")
     _enter_amount_and_agregar(qtbot, window, "3000")
-    _find(window, "payment_combo").setCurrentIndex(1)
+    _select_payment(qtbot, window, 1)
 
     def assert_confirm(dialog: ConfirmSaleDialog) -> None:
         assert (
@@ -389,7 +512,7 @@ def test_api_error_does_not_show_success_popup(qtbot) -> None:
     window.show()
     _click(qtbot, _find(window, "menu_register_button"))
     _enter_amount_and_agregar(qtbot, window, "5000")
-    _find(window, "payment_combo").setCurrentIndex(1)
+    _select_payment(qtbot, window, 1)
 
     def accept_confirm_then_dismiss_error() -> None:
         def dismiss_error() -> None:
@@ -414,7 +537,7 @@ def test_api_error_does_not_show_success_popup(qtbot) -> None:
     assert api.sales == []
     assert window.findChild(QObject, "sale_saved_dialog") is None
     assert _find(window, "purchase_total").text() == "Total: $ 5.000"
-    assert _find(window, "payment_combo").currentIndex() == 1
+    assert _find(window, "payment_button").text() == "Medio de pago: Efectivo"
 
 
 class DesktopApiViaTestClient:
@@ -454,7 +577,7 @@ def test_happy_path_persists_sale_through_api(qtbot, tmp_path) -> None:
     try:
         _click(qtbot, _find(window, "menu_register_button"))
         _enter_amount_and_agregar(qtbot, window, "5000")
-        _find(window, "payment_combo").setCurrentIndex(1)
+        _select_payment(qtbot, window, 1)
 
         def sale_count() -> int:
             connection = connect(db_path)

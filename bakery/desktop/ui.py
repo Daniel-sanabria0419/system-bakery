@@ -3,7 +3,6 @@ from typing import List, Mapping, Optional
 import httpx
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QComboBox,
     QDialog,
     QDialogButtonBox,
     QFrame,
@@ -23,6 +22,9 @@ from bakery.app.money import format_cop
 from bakery.app.purchase import SaleDraft
 from bakery.desktop import style
 from bakery.desktop.client import ApiClient
+
+_PAYMENT_BUTTON_PLACEHOLDER = "Seleccionar medio de pago"
+_PAYMENT_METHODS_PER_ROW = 5
 
 
 def _apply_page_layout(layout: QVBoxLayout) -> None:
@@ -47,6 +49,54 @@ def _make_separator(object_name: str) -> QFrame:
     line.setFrameShadow(QFrame.Plain)
     line.setFixedHeight(2)
     return line
+
+
+class SelectPaymentMethodDialog(QDialog):
+    """Popup táctil de medios de pago. Solo se cierra al elegir un medio."""
+
+    def __init__(self, methods: List[Mapping], parent: QWidget = None) -> None:
+        super().__init__(parent)
+        self.setObjectName("select_payment_dialog")
+        self.setWindowTitle("Medio de pago")
+        self.setModal(True)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowCloseButtonHint)
+        self._selected: Optional[Mapping] = None
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(style.PAGE_SPACING)
+        grid = QGridLayout()
+        grid.setSpacing(style.PAGE_SPACING)
+
+        for index, method in enumerate(methods):
+            row, column = divmod(index, _PAYMENT_METHODS_PER_ROW)
+            button = QPushButton(method["nombre"])
+            button.setObjectName(f"payment_method_{method['id_medio_pago']}")
+            style.apply_class(button, "payment-method-button")
+            if (
+                style.PAYMENT_METHOD_BUTTON_MIN_WIDTH > 0
+                or style.PAYMENT_METHOD_BUTTON_MIN_HEIGHT > 0
+            ):
+                button.setMinimumSize(
+                    style.PAYMENT_METHOD_BUTTON_MIN_WIDTH,
+                    style.PAYMENT_METHOD_BUTTON_MIN_HEIGHT,
+                )
+            button.clicked.connect(
+                lambda checked=False, m=method: self._choose(m)
+            )
+            grid.addWidget(button, row, column)
+
+        layout.addLayout(grid)
+
+    def selected_method(self) -> Optional[Mapping]:
+        return self._selected
+
+    def _choose(self, method: Mapping) -> None:
+        self._selected = method
+        self.accept()
+
+    def reject(self) -> None:
+        # Escape / rechazo del sistema no cierran sin elegir un medio.
+        return
 
 
 class ConfirmSaleDialog(QDialog):
@@ -110,6 +160,8 @@ class RegisterSalePage(QWidget):
         self._api = api_client
         self._draft = SaleDraft()
         self._payment_methods: List[Mapping] = []
+        self._selected_payment_id: Optional[int] = None
+        self._selected_payment_name: Optional[str] = None
 
         root = QVBoxLayout(self)
         _apply_page_layout(root)
@@ -157,12 +209,11 @@ class RegisterSalePage(QWidget):
         panel_layout.addWidget(_make_separator("total_separator"))
 
         footer = QHBoxLayout()
-        self._payment_combo = QComboBox()
-        self._payment_combo.setObjectName("payment_combo")
-        style.apply_class(self._payment_combo, "combo-box")
-    
-        self._payment_combo.currentIndexChanged.connect(self._refresh_submit)
-        footer.addWidget(self._payment_combo, stretch=1)
+        self._payment_button = QPushButton(_PAYMENT_BUTTON_PLACEHOLDER)
+        self._payment_button.setObjectName("payment_button")
+        style.apply_class(self._payment_button, "payment-button")
+        self._payment_button.clicked.connect(self._open_payment_dialog)
+        footer.addWidget(self._payment_button, stretch=1)
 
         self._purchase_total = QLabel("")
         self._purchase_total.setObjectName("purchase_total")
@@ -233,25 +284,54 @@ class RegisterSalePage(QWidget):
         self._refresh_submit()
 
     def load_payment_methods(self) -> None:
-        selected_id = self._selected_payment_id()
+        selected_id = self._selected_payment_id
         self._payment_methods = list(self._api.list_payment_methods())
-        self._payment_combo.blockSignals(True)
-        self._payment_combo.clear()
-        self._payment_combo.addItem("Seleccione medio de pago", None)
-        for method in self._payment_methods:
-            self._payment_combo.addItem(method["nombre"], method["id_medio_pago"])
         if selected_id is not None:
-            index = self._payment_combo.findData(selected_id)
-            if index >= 0:
-                self._payment_combo.setCurrentIndex(index)
-        self._payment_combo.blockSignals(False)
+            match = next(
+                (
+                    method
+                    for method in self._payment_methods
+                    if method["id_medio_pago"] == selected_id
+                ),
+                None,
+            )
+            if match is None:
+                self._clear_payment_selection()
+            else:
+                self._selected_payment_name = match["nombre"]
+                self._update_payment_button_text()
         self._refresh_submit()
 
     def reset_form(self) -> None:
         self._draft.clear_purchase()
-        self._payment_combo.setCurrentIndex(0)
+        self._clear_payment_selection()
         self._refresh_display()
         self._refresh_submit()
+
+    def _open_payment_dialog(self) -> None:
+        dialog = SelectPaymentMethodDialog(self._payment_methods, self)
+        if dialog.exec() != QDialog.Accepted:
+            return
+        method = dialog.selected_method()
+        if method is None:
+            return
+        self._selected_payment_id = method["id_medio_pago"]
+        self._selected_payment_name = method["nombre"]
+        self._update_payment_button_text()
+        self._refresh_submit()
+
+    def _clear_payment_selection(self) -> None:
+        self._selected_payment_id = None
+        self._selected_payment_name = None
+        self._update_payment_button_text()
+
+    def _update_payment_button_text(self) -> None:
+        if self._selected_payment_name:
+            self._payment_button.setText(
+                f"Medio de pago: {self._selected_payment_name}"
+            )
+        else:
+            self._payment_button.setText(_PAYMENT_BUTTON_PLACEHOLDER)
 
     def _digit(self, digit: str) -> None:
         self._draft.entry.press_digit(digit)
@@ -280,22 +360,16 @@ class RegisterSalePage(QWidget):
         else:
             self._purchase_total.setText("Total: $0.00")
 
-    def _selected_payment_id(self) -> Optional[int]:
-        return self._payment_combo.currentData()
-
-    def _selected_payment_name(self) -> str:
-        return self._payment_combo.currentText()
-
     def _refresh_submit(self) -> None:
-        ready = self._draft.total() > 0 and self._selected_payment_id() is not None
+        ready = self._draft.total() > 0 and self._selected_payment_id is not None
         self._submit.setEnabled(ready)
 
     def _on_submit(self) -> None:
         value = self._draft.total()
-        payment_id = self._selected_payment_id()
-        if value <= 0 or payment_id is None:
+        payment_id = self._selected_payment_id
+        if value <= 0 or payment_id is None or not self._selected_payment_name:
             return
-        dialog = ConfirmSaleDialog(value, self._selected_payment_name(), self)
+        dialog = ConfirmSaleDialog(value, self._selected_payment_name, self)
         if dialog.exec() != QDialog.Accepted:
             return
         try:

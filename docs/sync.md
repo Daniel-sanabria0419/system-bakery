@@ -4,13 +4,13 @@
 
 La sincronización con la base de datos en la nube está FUERA DEL ALCANCE.
 
-## Beta 1 y Beta 1.1
+## Beta 1, Beta 1.1 y Beta 1.2
 
 Las ventas se almacenan únicamente en SQLite local.
 
-**Beta 1.1 no introduce ni modifica ningún comportamiento de sincronización.**
+**Beta 1.1 y Beta 1.2 no introducen ni modifican ningún comportamiento de sincronización.**
 
-Los cambios de Beta 1.1 (lista de compra en memoria, calculadora local, navegación, popup de éxito) afectan solo al flujo de registro en desktop y a la lógica local. El `POST /ventas` sigue persistiendo un único `valor_total` en SQLite.
+Los cambios de Beta 1.1 (lista de compra en memoria, calculadora local, navegación, popup de éxito) y de Beta 1.2 (UX táctil / estética en desktop) afectan solo al flujo de registro en desktop. El `POST /ventas` sigue persistiendo un único `valor_total` en SQLite.
 
 No se debe implementar:
 

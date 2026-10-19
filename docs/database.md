@@ -8,9 +8,9 @@ SQLite
 
 La base de datos es local y debe funcionar sin Internet.
 
-## Beta 1.1 — esquema
+## Beta 1.1 y Beta 1.2 — esquema
 
-**Beta 1.1 no requiere cambios de esquema.**
+**Beta 1.1 y Beta 1.2 no requieren cambios de esquema.**
 
 La lista temporal de valores de la compra vive solo en memoria (capa de aplicación / desktop) durante el registro de la venta.
 

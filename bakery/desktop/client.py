@@ -1,4 +1,4 @@
-from typing import Any, List, Mapping
+from typing import Any, List, Mapping, Optional
 
 import httpx
 
@@ -30,6 +30,83 @@ class ApiClient:
             "/ventas",
             json={"valor_total": valor_total, "id_medio_pago": id_medio_pago},
         )
+        response.raise_for_status()
+        return response.json()
+
+    def list_categories(self) -> List[Mapping[str, Any]]:
+        response = self._request("GET", "/categorias")
+        response.raise_for_status()
+        return response.json()
+
+    def list_products(self) -> List[Mapping[str, Any]]:
+        response = self._request("GET", "/productos")
+        response.raise_for_status()
+        return response.json()
+
+    def list_active_products(
+        self,
+        *,
+        id_categoria: Optional[int] = None,
+        precio: Optional[int] = None,
+    ) -> List[Mapping[str, Any]]:
+        params = {}
+        if id_categoria is not None:
+            params["id_categoria"] = id_categoria
+        if precio is not None:
+            params["precio"] = precio
+        response = self._request("GET", "/productos/activos", params=params or None)
+        response.raise_for_status()
+        return response.json()
+
+    def get_product(self, id_producto: int) -> Mapping[str, Any]:
+        response = self._request("GET", f"/productos/{id_producto}")
+        response.raise_for_status()
+        return response.json()
+
+    def create_product(
+        self,
+        *,
+        nombre: str,
+        precio: int,
+        id_categoria: int,
+        descripcion: Optional[str] = None,
+    ) -> Mapping[str, Any]:
+        payload = {
+            "nombre": nombre,
+            "precio": precio,
+            "id_categoria": id_categoria,
+            "descripcion": descripcion,
+        }
+        response = self._request("POST", "/productos", json=payload)
+        response.raise_for_status()
+        return response.json()
+
+    def update_product(
+        self,
+        id_producto: int,
+        *,
+        nombre: str,
+        precio: int,
+        id_categoria: int,
+        descripcion: Optional[str] = None,
+    ) -> Mapping[str, Any]:
+        payload = {
+            "nombre": nombre,
+            "precio": precio,
+            "id_categoria": id_categoria,
+            "descripcion": descripcion,
+        }
+        response = self._request("PUT", f"/productos/{id_producto}", json=payload)
+        response.raise_for_status()
+        return response.json()
+
+    def activate_product(self, id_producto: int) -> Mapping[str, Any]:
+        response = self._request("POST", f"/productos/{id_producto}/activar")
+        response.raise_for_status()
+        return response.json()
+
+    def deactivate_product(self, id_producto: int) -> Mapping[str, Any]:
+        response = self._request("POST", f"/productos/{id_producto}/desactivar")
         response.raise_for_status()
         return response.json()
 

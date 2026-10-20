@@ -1,6 +1,7 @@
 import sqlite3
 
 ESTADO_ACTIVO = 1
+ESTADO_INACTIVO = 0
 
 SEED_MEDIOS_PAGO = (
     "Efectivo",

@@ -86,19 +86,24 @@ def list_active_products(
     connection: sqlite3.Connection,
     *,
     id_categoria: Optional[int] = None,
+    precio: Optional[int] = None,
 ) -> List[Mapping]:
     if id_categoria is not None:
         _require_existing_categoria(connection, id_categoria)
-    return list_active_productos(connection, id_categoria=id_categoria)
+    precio_ok = None
+    if precio is not None:
+        precio_ok = _require_positive_int(
+            precio, "El precio debe ser un entero mayor que 0."
+        )
+    return list_active_productos(
+        connection, id_categoria=id_categoria, precio=precio_ok
+    )
 
 
 def find_active_products_by_price(
     connection: sqlite3.Connection, precio: int
 ) -> List[Mapping]:
-    precio_ok = _require_positive_int(
-        precio, "El precio debe ser un entero mayor que 0."
-    )
-    return list_active_productos(connection, precio=precio_ok)
+    return list_active_products(connection, precio=precio)
 
 
 def activate_product(connection: sqlite3.Connection, id_producto: int) -> Mapping:

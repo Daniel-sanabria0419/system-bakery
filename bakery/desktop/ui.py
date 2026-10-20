@@ -143,6 +143,8 @@ class ConfirmSaleDialog(QDialog):
         layout.addWidget(payment_label)
 
         buttons = QDialogButtonBox()
+        buttons.setCenterButtons(True)
+
         confirm = buttons.addButton("Confirmar", QDialogButtonBox.AcceptRole)
         confirm.setObjectName("confirm_button")
         style.apply_class(confirm, "dialog-action-button")
@@ -171,6 +173,8 @@ class SaleSavedDialog(QDialog):
         layout.addWidget(message)
 
         buttons = QDialogButtonBox()
+        buttons.setCenterButtons(True)
+
         ok = buttons.addButton("Aceptar", QDialogButtonBox.AcceptRole)
         ok.setObjectName("sale_saved_ok_button")
         style.apply_class(ok, "dialog-action-button")
@@ -222,7 +226,6 @@ class RegisterSalePage(QWidget):
         _apply_page_layout(root)
 
         top_bar = QHBoxLayout()
-        top_bar.addStretch(1)
         back = QPushButton(_BACK_BUTTON_ARROW)
         back.setObjectName("back_button")
         style.apply_class(back, "back-button")
@@ -234,6 +237,8 @@ class RegisterSalePage(QWidget):
         if on_back is not None:
             back.clicked.connect(on_back)
         top_bar.addWidget(back)
+        top_bar.addStretch(1)
+
         root.addLayout(top_bar)
 
         columns = QHBoxLayout()
@@ -269,9 +274,9 @@ class RegisterSalePage(QWidget):
         self._purchase_list_scroll = QScrollArea()
         self._purchase_list_scroll.setObjectName("purchase_list_scroll")
         self._purchase_list_scroll.setWidgetResizable(False)
-        self._purchase_list_scroll.setFrameShape(QFrame.NoFrame)
+        self._purchase_list_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self._purchase_list_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self._purchase_list_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self._purchase_list_scroll.setFrameShape(QFrame.NoFrame)
         self._purchase_list_scroll.setWidget(self._purchase_list)
         panel_layout.addWidget(self._purchase_list_scroll, stretch=1)
 
@@ -317,6 +322,7 @@ class RegisterSalePage(QWidget):
         ]
         for text, row, column, row_span, col_span, kind in pad_buttons:
             button = QPushButton(text)
+            button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
             _apply_pad_button_size(button)
             style.apply_class(button, "pad-button")
             if kind == "digit":
@@ -336,7 +342,6 @@ class RegisterSalePage(QWidget):
                 button.clicked.connect(lambda: self._action("borrar"))
             elif kind == "pago":
                 button.setObjectName("submit_sale_button")
-                button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
                 button.clicked.connect(self._on_submit)
                 
                 self._submit = button

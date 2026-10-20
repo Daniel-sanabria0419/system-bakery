@@ -1,6 +1,6 @@
 # Guía de personalización visual — Beta 1.2
 
-Esta guía indica **dónde** cambiar la apariencia del desktop con **Beta 1.2 terminada**, más el **pulido visual post-1.2** aplicado en el checkout local (métricas y colores leídos del working tree; el código de esos tweaks puede aún no estar en `main`).
+Esta guía indica **dónde** cambiar la apariencia del desktop con **Beta 1.2 terminada**, más el **pulido visual post-1.2** (métricas y colores del checkout local; código restaurado en el mismo árbol que esta guía).
 
 Parte de la guía de Beta 1.1 y documenta los seis ajustes UX/estéticos de 1.2 (medio de pago, diálogos, volver, layout, menú) y el pulido posterior.
 

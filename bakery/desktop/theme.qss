@@ -1,8 +1,11 @@
 /* Tema visual del desktop — edita colores y tipografía aquí. */
 
-QMainWindow {
+QMainWindow,
+QDialog{
     background-color: #F5F0E8;
+    
 }
+
 
 QWidget#purchase_panel {
     background-color: #FFFFFF;
@@ -20,16 +23,18 @@ QPushButton[class="pad-button"] {
     background-color: #D0D0D0;
     color:rgb(0, 0, 0);
     margin:  10px 3px;
+    font-size: 28px;   
+    font-weight: bold;
 }
 
 QPushButton[class="back-button"] {
-    background-color: #1A1A1A;
+    background-color: #5ac4f6;
     color: #FFFFFF;
-    font-size: 32px;
+    font-size: 30px;
     font-weight: bold;
-    min-width: 96px;
-    min-height: 72px;
-    padding: 8px 16px;
+    min-width: 72px;
+    min-height: 20px;
+    padding: 4px 8px;
 }
 
 QPushButton[class="menu-button"] {
@@ -79,4 +84,18 @@ QLabel#purchase_total[class="money-text"] {
 QLabel#purchase_list[class="money-text"] {
     font-size: 28px;
     font-weight: bold;
+}
+
+
+QLabel#purchase_list {
+    background-color: #FFFFFF;
+    color: #1A1A1A;   /* números oscuros sobre blanco */
+}
+
+QScrollArea#purchase_list_scroll > QWidget {
+    background-color: #FFFFFF;
+}
+QScrollArea#purchase_list_scroll {
+    background-color: #FFFFFF;
+    border: none;
 }

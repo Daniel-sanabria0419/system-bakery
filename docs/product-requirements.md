@@ -42,6 +42,8 @@ Mejorar la usabilidad táctil y la apariencia del flujo de registro de ventas, s
 
 **Beta 1.2 está cerrada** a nivel de alcance implementado (regresión en verde; 67 pruebas). Detalle: `docs/beta-1.2/stages.md`. Guía visual: `docs/beta-1.2/visual-guide.md`.
 
+Pulido visual posterior (colores/métricas/layout táctil; sin cambio de lógica ni de las seis decisiones): documentado en la misma guía visual.
+
 ## Medio de pago (vigente tras Etapa 0)
 
 En registrar venta:

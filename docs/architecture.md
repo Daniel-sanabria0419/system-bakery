@@ -140,9 +140,12 @@ No debe existir un endpoint de calculadora ni peticiones por cada tecla.
 
 La apariencia se controla en la capa desktop:
 
+- Colores y tipografía: [`bakery/desktop/theme.qss`](../bakery/desktop/theme.qss)
 - Constantes de tamaño/márgenes/espaciado: [`bakery/desktop/style.py`](../bakery/desktop/style.py)
 - Widgets y `objectName`: [`bakery/desktop/ui.py`](../bakery/desktop/ui.py)
 - Guía práctica vigente: [`docs/beta-1.2/visual-guide.md`](beta-1.2/visual-guide.md) (histórico 1.1: [`docs/beta-1.1/visual-guide.md`](beta-1.1/visual-guide.md))
+
+Para controles como el botón volver, `min-width` / `min-height` (y colores) en QSS son la fuente del look acordado; las constantes de `style.py` alimentan `setMinimumSize` y no sustituyen editar el QSS.
 
 No hay un framework de temas obligatorio ni paleta de marca fijada. Los widgets usan `objectName` para poder aplicar `setStyleSheet` después, sin cambiar la arquitectura.
 

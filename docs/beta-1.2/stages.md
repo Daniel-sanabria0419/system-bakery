@@ -13,7 +13,7 @@ No implementar funcionalidades fuera del alcance de Beta 1.2.
 |---|---|---|
 | 1 | Medio de pago | Quitar el select (`payment_combo` / `QComboBox`). Botón con texto inicial «Seleccionar medio de pago». Al elegir un medio, el botón muestra «Medio de pago: {nombre}». Popup con botones grandes; una fila de máximo 5; si hay más medios, otra fila. El popup solo se cierra al tocar un medio. Se puede volver a abrir para cambiar la selección. |
 | 2 | Popups confirmar / éxito | `ConfirmSaleDialog` y `SaleSavedDialog`: todo más grande (texto y diálogo). Botones de acción ~80 px de alto. |
-| 3 | Botón volver | Ícono de flecha atrás; sin texto «Volver». Forma: rectángulo un poco más ancho que alto; un poco más grande que el actual. |
+| 3 | Botón volver | Ícono de flecha atrás; sin texto «Volver». Forma: rectángulo más ancho que alto. En el cierre de la etapa quedó un poco más grande que el control de texto; el **pulido visual post-1.2** lo dejó más compacto, a la izquierda, con color `#5ac4f6` y flecha blanca (tamaños vía QSS; ver `visual-guide.md`). |
 | 4 | Layout registrar venta | Panel de detalle/compra ~1/3 de la altura útil; pad de calculadora ~2/3. Si hay muchas líneas, scroll en el detalle. Solo aumentar el tamaño de fuente de las **líneas agregadas** (`purchase_list`); no subir el de total ni el de la entrada en curso (`sale_display`, `purchase_total`). |
 | 5 | Menú | Botón «Registrar venta» arriba a la izquierda, margen ~20 px (preparado para una grilla futura de botones). Color de fondo `#2E7D32`. |
 | 6 | Alcance | Solo cambios estéticos / UX táctil listados arriba. Sin productos, sync, login ni lógica de negocio nueva. Preservar contratos API/SQLite. |
@@ -56,15 +56,18 @@ Comportamientos de Beta 1.1 que **no** cambian:
 - Botones de acción (`confirm_button`, `cancel_button`, `sale_saved_ok_button`) con clase `dialog-action-button` y altura mínima ~80 px (`DIALOG_ACTION_BUTTON_MIN_HEIGHT`).
 - Área mínima del diálogo vía `DIALOG_MIN_WIDTH` / `DIALOG_MIN_HEIGHT` y márgenes de contenido.
 - Flujo funcional idéntico (Confirmar/No; Aceptar tras éxito; mismo momento del POST).
+- **Pulido post-1.2:** `setCenterButtons(True)` en ambos diálogos (centrado horizontal de la fila de botones).
 
 ## Etapa 2 — Botón volver con ícono
 
 **Hecha.** Reemplazó el texto «Volver» por un ícono de flecha atrás (`←`):
 
 - `objectName` estable: `back_button`; clase `back-button`.
-- Forma rectangular un poco más ancha que alta (`BACK_BUTTON_MIN_WIDTH` > `BACK_BUTTON_MIN_HEIGHT`); un poco más grande que el control de texto anterior.
+- Forma rectangular más ancha que alta; en el cierre de la etapa, un poco más grande que el control de texto anterior.
 - Misma navegación: vuelve al menú sin limpiar compra, entrada ni medio.
 - Tooltip «Volver» para accesibilidad; la etiqueta visible no es «Volver».
+
+**Pulido visual post-1.2 (métricas finales en `visual-guide.md`):** botón a la izquierda; fondo `#5ac4f6`; flecha blanca; tamaño más compacto definido en QSS (`min-width`/`min-height`/`padding`; QSS es la fuente del look frente a `BACK_BUTTON_MIN_*` en `style.py`). No reabre la etapa ni cambia el comportamiento.
 
 ## Etapa 3 — Layout registrar venta (proporciones, scroll, fuente)
 
@@ -73,6 +76,8 @@ Comportamientos de Beta 1.1 que **no** cambian:
 - Stretch `PURCHASE_PANEL_STRETCH = 1` y `PAD_PANEL_STRETCH = 2` (`pad_panel`).
 - Lista de líneas en `QScrollArea` (`purchase_list_scroll`) para muchas líneas.
 - Fuente mayor solo en `QLabel#purchase_list` (28 px); `sale_display` y `purchase_total` siguen en 36 px.
+
+**Pulido visual post-1.2:** barras de scroll `ScrollBarAlwaysOff` (V+H); fondo blanco en scroll/lista; pad con `Expanding` en todas las teclas y `font-size: 28px` en `pad-button`. Ver `visual-guide.md`.
 
 ## Etapa 4 — Menú: posición y color
 

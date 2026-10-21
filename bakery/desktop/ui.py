@@ -426,6 +426,7 @@ class RegisterSalePage(QWidget):
 
     def _action(self, name: str) -> None:
         if name == "agregar":
+            # Etapa 5: exige producto seleccionado en el draft (UI de selección = Etapa 7).
             self._draft.add_to_purchase()
         elif name == "clear":
             self._draft.clear_purchase()
@@ -439,7 +440,12 @@ class RegisterSalePage(QWidget):
     def _refresh_display(self) -> None:
         self._display.setText(self._draft.entry.display_text())
         items = self._draft.purchase.items()
-        self._purchase_list.setText("\n".join(format_cop(amount) for amount in items))
+        self._purchase_list.setText(
+            "\n".join(
+                f"{line.nombre} × {line.cantidad} — {format_cop(line.subtotal)}"
+                for line in items
+            )
+        )
         viewport_width = self._purchase_list_scroll.viewport().width()
         if viewport_width > 0:
             self._purchase_list.setFixedWidth(viewport_width)

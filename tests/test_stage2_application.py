@@ -4,7 +4,7 @@ import pytest
 
 from bakery.app.calculator import Calculator
 from bakery.app.money import format_cop
-from bakery.app.purchase import Purchase, SaleDraft
+from bakery.app.purchase import Purchase, SaleDraft, candidates_by_exact_price
 from bakery.app.sales import SaleValidationError, register_sale
 from bakery.persistence import initialize
 from bakery.persistence.connection import connect
@@ -13,6 +13,20 @@ from bakery.persistence.connection import connect
 def _enter_digits(calculator: Calculator, digits: str) -> None:
     for character in digits:
         calculator.press_digit(character)
+
+
+def _product(
+    id_producto: int = 1,
+    nombre: str = "Pan",
+    precio: int = 5000,
+    id_estado: int = 1,
+) -> dict:
+    return {
+        "id_producto": id_producto,
+        "nombre": nombre,
+        "precio": precio,
+        "id_estado": id_estado,
+    }
 
 
 def test_empty_entry_has_no_amount() -> None:
@@ -147,76 +161,128 @@ def test_display_text_zero_entry() -> None:
     assert calculator.display_text() == "$ 0"
 
 
-def test_purchase_add_and_total() -> None:
+def test_purchase_add_line_and_total() -> None:
     purchase = Purchase()
-    assert purchase.add(5000) is True
-    assert purchase.add(3000) is True
-    assert purchase.items() == [5000, 3000]
-    assert purchase.total() == 8000
+    assert (
+        purchase.add(
+            id_producto=1, nombre="Pan", precio_aplicado=5000, cantidad=1
+        )
+        is True
+    )
+    assert (
+        purchase.add(
+            id_producto=2, nombre="Café", precio_aplicado=3000, cantidad=2
+        )
+        is True
+    )
+    items = purchase.items()
+    assert len(items) == 2
+    assert items[0].subtotal == 5000
+    assert items[1].subtotal == 6000
+    assert items[1].cantidad == 2
+    assert purchase.total() == 11000
 
 
-def test_purchase_rejects_invalid_amounts() -> None:
+def test_purchase_rejects_invalid_lines() -> None:
     purchase = Purchase()
-    for amount in (0, -1000, True, 25.0):
-        assert purchase.add(amount) is False  # type: ignore[arg-type]
+    assert (
+        purchase.add(
+            id_producto=1, nombre="Pan", precio_aplicado=0, cantidad=1
+        )
+        is False
+    )
+    assert (
+        purchase.add(
+            id_producto=1, nombre="Pan", precio_aplicado=1000, cantidad=0
+        )
+        is False
+    )
+    assert (
+        purchase.add(
+            id_producto=1, nombre="  ", precio_aplicado=1000, cantidad=1
+        )
+        is False
+    )
     assert purchase.items() == []
     assert purchase.total() == 0
 
 
 def test_purchase_clear() -> None:
     purchase = Purchase()
-    purchase.add(5000)
-    purchase.add(3000)
+    purchase.add(id_producto=1, nombre="Pan", precio_aplicado=5000, cantidad=1)
+    purchase.add(id_producto=2, nombre="Café", precio_aplicado=3000, cantidad=1)
     purchase.clear()
     assert purchase.items() == []
     assert purchase.total() == 0
 
 
-def test_add_to_purchase_accumulates_and_clears_entry() -> None:
+def test_add_to_purchase_requires_selected_product() -> None:
     draft = SaleDraft()
     _enter_digits(draft.entry, "5000")
+    assert draft.add_to_purchase() is False
+    assert draft.purchase.items() == []
+    assert draft.entry.digits() == "5000"
+
+
+def test_add_to_purchase_with_product_accumulates() -> None:
+    draft = SaleDraft()
+    assert draft.select_product(_product(1, "Pan", 5000)) is True
     assert draft.add_to_purchase() is True
     assert draft.entry.current_amount() is None
-    assert draft.purchase.items() == [5000]
+    assert draft.selected_product() is None
+    items = draft.purchase.items()
+    assert len(items) == 1
+    assert items[0].nombre == "Pan"
+    assert items[0].precio_aplicado == 5000
+    assert items[0].cantidad == 1
+    assert items[0].subtotal == 5000
     assert draft.total() == 5000
 
-    _enter_digits(draft.entry, "3000")
+    assert draft.select_product(_product(2, "Café", 3000)) is True
+    draft.set_quantity(2)
     assert draft.add_to_purchase() is True
-    assert draft.entry.digits() == ""
-    assert draft.purchase.items() == [5000, 3000]
-    assert draft.total() == 8000
+    assert draft.quantity() == 1
+    assert draft.total() == 11000
+    assert [line.subtotal for line in draft.purchase.items()] == [5000, 6000]
 
 
-def test_add_to_purchase_invalid_is_noop() -> None:
+def test_add_to_purchase_keeps_previous_items_without_product() -> None:
     draft = SaleDraft()
-    assert draft.add_to_purchase() is False
-    assert draft.purchase.items() == []
-    assert draft.total() == 0
-
-    draft.entry.press_digit("0")
-    assert draft.add_to_purchase() is False
-    assert draft.entry.digits() == "0"
-    assert draft.purchase.items() == []
-
-
-def test_add_to_purchase_keeps_previous_items_on_invalid() -> None:
-    draft = SaleDraft()
-    _enter_digits(draft.entry, "5000")
+    draft.select_product(_product(1, "Pan", 5000))
     draft.add_to_purchase()
+    _enter_digits(draft.entry, "3000")
     assert draft.add_to_purchase() is False
-    assert draft.purchase.items() == [5000]
+    assert len(draft.purchase.items()) == 1
     assert draft.total() == 5000
+    assert draft.entry.digits() == "3000"
 
 
-def test_clear_purchase_resets_entry_and_items() -> None:
+def test_clear_purchase_resets_entry_selection_and_items() -> None:
     draft = SaleDraft()
-    _enter_digits(draft.entry, "5000")
+    draft.select_product(_product(1, "Pan", 5000))
     draft.add_to_purchase()
+    draft.select_product(_product(2, "Café", 3000))
+    draft.set_quantity(3)
     _enter_digits(draft.entry, "3000")
     draft.clear_purchase()
     assert draft.entry.digits() == ""
+    assert draft.selected_product() is None
+    assert draft.quantity() == 1
     assert draft.purchase.items() == []
     assert draft.total() == 0
+
+
+def test_candidates_by_exact_price_filters_active() -> None:
+    products = [
+        _product(1, "Pan A", 2500, id_estado=1),
+        _product(2, "Pan B", 2500, id_estado=1),
+        _product(3, "Pan viejo", 2500, id_estado=0),
+        _product(4, "Café", 4000, id_estado=1),
+    ]
+    matches = candidates_by_exact_price(products, 2500)
+    assert [item["nombre"] for item in matches] == ["Pan A", "Pan B"]
+    assert candidates_by_exact_price(products, 0) == []
+    assert candidates_by_exact_price(products, 9999) == []
 
 
 def test_format_cop() -> None:

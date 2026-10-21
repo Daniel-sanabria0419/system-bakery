@@ -24,11 +24,13 @@ class ApiClient:
         response.raise_for_status()
         return response.json()
 
-    def create_sale(self, valor_total: int, id_medio_pago: int) -> Mapping[str, Any]:
+    def create_sale(
+        self, id_medio_pago: int, lineas: List[Mapping[str, Any]]
+    ) -> Mapping[str, Any]:
         response = self._request(
             "POST",
             "/ventas",
-            json={"valor_total": valor_total, "id_medio_pago": id_medio_pago},
+            json={"id_medio_pago": id_medio_pago, "lineas": list(lineas)},
         )
         response.raise_for_status()
         return response.json()

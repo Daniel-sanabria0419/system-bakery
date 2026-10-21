@@ -469,8 +469,16 @@ class RegisterSalePage(QWidget):
         dialog = ConfirmSaleDialog(value, self._selected_payment_name, self)
         if dialog.exec() != QDialog.Accepted:
             return
+        lineas = [
+            {
+                "id_producto": line.id_producto,
+                "cantidad": line.cantidad,
+                "precio_aplicado": line.precio_aplicado,
+            }
+            for line in self._draft.purchase.items()
+        ]
         try:
-            self._api.create_sale(value, payment_id)
+            self._api.create_sale(payment_id, lineas)
         except httpx.HTTPError as error:
             QMessageBox.warning(self, "Error", f"No se pudo guardar la venta.\n{error}")
             return

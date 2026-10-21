@@ -4,10 +4,12 @@ import pytest
 
 from bakery.app.calculator import Calculator
 from bakery.app.money import format_cop
+from bakery.app.products import create_product
 from bakery.app.purchase import Purchase, SaleDraft, candidates_by_exact_price
 from bakery.app.sales import SaleValidationError, register_sale
 from bakery.persistence import initialize
 from bakery.persistence.connection import connect
+from bakery.persistence.repositories import list_venta_lineas
 
 
 def _enter_digits(calculator: Calculator, digits: str) -> None:
@@ -302,13 +304,22 @@ def _connection(tmp_path: Path):
     return connect(path)
 
 
-def test_register_sale_persists_uuid_and_defaults(tmp_path: Path) -> None:
+def test_register_sale_persists_uuid_lines_and_defaults(tmp_path: Path) -> None:
     connection = _connection(tmp_path)
     try:
+        product = create_product(
+            connection, nombre="Pan", precio=25000, id_categoria=1
+        )
         sale = register_sale(
             connection,
-            25000,
             1,
+            [
+                {
+                    "id_producto": product["id_producto"],
+                    "cantidad": 1,
+                    "precio_aplicado": 25000,
+                }
+            ],
             fecha_venta="2026-10-15T11:00:00",
         )
         row = connection.execute("SELECT * FROM ventas").fetchone()
@@ -319,16 +330,21 @@ def test_register_sale_persists_uuid_and_defaults(tmp_path: Path) -> None:
         assert row["id_medio_pago"] == 1
         assert row["caja"] == 1
         assert row["tendero"] == 1
+        lines = list_venta_lineas(connection, sale["id_venta"])
+        assert len(lines) == 1
+        assert lines[0]["nombre_producto"] == "Pan"
+        assert lines[0]["subtotal"] == 25000
     finally:
         connection.close()
 
 
-def test_register_sale_rejects_invalid_values(tmp_path: Path) -> None:
+def test_register_sale_rejects_empty_or_invalid_lines(tmp_path: Path) -> None:
     connection = _connection(tmp_path)
     try:
-        for value in (0, -1000, True, 25.0):
-            with pytest.raises(SaleValidationError):
-                register_sale(connection, value, 1)  # type: ignore[arg-type]
+        with pytest.raises(SaleValidationError):
+            register_sale(connection, 1, [])
+        with pytest.raises(SaleValidationError):
+            register_sale(connection, 1, "x")  # type: ignore[arg-type]
         count = connection.execute("SELECT COUNT(*) FROM ventas").fetchone()[0]
         assert count == 0
     finally:
@@ -338,6 +354,14 @@ def test_register_sale_rejects_invalid_values(tmp_path: Path) -> None:
 def test_register_sale_rejects_inactive_or_unknown_payment_method(tmp_path: Path) -> None:
     connection = _connection(tmp_path)
     try:
+        product = create_product(
+            connection, nombre="Pan", precio=1000, id_categoria=1
+        )
+        line = {
+            "id_producto": product["id_producto"],
+            "cantidad": 1,
+            "precio_aplicado": 1000,
+        }
         connection.execute(
             "INSERT INTO medios_pago (nombre, id_estado) VALUES (?, ?)",
             ("Inactivo", 0),
@@ -348,9 +372,9 @@ def test_register_sale_rejects_inactive_or_unknown_payment_method(tmp_path: Path
             ("Inactivo",),
         ).fetchone()[0]
         with pytest.raises(SaleValidationError):
-            register_sale(connection, 1000, inactive_id)
+            register_sale(connection, inactive_id, [line])
         with pytest.raises(SaleValidationError):
-            register_sale(connection, 1000, 999)
+            register_sale(connection, 999, [line])
         count = connection.execute("SELECT COUNT(*) FROM ventas").fetchone()[0]
         assert count == 0
     finally:

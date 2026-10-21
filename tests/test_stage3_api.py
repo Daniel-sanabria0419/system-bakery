@@ -12,6 +12,19 @@ def _client(tmp_path: Path) -> TestClient:
     return TestClient(create_app(tmp_path / "bakery.sqlite3"))
 
 
+def _create_product(client: TestClient, *, nombre: str, precio: int, id_categoria: int = 1) -> dict:
+    response = client.post(
+        "/productos",
+        json={
+            "nombre": nombre,
+            "precio": precio,
+            "id_categoria": id_categoria,
+        },
+    )
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
 def test_list_active_payment_methods(tmp_path: Path) -> None:
     with _client(tmp_path) as client:
         response = client.get("/medios-pago")
@@ -39,12 +52,22 @@ def test_list_payment_methods_excludes_inactive(tmp_path: Path) -> None:
         assert "Efectivo" in names
 
 
-def test_create_sale_returns_uuid_and_persists(tmp_path: Path) -> None:
+def test_create_sale_returns_uuid_and_persists_lines(tmp_path: Path) -> None:
     db_path = tmp_path / "bakery.sqlite3"
     with TestClient(create_app(db_path)) as client:
+        product = _create_product(client, nombre="Pan", precio=25000)
         response = client.post(
             "/ventas",
-            json={"valor_total": 25000, "id_medio_pago": 1},
+            json={
+                "id_medio_pago": 1,
+                "lineas": [
+                    {
+                        "id_producto": product["id_producto"],
+                        "cantidad": 1,
+                        "precio_aplicado": 25000,
+                    }
+                ],
+            },
         )
         assert response.status_code == 200
         payload = response.json()
@@ -63,27 +86,33 @@ def test_create_sale_returns_uuid_and_persists(tmp_path: Path) -> None:
             ).fetchone()
             assert row is not None
             assert row["valor_total"] == 25000
-            assert row["caja"] == 1
-            assert row["tendero"] == 1
+            lines = connection.execute(
+                "SELECT * FROM venta_lineas WHERE id_venta = ?",
+                (payload["id_venta"],),
+            ).fetchall()
+            assert len(lines) == 1
+            assert lines[0]["nombre_producto"] == "Pan"
+            assert lines[0]["subtotal"] == 25000
         finally:
             connection.close()
 
 
-def test_create_sale_rejects_zero(tmp_path: Path) -> None:
+def test_create_sale_rejects_legacy_valor_total_only(tmp_path: Path) -> None:
     with _client(tmp_path) as client:
         response = client.post(
             "/ventas",
-            json={"valor_total": 0, "id_medio_pago": 1},
+            json={"valor_total": 25000, "id_medio_pago": 1},
         )
         assert response.status_code == 400
+        assert "lineas" in response.json()["detail"].lower()
         assert client.get("/medios-pago").status_code == 200
 
 
-def test_create_sale_rejects_negative(tmp_path: Path) -> None:
+def test_create_sale_rejects_empty_lineas(tmp_path: Path) -> None:
     with _client(tmp_path) as client:
         response = client.post(
             "/ventas",
-            json={"valor_total": -1000, "id_medio_pago": 1},
+            json={"id_medio_pago": 1, "lineas": []},
         )
         assert response.status_code == 400
 
@@ -91,6 +120,7 @@ def test_create_sale_rejects_negative(tmp_path: Path) -> None:
 def test_create_sale_rejects_inactive_payment_method(tmp_path: Path) -> None:
     db_path = tmp_path / "bakery.sqlite3"
     with TestClient(create_app(db_path)) as client:
+        product = _create_product(client, nombre="Pan", precio=1000)
         connection = connect(db_path)
         try:
             connection.execute(
@@ -107,7 +137,16 @@ def test_create_sale_rejects_inactive_payment_method(tmp_path: Path) -> None:
 
         response = client.post(
             "/ventas",
-            json={"valor_total": 1000, "id_medio_pago": inactive_id},
+            json={
+                "id_medio_pago": inactive_id,
+                "lineas": [
+                    {
+                        "id_producto": product["id_producto"],
+                        "cantidad": 1,
+                        "precio_aplicado": 1000,
+                    }
+                ],
+            },
         )
         assert response.status_code == 400
 
@@ -121,9 +160,19 @@ def test_create_sale_rejects_inactive_payment_method(tmp_path: Path) -> None:
 
 def test_create_sale_rejects_unknown_payment_method(tmp_path: Path) -> None:
     with _client(tmp_path) as client:
+        product = _create_product(client, nombre="Pan", precio=1000)
         response = client.post(
             "/ventas",
-            json={"valor_total": 1000, "id_medio_pago": 999},
+            json={
+                "id_medio_pago": 999,
+                "lineas": [
+                    {
+                        "id_producto": product["id_producto"],
+                        "cantidad": 1,
+                        "precio_aplicado": 1000,
+                    }
+                ],
+            },
         )
         assert response.status_code == 400
 

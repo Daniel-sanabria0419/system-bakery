@@ -127,15 +127,25 @@ def test_create_rejects_invalid_price_and_category(tmp_path: Path) -> None:
         assert "categoría" in bad_cat.json()["detail"].lower()
 
 
-def test_medios_pago_and_ventas_unchanged(tmp_path: Path) -> None:
+def test_medios_pago_and_ventas_with_lines(tmp_path: Path) -> None:
     with _client(tmp_path) as client:
         methods = client.get("/medios-pago")
         assert methods.status_code == 200
         assert methods.json()[0]["nombre"] == "Efectivo"
 
+        product = _create_sample(client, nombre="Pan", precio=12000, descripcion=None)
         sale = client.post(
             "/ventas",
-            json={"valor_total": 12000, "id_medio_pago": 1},
+            json={
+                "id_medio_pago": 1,
+                "lineas": [
+                    {
+                        "id_producto": product["id_producto"],
+                        "cantidad": 1,
+                        "precio_aplicado": 12000,
+                    }
+                ],
+            },
         )
         assert sale.status_code == 200
         assert sale.json()["valor_total"] == 12000

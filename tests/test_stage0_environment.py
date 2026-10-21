@@ -18,7 +18,7 @@ def test_create_window(qtbot) -> None:
         def list_payment_methods(self):
             return []
 
-        def create_sale(self, valor_total, id_medio_pago):
+        def create_sale(self, id_medio_pago, lineas):
             raise AssertionError("No debe guardar en esta prueba.")
 
     window = create_window(api_client=_StubClient())

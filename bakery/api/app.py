@@ -1,9 +1,9 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 
-from fastapi import FastAPI, HTTPException, Query
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, Query, Request
+from pydantic import BaseModel, Field
 
 from bakery.app.products import (
     ProductValidationError,
@@ -25,9 +25,15 @@ API_HOST = "127.0.0.1"
 API_PORT = 8765
 
 
+class SaleLineCreate(BaseModel):
+    id_producto: int
+    cantidad: int
+    precio_aplicado: int
+
+
 class SaleCreate(BaseModel):
-    valor_total: int
     id_medio_pago: int
+    lineas: List[SaleLineCreate] = Field(min_length=1)
 
 
 class SaleResponse(BaseModel):
@@ -96,14 +102,32 @@ def create_app(db_path: Path = DEFAULT_DB_PATH) -> FastAPI:
             connection.close()
 
     @app.post("/ventas", response_model=SaleResponse)
-    def create_sale(body: SaleCreate) -> dict:
+    async def create_sale(request: Request) -> dict:
+        payload: Any = await request.json()
+        if not isinstance(payload, dict):
+            raise HTTPException(
+                status_code=400, detail="Cuerpo de venta inválido."
+            )
+        if "lineas" not in payload:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Debe enviar lineas de producto. "
+                    "El cuerpo solo con valor_total ya no es válido."
+                ),
+            )
+        try:
+            body = SaleCreate.model_validate(payload)
+        except Exception as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+
         connection = connect(app.state.db_path)
         try:
             return dict(
                 register_sale(
                     connection,
-                    body.valor_total,
                     body.id_medio_pago,
+                    [line.model_dump() for line in body.lineas],
                 )
             )
         except SaleValidationError as error:

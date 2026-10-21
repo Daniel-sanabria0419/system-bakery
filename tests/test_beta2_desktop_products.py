@@ -26,8 +26,13 @@ class FakeProductsApiClient:
         self.request_count += 1
         return list(self.methods)
 
-    def create_sale(self, valor_total: int, id_medio_pago: int) -> Mapping[str, Any]:
+    def create_sale(
+        self, id_medio_pago: int, lineas: List[Mapping[str, Any]]
+    ) -> Mapping[str, Any]:
         self.request_count += 1
+        valor_total = sum(
+            int(line["precio_aplicado"]) * int(line["cantidad"]) for line in lineas
+        )
         sale = {
             "id_venta": "11111111-1111-4111-8111-111111111111",
             "valor_total": valor_total,
@@ -35,6 +40,7 @@ class FakeProductsApiClient:
             "id_medio_pago": id_medio_pago,
             "caja": 1,
             "tendero": 1,
+            "lineas": list(lineas),
         }
         self.sales.append(sale)
         return sale

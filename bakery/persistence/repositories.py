@@ -37,6 +37,51 @@ def insert_sale(
     )
 
 
+def insert_venta_linea(
+    connection: sqlite3.Connection,
+    *,
+    id_venta: str,
+    id_producto: int,
+    nombre_producto: str,
+    precio_aplicado: int,
+    cantidad: int,
+    subtotal: int,
+) -> int:
+    cursor = connection.execute(
+        """
+        INSERT INTO venta_lineas (
+            id_venta, id_producto, nombre_producto,
+            precio_aplicado, cantidad, subtotal
+        ) VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (
+            id_venta,
+            id_producto,
+            nombre_producto,
+            precio_aplicado,
+            cantidad,
+            subtotal,
+        ),
+    )
+    return int(cursor.lastrowid)
+
+
+def list_venta_lineas(
+    connection: sqlite3.Connection, id_venta: str
+) -> List[Mapping]:
+    rows = connection.execute(
+        """
+        SELECT id_linea, id_venta, id_producto, nombre_producto,
+               precio_aplicado, cantidad, subtotal
+        FROM venta_lineas
+        WHERE id_venta = ?
+        ORDER BY id_linea
+        """,
+        (id_venta,),
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
 def list_categorias(connection: sqlite3.Connection) -> List[Mapping]:
     rows = connection.execute(
         """

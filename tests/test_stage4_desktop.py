@@ -32,8 +32,13 @@ class FakeApiClient:
         self.request_count += 1
         return list(self.methods)
 
-    def create_sale(self, valor_total: int, id_medio_pago: int) -> Mapping[str, Any]:
+    def create_sale(
+        self, id_medio_pago: int, lineas: List[Mapping[str, Any]]
+    ) -> Mapping[str, Any]:
         self.request_count += 1
+        valor_total = sum(
+            int(line["precio_aplicado"]) * int(line["cantidad"]) for line in lineas
+        )
         sale = {
             "id_venta": "11111111-1111-4111-8111-111111111111",
             "valor_total": valor_total,
@@ -41,6 +46,7 @@ class FakeApiClient:
             "id_medio_pago": id_medio_pago,
             "caja": 1,
             "tendero": 1,
+            "lineas": list(lineas),
         }
         self.sales.append(sale)
         return sale
@@ -621,7 +627,9 @@ def test_confirm_sale_posts_accumulated_total(qtbot) -> None:
 
 def test_api_error_does_not_show_success_popup(qtbot) -> None:
     class FailingApiClient(FakeApiClient):
-        def create_sale(self, valor_total: int, id_medio_pago: int) -> Mapping[str, Any]:
+        def create_sale(
+            self, id_medio_pago: int, lineas: List[Mapping[str, Any]]
+        ) -> Mapping[str, Any]:
             self.request_count += 1
             raise httpx.HTTPError("fallo de red")
 
@@ -673,11 +681,46 @@ class DesktopApiViaTestClient:
         response.raise_for_status()
         return response.json()
 
-    def create_sale(self, valor_total: int, id_medio_pago: int) -> Mapping[str, Any]:
+    def list_categories(self) -> List[Mapping[str, Any]]:
+        self.request_count += 1
+        response = self._client.get("/categorias")
+        response.raise_for_status()
+        return response.json()
+
+    def list_products(self) -> List[Mapping[str, Any]]:
+        self.request_count += 1
+        response = self._client.get("/productos")
+        response.raise_for_status()
+        return response.json()
+
+    def create_product(
+        self,
+        *,
+        nombre: str,
+        precio: int,
+        id_categoria: int,
+        descripcion: str = None,
+    ) -> Mapping[str, Any]:
+        self.request_count += 1
+        response = self._client.post(
+            "/productos",
+            json={
+                "nombre": nombre,
+                "precio": precio,
+                "id_categoria": id_categoria,
+                "descripcion": descripcion,
+            },
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def create_sale(
+        self, id_medio_pago: int, lineas: List[Mapping[str, Any]]
+    ) -> Mapping[str, Any]:
         self.request_count += 1
         response = self._client.post(
             "/ventas",
-            json={"valor_total": valor_total, "id_medio_pago": id_medio_pago},
+            json={"id_medio_pago": id_medio_pago, "lineas": list(lineas)},
         )
         response.raise_for_status()
         return response.json()
@@ -694,8 +737,17 @@ def test_happy_path_persists_sale_through_api(qtbot, tmp_path) -> None:
     window.show()
 
     try:
+        product = api.create_product(nombre="Pan", precio=5000, id_categoria=1)
         _click(qtbot, _find(window, "menu_register_button"))
-        _enter_amount_and_agregar(qtbot, window, "5000")
+        _select_draft_product(
+            window,
+            precio=5000,
+            nombre="Pan",
+            id_producto=product["id_producto"],
+        )
+        for digit in "5000":
+            _click(qtbot, _find(window, f"digit_{digit}"))
+        _click(qtbot, _find(window, "agregar_button"))
         _select_payment(qtbot, window, 1)
 
         def sale_count() -> int:

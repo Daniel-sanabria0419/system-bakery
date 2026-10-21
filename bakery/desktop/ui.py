@@ -3,12 +3,14 @@ from typing import List, Mapping, Optional
 import httpx
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QComboBox,
     QDialog,
     QDialogButtonBox,
     QFrame,
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QMessageBox,
     QPushButton,
@@ -23,6 +25,7 @@ from bakery.app.money import format_cop
 from bakery.app.purchase import SaleDraft
 from bakery.desktop import style
 from bakery.desktop.client import ApiClient
+from bakery.persistence.schema import ESTADO_ACTIVO
 
 _PAYMENT_BUTTON_PLACEHOLDER = "Seleccionar medio de pago"
 _PAYMENT_METHODS_PER_ROW = 5
@@ -184,7 +187,7 @@ class SaleSavedDialog(QDialog):
 
 
 class MenuPage(QWidget):
-    def __init__(self, on_register) -> None:
+    def __init__(self, on_register, on_products) -> None:
         super().__init__()
         root = QVBoxLayout(self)
         root.setContentsMargins(
@@ -195,19 +198,25 @@ class MenuPage(QWidget):
         )
         root.setSpacing(style.PAGE_SPACING)
 
-        # Contenedor en grilla: hoy solo (0,0); stretch deja sitio para botones futuros.
         menu_grid = QWidget()
         menu_grid.setObjectName("menu_grid")
         grid = QGridLayout(menu_grid)
         grid.setContentsMargins(0, 0, 0, 0)
         grid.setSpacing(style.PAGE_SPACING)
 
-        button = QPushButton("Registrar venta")
-        button.setObjectName("menu_register_button")
-        style.apply_class(button, "menu-button")
-        button.clicked.connect(on_register)
-        grid.addWidget(button, 0, 0, Qt.AlignLeft | Qt.AlignTop)
-        grid.setColumnStretch(1, 1)
+        register_button = QPushButton("Registrar venta")
+        register_button.setObjectName("menu_register_button")
+        style.apply_class(register_button, "menu-button")
+        register_button.clicked.connect(on_register)
+        grid.addWidget(register_button, 0, 0, Qt.AlignLeft | Qt.AlignTop)
+
+        products_button = QPushButton("Productos")
+        products_button.setObjectName("menu_products_button")
+        style.apply_class(products_button, "menu-button")
+        products_button.clicked.connect(on_products)
+        grid.addWidget(products_button, 0, 1, Qt.AlignLeft | Qt.AlignTop)
+
+        grid.setColumnStretch(2, 1)
         grid.setRowStretch(1, 1)
 
         root.addWidget(menu_grid, stretch=1)
@@ -463,6 +472,269 @@ class RegisterSalePage(QWidget):
         self.reset_form()
 
 
+class ProductFormDialog(QDialog):
+    """Crear o editar producto. La validación de negocio la hace la API."""
+
+    def __init__(
+        self,
+        categories: List[Mapping],
+        parent: QWidget = None,
+        *,
+        product: Optional[Mapping] = None,
+    ) -> None:
+        super().__init__(parent)
+        self._product = product
+        self.setObjectName("product_form_dialog")
+        self.setWindowTitle("Editar producto" if product else "Nuevo producto")
+        self.setModal(True)
+
+        layout = QVBoxLayout(self)
+        _apply_touch_dialog_layout(self, layout)
+
+        self._nombre = QLineEdit()
+        self._nombre.setObjectName("product_nombre_input")
+        self._nombre.setPlaceholderText("Nombre")
+        layout.addWidget(self._nombre)
+
+        self._precio = QLineEdit()
+        self._precio.setObjectName("product_precio_input")
+        self._precio.setPlaceholderText("Precio (entero)")
+        layout.addWidget(self._precio)
+
+        self._categoria = QComboBox()
+        self._categoria.setObjectName("product_categoria_combo")
+        for category in categories:
+            self._categoria.addItem(category["nombre"], category["id_categoria"])
+        layout.addWidget(self._categoria)
+
+        self._descripcion = QLineEdit()
+        self._descripcion.setObjectName("product_descripcion_input")
+        self._descripcion.setPlaceholderText("Descripción (opcional)")
+        layout.addWidget(self._descripcion)
+
+        self._estado_label = QLabel("")
+        self._estado_label.setObjectName("product_estado_label")
+        style.apply_class(self._estado_label, "dialog-text")
+        layout.addWidget(self._estado_label)
+
+        if product is not None:
+            self._nombre.setText(product["nombre"])
+            self._precio.setText(str(product["precio"]))
+            index = self._categoria.findData(product["id_categoria"])
+            if index >= 0:
+                self._categoria.setCurrentIndex(index)
+            self._descripcion.setText(product.get("descripcion") or "")
+            estado = (
+                "Activo"
+                if product.get("id_estado") == ESTADO_ACTIVO
+                else "Inactivo"
+            )
+            self._estado_label.setText(f"Estado: {estado}")
+        else:
+            self._estado_label.setText("Estado: Activo")
+
+        buttons = QDialogButtonBox()
+        buttons.setCenterButtons(True)
+        save = buttons.addButton("Guardar", QDialogButtonBox.AcceptRole)
+        save.setObjectName("product_save_button")
+        style.apply_class(save, "dialog-action-button")
+        _apply_dialog_action_button_size(save)
+        cancel = buttons.addButton("Cancelar", QDialogButtonBox.RejectRole)
+        cancel.setObjectName("product_cancel_button")
+        style.apply_class(cancel, "dialog-action-button")
+        _apply_dialog_action_button_size(cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def form_values(self) -> Optional[Mapping]:
+        nombre = self._nombre.text().strip()
+        precio_text = self._precio.text().strip()
+        if not precio_text.isdigit() or int(precio_text) <= 0:
+            return None
+        precio = int(precio_text)
+        descripcion = self._descripcion.text().strip() or None
+        return {
+            "nombre": nombre,
+            "precio": precio,
+            "id_categoria": self._categoria.currentData(),
+            "descripcion": descripcion,
+        }
+
+
+class ProductsPage(QWidget):
+    def __init__(self, api_client: ApiClient, on_back=None) -> None:
+        super().__init__()
+        self.setObjectName("products_page")
+        self._api = api_client
+        self._categories: List[Mapping] = []
+        self._category_names: Mapping[int, str] = {}
+
+        root = QVBoxLayout(self)
+        _apply_page_layout(root)
+
+        top_bar = QHBoxLayout()
+        back = QPushButton(_BACK_BUTTON_ARROW)
+        back.setObjectName("products_back_button")
+        style.apply_class(back, "back-button")
+        back.setMinimumSize(
+            style.BACK_BUTTON_MIN_WIDTH,
+            style.BACK_BUTTON_MIN_HEIGHT,
+        )
+        back.setToolTip("Volver")
+        if on_back is not None:
+            back.clicked.connect(on_back)
+        top_bar.addWidget(back)
+
+        title = QLabel("Productos")
+        title.setObjectName("products_title")
+        style.apply_class(title, "dialog-text")
+        top_bar.addWidget(title)
+        top_bar.addStretch(1)
+
+        new_button = QPushButton("Nuevo producto")
+        new_button.setObjectName("new_product_button")
+        style.apply_class(new_button, "menu-button")
+        new_button.clicked.connect(self._on_new_product)
+        top_bar.addWidget(new_button)
+        root.addLayout(top_bar)
+
+        self._list_host = QWidget()
+        self._list_host.setObjectName("products_list")
+        self._list_layout = QVBoxLayout(self._list_host)
+        self._list_layout.setContentsMargins(0, 0, 0, 0)
+        self._list_layout.setSpacing(style.PAGE_SPACING)
+        self._list_layout.addStretch(1)
+
+        scroll = QScrollArea()
+        scroll.setObjectName("products_list_scroll")
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setWidget(self._list_host)
+        root.addWidget(scroll, stretch=1)
+
+    def reload(self) -> None:
+        self._categories = list(self._api.list_categories())
+        self._category_names = {
+            category["id_categoria"]: category["nombre"]
+            for category in self._categories
+        }
+        products = list(self._api.list_products())
+        while self._list_layout.count():
+            item = self._list_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+        for product in products:
+            self._list_layout.addWidget(self._make_row(product))
+        self._list_layout.addStretch(1)
+
+    def _make_row(self, product: Mapping) -> QWidget:
+        row = QWidget()
+        row.setObjectName(f"product_row_{product['id_producto']}")
+        layout = QHBoxLayout(row)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(style.PAGE_SPACING)
+
+        estado = "Activo" if product["id_estado"] == ESTADO_ACTIVO else "Inactivo"
+        categoria = self._category_names.get(product["id_categoria"], "?")
+        descripcion = product.get("descripcion") or ""
+        summary = (
+            f"{product['nombre']} — {format_cop(product['precio'])} — "
+            f"{categoria} — {estado}"
+        )
+        if descripcion:
+            summary = f"{summary} — {descripcion}"
+        label = QLabel(summary)
+        label.setObjectName(f"product_summary_{product['id_producto']}")
+        label.setWordWrap(True)
+        layout.addWidget(label, stretch=1)
+
+        edit = QPushButton("Editar")
+        edit.setObjectName(f"edit_product_{product['id_producto']}")
+        style.apply_class(edit, "payment-method-button")
+        edit.clicked.connect(
+            lambda checked=False, p=product: self._on_edit_product(p)
+        )
+        layout.addWidget(edit)
+
+        if product["id_estado"] == ESTADO_ACTIVO:
+            toggle = QPushButton("Desactivar")
+            toggle.setObjectName(f"deactivate_product_{product['id_producto']}")
+            toggle.clicked.connect(
+                lambda checked=False, pid=product["id_producto"]: self._on_deactivate(
+                    pid
+                )
+            )
+        else:
+            toggle = QPushButton("Activar")
+            toggle.setObjectName(f"activate_product_{product['id_producto']}")
+            toggle.clicked.connect(
+                lambda checked=False, pid=product["id_producto"]: self._on_activate(pid)
+            )
+        style.apply_class(toggle, "payment-method-button")
+        layout.addWidget(toggle)
+        return row
+
+    def _on_new_product(self) -> None:
+        dialog = ProductFormDialog(self._categories, self)
+        if dialog.exec() != QDialog.Accepted:
+            return
+        values = dialog.form_values()
+        if values is None or not values["nombre"]:
+            QMessageBox.warning(
+                self, "Error", "Nombre obligatorio y precio entero mayor que 0."
+            )
+            return
+        try:
+            self._api.create_product(**values)
+        except httpx.HTTPError as error:
+            QMessageBox.warning(
+                self, "Error", f"No se pudo crear el producto.\n{error}"
+            )
+            return
+        self.reload()
+
+    def _on_edit_product(self, product: Mapping) -> None:
+        dialog = ProductFormDialog(self._categories, self, product=product)
+        if dialog.exec() != QDialog.Accepted:
+            return
+        values = dialog.form_values()
+        if values is None or not values["nombre"]:
+            QMessageBox.warning(
+                self, "Error", "Nombre obligatorio y precio entero mayor que 0."
+            )
+            return
+        try:
+            self._api.update_product(product["id_producto"], **values)
+        except httpx.HTTPError as error:
+            QMessageBox.warning(
+                self, "Error", f"No se pudo actualizar el producto.\n{error}"
+            )
+            return
+        self.reload()
+
+    def _on_activate(self, id_producto: int) -> None:
+        try:
+            self._api.activate_product(id_producto)
+        except httpx.HTTPError as error:
+            QMessageBox.warning(
+                self, "Error", f"No se pudo activar el producto.\n{error}"
+            )
+            return
+        self.reload()
+
+    def _on_deactivate(self, id_producto: int) -> None:
+        try:
+            self._api.deactivate_product(id_producto)
+        except httpx.HTTPError as error:
+            QMessageBox.warning(
+                self, "Error", f"No se pudo desactivar el producto.\n{error}"
+            )
+            return
+        self.reload()
+
+
 class MainWindow(QMainWindow):
     def __init__(self, api_client: ApiClient) -> None:
         super().__init__()
@@ -473,15 +745,21 @@ class MainWindow(QMainWindow):
         self._stack = QStackedWidget()
         self.setCentralWidget(self._stack)
 
-        self._menu = MenuPage(self.open_register_sale)
+        self._menu = MenuPage(self.open_register_sale, self.open_products)
         self._register = RegisterSalePage(api_client, on_back=self.go_back_to_menu)
+        self._products = ProductsPage(api_client, on_back=self.go_back_to_menu)
         self._stack.addWidget(self._menu)
         self._stack.addWidget(self._register)
+        self._stack.addWidget(self._products)
         self._stack.setCurrentWidget(self._menu)
 
     def open_register_sale(self) -> None:
         self._register.load_payment_methods()
         self._stack.setCurrentWidget(self._register)
+
+    def open_products(self) -> None:
+        self._products.reload()
+        self._stack.setCurrentWidget(self._products)
 
     def go_back_to_menu(self) -> None:
         self._stack.setCurrentWidget(self._menu)

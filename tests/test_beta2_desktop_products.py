@@ -53,6 +53,20 @@ class FakeProductsApiClient:
         self.request_count += 1
         return [dict(product) for product in self.products]
 
+    def list_active_products(
+        self,
+        *,
+        id_categoria: Optional[int] = None,
+        precio: Optional[int] = None,
+    ) -> List[Mapping[str, Any]]:
+        self.request_count += 1
+        rows = [p for p in self.products if p["id_estado"] == ESTADO_ACTIVO]
+        if id_categoria is not None:
+            rows = [p for p in rows if p["id_categoria"] == id_categoria]
+        if precio is not None:
+            rows = [p for p in rows if p["precio"] == precio]
+        return [dict(p) for p in rows]
+
     def create_product(
         self,
         *,

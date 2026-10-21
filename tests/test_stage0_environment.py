@@ -18,6 +18,12 @@ def test_create_window(qtbot) -> None:
         def list_payment_methods(self):
             return []
 
+        def list_categories(self):
+            return []
+
+        def list_active_products(self, **kwargs):
+            return []
+
         def create_sale(self, id_medio_pago, lineas):
             raise AssertionError("No debe guardar en esta prueba.")
 

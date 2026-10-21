@@ -6,6 +6,7 @@ from PySide6.QtCore import QObject, QTimer, Qt
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from bakery.api.app import create_app
+from bakery.app.money import format_cop
 from bakery.desktop import style
 from bakery.desktop.main import create_window
 from bakery.desktop.ui import (
@@ -14,6 +15,8 @@ from bakery.desktop.ui import (
     SelectPaymentMethodDialog,
 )
 from bakery.persistence.connection import connect
+
+_PRODUCT_ID_SEQ = {"n": 1}
 
 
 class FakeApiClient:
@@ -53,7 +56,27 @@ def _find(window, name: str):
     return widget
 
 
-def _enter_amount_and_agregar(qtbot, window, digits: str) -> None:
+def _line_text(nombre: str, precio: int, cantidad: int = 1) -> str:
+    return f"{nombre} × {cantidad} — {format_cop(precio * cantidad)}"
+
+
+def _select_draft_product(
+    window, *, precio: int, nombre: str = "Producto", id_producto: int = None
+) -> None:
+    if id_producto is None:
+        id_producto = _PRODUCT_ID_SEQ["n"]
+        _PRODUCT_ID_SEQ["n"] += 1
+    window._register._draft.select_product(
+        {"id_producto": id_producto, "nombre": nombre, "precio": precio}
+    )
+
+
+def _enter_amount_and_agregar(
+    qtbot, window, digits: str, *, nombre: str = "Producto"
+) -> None:
+    """Stub Etapa 5–6: selecciona producto en el draft (UI de selección = Etapa 7)."""
+    precio = int(digits)
+    _select_draft_product(window, precio=precio, nombre=nombre)
     for digit in digits:
         _click(qtbot, _find(window, f"digit_{digit}"))
     _click(qtbot, _find(window, "agregar_button"))
@@ -222,8 +245,9 @@ def test_digit_00_appends_without_http(qtbot) -> None:
     assert _find(window, "sale_display").text() == "$ 500"
     assert api.request_count == after_load
 
+    _select_draft_product(window, precio=500, nombre="Producto")
     _click(qtbot, _find(window, "agregar_button"))
-    assert _find(window, "purchase_list").text() == "$ 500"
+    assert _find(window, "purchase_list").text() == _line_text("Producto", 500)
     assert _find(window, "purchase_total").text() == "Total: $ 500"
     assert api.request_count == after_load
 
@@ -270,7 +294,7 @@ def test_back_preserves_pending_purchase_and_payment(qtbot) -> None:
     assert window.centralWidget().currentWidget() is window._register
     assert api.request_count == requests_before_reenter + 1
 
-    assert _find(window, "purchase_list").text() == "$ 5.000"
+    assert _find(window, "purchase_list").text() == _line_text("Producto", 5000)
     assert _find(window, "purchase_total").text() == "Total: $ 5.000"
     assert _find(window, "sale_display").text() == "$ 300"
     assert _find(window, "payment_button").text() == "Medio de pago: Efectivo"
@@ -285,23 +309,14 @@ def test_calculator_keys_do_not_call_api(qtbot) -> None:
     _click(qtbot, _find(window, "menu_register_button"))
     after_load = api.request_count
 
-    for name in (
-        "digit_5",
-        "digit_0",
-        "digit_0",
-        "digit_0",
-        "agregar_button",
-        "digit_2",
-        "digit_0",
-        "digit_0",
-        "digit_0",
-        "agregar_button",
-    ):
-        _click(qtbot, _find(window, name))
+    _enter_amount_and_agregar(qtbot, window, "5000")
+    _enter_amount_and_agregar(qtbot, window, "2000")
 
     assert api.request_count == after_load
     assert _find(window, "sale_display").text() == "$ 0.00"
-    assert _find(window, "purchase_list").text() == "$ 5.000\n$ 2.000"
+    assert _find(window, "purchase_list").text() == (
+        f"{_line_text('Producto', 5000)}\n{_line_text('Producto', 2000)}"
+    )
     assert _find(window, "purchase_total").text() == "Total: $ 7.000"
 
 
@@ -341,7 +356,7 @@ def test_borrar_removes_digit_not_purchase_items(qtbot) -> None:
 
     _click(qtbot, _find(window, "borrar_button"))
     assert _find(window, "sale_display").text() == "$ 300"
-    assert _find(window, "purchase_list").text() == "$ 5.000"
+    assert _find(window, "purchase_list").text() == _line_text("Producto", 5000)
     assert _find(window, "purchase_total").text() == "Total: $ 5.000"
     assert api.request_count == after_load
 
@@ -381,6 +396,10 @@ def test_submit_disabled_without_value_or_payment(qtbot) -> None:
         _click(qtbot, _find(window, f"digit_{digit}"))
     assert not submit.isEnabled()
 
+    _click(qtbot, _find(window, "agregar_button"))
+    assert not submit.isEnabled()  # sin producto seleccionado no agrega
+
+    _select_draft_product(window, precio=5000, nombre="Producto")
     _click(qtbot, _find(window, "agregar_button"))
     assert not submit.isEnabled()
 
@@ -490,7 +509,7 @@ def test_cancel_confirmation_does_not_save(qtbot) -> None:
     _click(qtbot, _find(window, "submit_sale_button"))
     qtbot.waitUntil(
         lambda: api.sales == []
-        and _find(window, "purchase_list").text() == "$ 5.000"
+        and _find(window, "purchase_list").text() == _line_text("Producto", 5000)
         and _find(window, "purchase_total").text() == "Total: $ 5.000"
     )
     assert api.sales == []
@@ -631,7 +650,7 @@ def test_api_error_does_not_show_success_popup(qtbot) -> None:
     _click(qtbot, _find(window, "submit_sale_button"))
     qtbot.waitUntil(
         lambda: api.request_count >= 2
-        and _find(window, "purchase_list").text() == "$ 5.000"
+        and _find(window, "purchase_list").text() == _line_text("Producto", 5000)
     )
 
     assert api.sales == []

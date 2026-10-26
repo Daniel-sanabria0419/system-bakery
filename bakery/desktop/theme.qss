@@ -99,3 +99,50 @@ QScrollArea#purchase_list_scroll {
     background-color: #FFFFFF;
     border: none;
 }
+
+/* Catálogo venta Beta 2.0.1 — no reutilizar payment-method-button aquí. */
+QWidget#future_panel,
+QWidget#categories_list,
+QWidget#sale_products_list,
+QWidget#price_search_list,
+QScrollArea#categories_scroll,
+QScrollArea#sale_products_scroll,
+QScrollArea#price_search_scroll,
+QScrollArea#categories_scroll > QWidget,
+QScrollArea#sale_products_scroll > QWidget,
+QScrollArea#price_search_scroll > QWidget {
+    background-color: #F5F0E8;
+    color: #000000;
+    border: none;
+}
+
+QPushButton[class="category-chip"],
+QPushButton[class="product-chip"] {
+    background-color: #64c466;
+    color: #000000;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 4px;
+    border: none;
+}
+
+QPushButton[class="category-chip-selected"],
+QPushButton[class="product-chip-selected"] {
+    background-color: #2E7D32;
+    color: #FFFFFF;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 4px;
+    border: 2px solid #1B5E20;
+}
+
+QLabel#quantity_caption,
+QLabel#quantity_label,
+QLabel#quantity_value_label,
+QLabel#sale_value_preview,
+QLabel#selected_product_label,
+QLabel#sale_feedback,
+QLabel#price_search_caption,
+QLabel#price_search_empty {
+    color: #000000;
+}

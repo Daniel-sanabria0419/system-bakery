@@ -1,11 +1,14 @@
+from pathlib import Path
 from typing import List, Mapping, Optional
 
 import httpx
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
+    QFileDialog,
     QFrame,
     QGridLayout,
     QHBoxLayout,
@@ -17,11 +20,17 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QSizePolicy,
     QStackedWidget,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
 
 from bakery.app.money import format_cop
+from bakery.app.product_images import (
+    category_image_path,
+    resolve_relative_image,
+    save_product_image,
+)
 from bakery.app.purchase import SaleDraft, candidates_by_exact_price
 from bakery.desktop import style
 from bakery.desktop.client import ApiClient
@@ -68,6 +77,14 @@ def _apply_touch_dialog_layout(dialog: QDialog, layout: QVBoxLayout) -> None:
     layout.setSpacing(style.DIALOG_CONTENT_SPACING)
     if style.DIALOG_MIN_WIDTH > 0 or style.DIALOG_MIN_HEIGHT > 0:
         dialog.setMinimumSize(style.DIALOG_MIN_WIDTH, style.DIALOG_MIN_HEIGHT)
+
+
+def _apply_catalog_chip_icon(button: QToolButton, image_path: Optional[Path]) -> None:
+    if image_path is None:
+        button.setIcon(QIcon())
+        return
+    button.setIcon(QIcon(str(image_path)))
+    button.setIconSize(QSize(36, 28))
 
 
 def _make_separator(object_name: str) -> QFrame:
@@ -698,8 +715,10 @@ class RegisterSalePage(QWidget):
 
     def _rebuild_categories(self) -> None:
         self._clear_layout(self._categories_layout)
-        todos = QPushButton("Todos")
+        todos = QToolButton()
+        todos.setText("Todos")
         todos.setObjectName("sale_category_todos")
+        todos.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         todos.setFixedSize(style.CATEGORY_CHIP_WIDTH, style.CATEGORY_CHIP_HEIGHT)
         style.apply_class(
             todos,
@@ -711,9 +730,14 @@ class RegisterSalePage(QWidget):
         self._categories_layout.addWidget(todos)
 
         for category in self._categories:
-            button = QPushButton(category["nombre"])
+            button = QToolButton()
+            button.setText(str(category["nombre"]))
             button.setObjectName(f"sale_category_{category['id_categoria']}")
+            button.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
             button.setFixedSize(style.CATEGORY_CHIP_WIDTH, style.CATEGORY_CHIP_HEIGHT)
+            _apply_catalog_chip_icon(
+                button, category_image_path(int(category["id_categoria"]))
+            )
             selected = category["id_categoria"] == self._selected_category_id
             style.apply_class(
                 button, "category-chip-selected" if selected else "category-chip"
@@ -738,9 +762,14 @@ class RegisterSalePage(QWidget):
         selected = self._draft.selected_product()
         selected_id = selected["id_producto"] if selected is not None else None
         for product in products:
-            button = QPushButton(str(product["nombre"]))
+            button = QToolButton()
+            button.setText(str(product["nombre"]))
             button.setObjectName(f"sale_product_{product['id_producto']}")
+            button.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
             button.setFixedSize(style.PRODUCT_CHIP_WIDTH, style.PRODUCT_CHIP_HEIGHT)
+            _apply_catalog_chip_icon(
+                button, resolve_relative_image(product.get("ruta_imagen"))
+            )
             is_selected = product["id_producto"] == selected_id
             style.apply_class(
                 button, "product-chip-selected" if is_selected else "product-chip"
@@ -768,9 +797,14 @@ class RegisterSalePage(QWidget):
         selected = self._draft.selected_product()
         selected_id = selected["id_producto"] if selected is not None else None
         for product in matches:
-            button = QPushButton(str(product["nombre"]))
+            button = QToolButton()
+            button.setText(str(product["nombre"]))
             button.setObjectName(f"price_search_product_{product['id_producto']}")
+            button.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
             button.setFixedSize(style.PRODUCT_CHIP_WIDTH, style.PRODUCT_CHIP_HEIGHT)
+            _apply_catalog_chip_icon(
+                button, resolve_relative_image(product.get("ruta_imagen"))
+            )
             is_selected = product["id_producto"] == selected_id
             style.apply_class(
                 button, "product-chip-selected" if is_selected else "product-chip"
@@ -842,6 +876,8 @@ class ProductFormDialog(QDialog):
     ) -> None:
         super().__init__(parent)
         self._product = product
+        self._pending_image_path: Optional[Path] = None
+        self._image_changed = False
         self.setObjectName("product_form_dialog")
         self.setWindowTitle("Editar producto" if product else "Nuevo producto")
         self.setModal(True)
@@ -870,6 +906,18 @@ class ProductFormDialog(QDialog):
         self._descripcion.setPlaceholderText("Descripción (opcional)")
         layout.addWidget(self._descripcion)
 
+        image_row = QHBoxLayout()
+        self._image_status = QLabel("")
+        self._image_status.setObjectName("product_image_status")
+        style.apply_class(self._image_status, "dialog-text")
+        image_row.addWidget(self._image_status, stretch=1)
+        pick_image = QPushButton("Elegir imagen")
+        pick_image.setObjectName("product_image_button")
+        style.apply_class(pick_image, "payment-method-button")
+        pick_image.clicked.connect(self._on_pick_image)
+        image_row.addWidget(pick_image)
+        layout.addLayout(image_row)
+
         self._estado_label = QLabel("")
         self._estado_label.setObjectName("product_estado_label")
         style.apply_class(self._estado_label, "dialog-text")
@@ -888,8 +936,14 @@ class ProductFormDialog(QDialog):
                 else "Inactivo"
             )
             self._estado_label.setText(f"Estado: {estado}")
+            existing = product.get("ruta_imagen")
+            if isinstance(existing, str) and existing.strip():
+                self._image_status.setText(f"Imagen: {existing.strip()}")
+            else:
+                self._image_status.setText("Sin imagen")
         else:
             self._estado_label.setText("Estado: Activo")
+            self._image_status.setText("Sin imagen")
 
         buttons = QDialogButtonBox()
         buttons.setCenterButtons(True)
@@ -904,6 +958,26 @@ class ProductFormDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+
+    def _on_pick_image(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Seleccionar imagen",
+            "",
+            "Imágenes (*.png *.jpg *.jpeg *.webp *.gif)",
+        )
+        if not path:
+            return
+        selected = Path(path)
+        self._pending_image_path = selected
+        self._image_changed = True
+        self._image_status.setText(f"Nueva imagen: {selected.name}")
+
+    def pending_image_path(self) -> Optional[Path]:
+        return self._pending_image_path
+
+    def image_changed(self) -> bool:
+        return self._image_changed
 
     def form_values(self) -> Optional[Mapping]:
         nombre = self._nombre.text().strip()
@@ -1034,6 +1108,20 @@ class ProductsPage(QWidget):
         layout.addWidget(toggle)
         return row
 
+    def _persist_product_image(
+        self, id_producto: int, source: Path, values: Mapping
+    ) -> None:
+        relative = save_product_image(int(id_producto), source)
+        self._api.update_product(
+            id_producto,
+            nombre=values["nombre"],
+            precio=values["precio"],
+            id_categoria=values["id_categoria"],
+            descripcion=values.get("descripcion"),
+            ruta_imagen=relative,
+            actualizar_ruta_imagen=True,
+        )
+
     def _on_new_product(self) -> None:
         dialog = ProductFormDialog(self._categories, self)
         if dialog.exec() != QDialog.Accepted:
@@ -1045,8 +1133,14 @@ class ProductsPage(QWidget):
             )
             return
         try:
-            self._api.create_product(**values)
-        except httpx.HTTPError as error:
+            created = self._api.create_product(**values)
+            if dialog.image_changed() and dialog.pending_image_path() is not None:
+                self._persist_product_image(
+                    created["id_producto"],
+                    dialog.pending_image_path(),
+                    values,
+                )
+        except (httpx.HTTPError, ValueError, OSError) as error:
             QMessageBox.warning(
                 self, "Error", f"No se pudo crear el producto.\n{error}"
             )
@@ -1064,8 +1158,19 @@ class ProductsPage(QWidget):
             )
             return
         try:
-            self._api.update_product(product["id_producto"], **values)
-        except httpx.HTTPError as error:
+            if dialog.image_changed() and dialog.pending_image_path() is not None:
+                self._persist_product_image(
+                    product["id_producto"],
+                    dialog.pending_image_path(),
+                    values,
+                )
+            else:
+                self._api.update_product(
+                    product["id_producto"],
+                    **values,
+                    actualizar_ruta_imagen=False,
+                )
+        except (httpx.HTTPError, ValueError, OSError) as error:
             QMessageBox.warning(
                 self, "Error", f"No se pudo actualizar el producto.\n{error}"
             )

@@ -67,6 +67,7 @@ class ProductCreate(BaseModel):
     precio: int
     id_categoria: int
     descripcion: Optional[str] = None
+    ruta_imagen: Optional[str] = None
 
 
 class ProductUpdate(BaseModel):
@@ -74,6 +75,8 @@ class ProductUpdate(BaseModel):
     precio: int
     id_categoria: int
     descripcion: Optional[str] = None
+    ruta_imagen: Optional[str] = None
+    actualizar_ruta_imagen: bool = False
 
 
 class ProductResponse(BaseModel):
@@ -83,6 +86,7 @@ class ProductResponse(BaseModel):
     id_categoria: int
     descripcion: Optional[str] = None
     id_estado: int
+    ruta_imagen: Optional[str] = None
 
 
 def create_app(db_path: Path = DEFAULT_DB_PATH) -> FastAPI:
@@ -193,6 +197,7 @@ def create_app(db_path: Path = DEFAULT_DB_PATH) -> FastAPI:
                     precio=body.precio,
                     id_categoria=body.id_categoria,
                     descripcion=body.descripcion,
+                    ruta_imagen=body.ruta_imagen,
                 )
             )
         except ProductValidationError as error:
@@ -212,6 +217,8 @@ def create_app(db_path: Path = DEFAULT_DB_PATH) -> FastAPI:
                     precio=body.precio,
                     id_categoria=body.id_categoria,
                     descripcion=body.descripcion,
+                    ruta_imagen=body.ruta_imagen,
+                    actualizar_ruta_imagen=body.actualizar_ruta_imagen,
                 )
             )
         except ProductValidationError as error:

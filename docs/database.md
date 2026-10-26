@@ -57,7 +57,7 @@ Además, al inicializar se ejecuta un **ensure por nombre** de la categoría **P
 
 La lógica especial de Pan pequeño (versiones posteriores de 2.0.1) debe resolver la categoría por **nombre**, no por `id_categoria` fijo.
 
-No hay CRUD de categorías en Beta 2.0 / 2.0.1 Etapa 1; solo listado y asociación desde productos / ventas.
+No hay CRUD de categorías en Beta 2.0 / 2.0.1; solo listado y asociación desde productos / ventas. La lógica de precios de Pan pequeño (Beta 2.0.1) resuelve la categoría por **nombre**.
 
 ## Tabla: productos (Beta 2.0 / 2.0.1)
 
@@ -75,7 +75,7 @@ Campos:
 
 Un producto desactivado se conserva (soft-delete). No se elimina físicamente un producto referenciado en `venta_lineas`.
 
-Las imágenes de producto viven bajo `imagenes/productos/`. Las de categoría (convención por archivo, sin columna obligatoria) bajo `imagenes/categorias/`.
+Las imágenes de producto viven bajo `imagenes/productos/` (ruta relativa en `ruta_imagen`, p. ej. `imagenes/productos/{id}.png`). Las de categoría (convención por archivo `imagenes/categorias/{id}.{ext}`, sin columna obligatoria) bajo `imagenes/categorias/`. Si el archivo falta, la UI no debe fallar.
 
 ## Tabla: venta_lineas (Beta 2.0)
 

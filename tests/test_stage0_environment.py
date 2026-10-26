@@ -35,6 +35,8 @@ def test_create_window(qtbot) -> None:
 def test_wait_for_api_times_out_when_server_down(monkeypatch) -> None:
     monkeypatch.setattr("bakery.desktop.main._WAIT_ATTEMPTS", 1)
     monkeypatch.setattr("bakery.desktop.main._WAIT_INTERVAL_SECONDS", 0)
+    # Puerto muerto: evita flake si ya hay API local en :8765.
+    monkeypatch.setattr("bakery.desktop.main.API_PORT", 1)
     try:
         wait_for_api()
     except RuntimeError as error:

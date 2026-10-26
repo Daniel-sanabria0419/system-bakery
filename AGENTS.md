@@ -80,6 +80,29 @@ Requisitos y etapas:
 
 No implementar una versión siguiente (Beta 3+) hasta que esté escrita en los documentos de requisitos.
 
+## Beta 2.0.1
+
+**Beta 2.0.1 está implementada en código** (etapas 1–8; cierre formal pendiente del OK final de Daniel). Extiende Beta 2.0 con Pan pequeño y pulido de catálogo/imágenes/formularios.
+
+Alcance implementado:
+
+1. Categoría «Pan pequeño» (por nombre); precio unitario $300; promo automática 7 / $2000 (sin flag por producto).
+2. Módulo central de precios (`pan_pequeno_pricing`): cantidades enteras, ceil hacia arriba.
+3. En cobro: calculadora por **valor** para Pan pequeño; otras categorías por unidades / búsqueda por precio.
+4. Chips de catálogo (Todos primero; métricas/color del scope); fondo de lista no negro.
+5. Imágenes de producto (`ruta_imagen`, carpeta `imagenes/productos/`); categorías por convención de archivo.
+6. Crear / Editar producto con el mismo lenguaje visual (placeholders/selects).
+
+Requisitos y etapas:
+
+- `docs/product-requirements.md` (sección Beta 2.0.1)
+- `docs/architecture.md`
+- `docs/database.md`
+- `docs/beta-2.0.1/stages.md`
+- `docs/beta-2.0.1/regression-notes.md`
+
+Preservar Beta 2.0. **No** motor genérico de promociones ni features de Beta 2.1+.
+
 ## Fuera del alcance
 
 NO implementar, ni anticipar en una versión que todavía no está especificada:

@@ -8,6 +8,8 @@ Beta 1 estableció las capas. Beta 1.1 las reutiliza cambiando el flujo de regis
 
 **Beta 2.0** reutiliza las mismas capas y añade catálogo de productos, líneas de venta y un contrato nuevo de `POST /ventas`, preservando offline, dinero en enteros y la UX táctil de 1.2.
 
+**Beta 2.0.1** añade precios especiales de Pan pequeño (módulo en `app`), modo valor en cobro para esa categoría, chips de catálogo, imágenes de producto y estilo unificado de formularios — sin cambiar el contrato de `POST /ventas` ni inventar un motor genérico de promociones.
+
 ## Arquitectura general
 
 ```text
@@ -36,7 +38,7 @@ SQLite
 | Desktop | `bakery/desktop` | Pantallas (menú, productos, registrar venta), navegación, diálogos; sin reglas de negocio |
 | Cliente HTTP | `bakery/desktop/client.py` | Medios, productos/categorías, `POST /ventas` con líneas; `GET /health` al arranque |
 | API | `bakery/api` | Rutas delgadas; validación HTTP |
-| Aplicación | `bakery/app` | Calculadora, compra con líneas (`PurchaseLine` / `SaleDraft`), productos, `register_sale`, formato COP |
+| Aplicación | `bakery/app` | Calculadora, compra con líneas (`PurchaseLine` / `SaleDraft`), productos, `pan_pequeno_pricing`, imágenes de producto, `register_sale`, formato COP |
 | Persistencia | `bakery/persistence` | Schema SQLite, repositorios (medios, productos, ventas + líneas) |
 
 ## Flujo desktop (Beta 2.0)
@@ -179,10 +181,21 @@ No hay endpoint de calculadora ni HTTP por tecla. La búsqueda por precio en UI 
 
 Detalle: `docs/beta-2/stages.md` y resumen de cierre en el Context del proyecto.
 
-## Fuera de alcance arquitectónico (Beta 2.0)
+## Beta 2.0.1 (resumen)
+
+- Detección Pan pequeño por **nombre** de categoría.
+- Precios solo en `bakery/app/pan_pequeno_pricing.py` (sin floats).
+- Calculadora: valor + ceil para Pan pequeño; resto como Beta 2.0.
+- `ruta_imagen` nullable; archivos bajo `imagenes/productos/`; categorías por convención de archivo.
+- Chips y formularios: clases QSS dedicadas (`category-chip` / `product-chip` / `product-form-field`).
+
+Detalle: `docs/beta-2.0.1/stages.md`.
+
+## Fuera de alcance arquitectónico (Beta 2.0 / 2.0.1)
 
 - Historial avanzado / edición de ventas.
 - Inventario, recetas, producción, clientes, sync, login, reportes.
+- Motor genérico/configurable de promociones.
 - ORM / framework de migraciones pesado.
 - Mover la calculadora al backend.
 - PostgreSQL funcional.

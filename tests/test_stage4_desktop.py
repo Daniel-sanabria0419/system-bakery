@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 
 from bakery.api.app import create_app
 from bakery.app.money import format_cop
+from bakery.app.pan_pequeno_pricing import is_pan_pequeno, subtotal_for_quantity
 from bakery.desktop import style
 from bakery.desktop.main import create_window
 from bakery.desktop.ui import (
@@ -15,6 +16,7 @@ from bakery.desktop.ui import (
     SelectPaymentMethodDialog,
 )
 from bakery.persistence.connection import connect
+from bakery.persistence.schema import NOMBRE_CATEGORIA_PAN_PEQUENO
 
 _PRODUCT_ID_SEQ = {"n": 1}
 
@@ -36,6 +38,7 @@ class FakeApiClient:
         self.categories = categories or [
             {"id_categoria": 1, "nombre": "Panadería"},
             {"id_categoria": 2, "nombre": "Bebidas"},
+            {"id_categoria": 6, "nombre": NOMBRE_CATEGORIA_PAN_PEQUENO},
         ]
         self.products = products or [
             {
@@ -58,6 +61,22 @@ class FakeApiClient:
                 "id_producto": 3,
                 "nombre": "Pan 2",
                 "precio": 5000,
+                "id_categoria": 1,
+                "descripcion": None,
+                "id_estado": 1,
+            },
+            {
+                "id_producto": 4,
+                "nombre": "Pan rollo",
+                "precio": 300,
+                "id_categoria": 6,
+                "descripcion": None,
+                "id_estado": 1,
+            },
+            {
+                "id_producto": 5,
+                "nombre": "Torta",
+                "precio": 20000,
                 "id_categoria": 1,
                 "descripcion": None,
                 "id_estado": 1,
@@ -102,9 +121,19 @@ class FakeApiClient:
         self, id_medio_pago: int, lineas: List[Mapping[str, Any]]
     ) -> Mapping[str, Any]:
         self.request_count += 1
-        valor_total = sum(
-            int(line["precio_aplicado"]) * int(line["cantidad"]) for line in lineas
-        )
+        cat_by_id = {c["id_categoria"]: c for c in self.categories}
+        prod_by_id = {p["id_producto"]: p for p in self.products}
+        valor_total = 0
+        for line in lineas:
+            product = prod_by_id.get(int(line["id_producto"]))
+            categoria = (
+                cat_by_id.get(product["id_categoria"]) if product is not None else None
+            )
+            cantidad = int(line["cantidad"])
+            if categoria is not None and is_pan_pequeno(categoria):
+                valor_total += subtotal_for_quantity(cantidad)
+            else:
+                valor_total += int(line["precio_aplicado"]) * cantidad
         sale = {
             "id_venta": "11111111-1111-4111-8111-111111111111",
             "valor_total": valor_total,

@@ -150,3 +150,54 @@ QLabel#price_search_caption,
 QLabel#price_search_empty {
     color: #000000;
 }
+
+/* Formularios Crear / Editar producto — mismo lenguaje visual. */
+QDialog#product_form_dialog {
+    background-color: #F5F0E8;
+}
+
+QLineEdit[class="product-form-field"],
+QComboBox[class="product-form-field"] {
+    background-color: #FFFFFF;
+    color: #000000;
+    border: 1px solid #C4B8A8;
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-size: 18px;
+    min-height: 40px;
+    selection-background-color: #64c466;
+    selection-color: #000000;
+}
+
+QLineEdit[class="product-form-field"] {
+    placeholder-text-color: #5C5346;
+}
+
+QComboBox[class="product-form-field"]::drop-down {
+    border: none;
+    width: 28px;
+}
+
+QComboBox[class="product-form-field"] QAbstractItemView {
+    background-color: #FFFFFF;
+    color: #000000;
+    border: 1px solid #C4B8A8;
+    selection-background-color: #64c466;
+    selection-color: #000000;
+    outline: 0;
+}
+
+QLabel[class="product-form-label"] {
+    color: #000000;
+    font-size: 16px;
+    font-weight: normal;
+}
+
+QPushButton[class="product-form-button"] {
+    background-color: #2E7D32;
+    color: #FFFFFF;
+    padding: 10px 16px;
+    font-size: 16px;
+    border: none;
+    border-radius: 4px;
+}

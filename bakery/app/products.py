@@ -1,6 +1,10 @@
 import sqlite3
 from typing import List, Mapping, Optional
 
+from bakery.app.pan_pequeno_pricing import (
+    PRECIO_UNITARIO_PAN_PEQUENO,
+    is_pan_pequeno,
+)
 from bakery.persistence.repositories import (
     get_categoria,
     get_producto,
@@ -33,6 +37,7 @@ def create_product(
     nombre_ok = _normalize_nombre(nombre)
     precio_ok = _require_positive_int(precio, "El precio debe ser un entero mayor que 0.")
     id_categoria_ok = _require_existing_categoria(connection, id_categoria)
+    _require_pan_pequeno_precio(connection, id_categoria_ok, precio_ok)
     descripcion_ok = _normalize_descripcion(descripcion)
 
     id_producto = insert_producto(
@@ -62,6 +67,7 @@ def update_product(
     nombre_ok = _normalize_nombre(nombre)
     precio_ok = _require_positive_int(precio, "El precio debe ser un entero mayor que 0.")
     id_categoria_ok = _require_existing_categoria(connection, id_categoria)
+    _require_pan_pequeno_precio(connection, id_categoria_ok, precio_ok)
     descripcion_ok = _normalize_descripcion(descripcion)
 
     update_producto(
@@ -146,6 +152,19 @@ def _require_existing_categoria(
     if get_categoria(connection, id_categoria) is None:
         raise ProductValidationError("Debe seleccionar una categoría válida.")
     return id_categoria
+
+
+def _require_pan_pequeno_precio(
+    connection: sqlite3.Connection, id_categoria: int, precio: int
+) -> None:
+    categoria = get_categoria(connection, id_categoria)
+    if categoria is None:
+        return
+    if is_pan_pequeno(categoria) and precio != PRECIO_UNITARIO_PAN_PEQUENO:
+        raise ProductValidationError(
+            "Los productos de Pan pequeño deben tener precio "
+            f"{PRECIO_UNITARIO_PAN_PEQUENO}."
+        )
 
 
 def _require_positive_int(value: object, message: str) -> int:

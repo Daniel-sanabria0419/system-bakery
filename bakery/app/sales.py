@@ -3,7 +3,13 @@ import uuid
 from datetime import datetime
 from typing import List, Mapping, Sequence
 
+from bakery.app.pan_pequeno_pricing import (
+    PRECIO_UNITARIO_PAN_PEQUENO,
+    is_pan_pequeno,
+    subtotal_for_quantity,
+)
 from bakery.persistence.repositories import (
+    get_categoria,
     get_producto,
     insert_sale,
     insert_venta_linea,
@@ -101,6 +107,22 @@ def _resolve_line(connection: sqlite3.Connection, raw: Mapping) -> Mapping:
         raise SaleValidationError(
             "El precio aplicado no coincide con el precio actual del producto."
         )
+
+    categoria = get_categoria(connection, product["id_categoria"])
+    if categoria is not None and is_pan_pequeno(categoria):
+        if product["precio"] != PRECIO_UNITARIO_PAN_PEQUENO:
+            raise SaleValidationError(
+                "El precio de lista de Pan pequeño debe ser "
+                f"{PRECIO_UNITARIO_PAN_PEQUENO}."
+            )
+        subtotal = subtotal_for_quantity(cantidad)
+        return {
+            "id_producto": product["id_producto"],
+            "nombre_producto": product["nombre"],
+            "precio_aplicado": product["precio"],
+            "cantidad": cantidad,
+            "subtotal": subtotal,
+        }
 
     subtotal = product["precio"] * cantidad
     return {

@@ -12,6 +12,36 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Beta 1.1 | Completada | Mejorar el flujo de registro con lista de compra en memoria y UX de calculadora |
 | Beta 1.2 | Completada | Ajustes estéticos / UX táctil; sin lógica de negocio nueva |
 | Beta 2.0 | Implementada (código); cierre documental Etapa 10 | Productos (CRUD), categorías, venta con líneas y búsqueda por precio |
+| Beta 2.0.1 | Implementada (código); pendiente OK final de cierre | Pan pequeño (promo), cobro por valor, chips, imágenes, formularios |
+
+---
+
+# Beta 2.0.1 (implementada; cierre pendiente OK final)
+
+## Objetivo
+
+Añadir la categoría **Pan pequeño** con promoción fija (7 panes / $2000), calculadora por valor en cobro para esa categoría, y mejoras de UI de catálogo, imágenes y formularios Crear/Editar — sin motor genérico de promociones ni features de 2.1+.
+
+Detalle de etapas: `docs/beta-2.0.1/stages.md`. Regresión: `docs/beta-2.0.1/regression-notes.md`.
+
+## Pan pequeño
+
+- Categoría garantizada por **nombre** (no por id fijo).
+- Precio unitario de lista: **$300**. Promo automática: cada grupo de **7** cuesta **$2000**.
+- Cantidades siempre enteras; valores inválidos redondean **hacia arriba** (ceil); el usuario ve el resultado antes de Agregar.
+- `+/-` recalcula cantidad y subtotal (promo incluida).
+- Otras categorías: por unidades; sin promo Pan pequeño.
+- En `venta_lineas`, `precio_aplicado` = unitario de lista; el subtotal puede reflejar la promo.
+
+## UI catálogo / imágenes / formularios
+
+- Botón **Todos** primero; chips categoría 93×70 y producto 87×60, color `#64c466`.
+- Estructura `imagenes/categorias` y `imagenes/productos`; asociar imagen al crear/editar producto; sin archivo no rompe la UI.
+- Crear y Editar producto: mismo estilo; placeholders más oscuros que el fondo; texto negro; select alineado a inputs.
+
+## Fuera del alcance de Beta 2.0.1
+
+Igual que Beta 2.0, más: sistema configurable de promociones, flag `tiene_promocion` por producto, Beta 2.1+.
 
 ---
 

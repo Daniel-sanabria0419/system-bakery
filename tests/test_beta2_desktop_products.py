@@ -5,7 +5,12 @@ from PySide6.QtWidgets import QApplication, QDialog
 
 from bakery.desktop.main import create_window
 from bakery.desktop.ui import ProductFormDialog
-from bakery.persistence.schema import ESTADO_ACTIVO, ESTADO_INACTIVO, SEED_CATEGORIAS
+from bakery.persistence.schema import (
+    ESTADO_ACTIVO,
+    ESTADO_INACTIVO,
+    NOMBRE_CATEGORIA_PAN_PEQUENO,
+    SEED_CATEGORIAS,
+)
 
 
 class FakeProductsApiClient:
@@ -14,9 +19,10 @@ class FakeProductsApiClient:
         self.methods = [
             {"id_medio_pago": 1, "nombre": "Efectivo", "id_estado": 1},
         ]
+        category_names = list(SEED_CATEGORIAS) + [NOMBRE_CATEGORIA_PAN_PEQUENO]
         self.categories = [
             {"id_categoria": index + 1, "nombre": name}
-            for index, name in enumerate(SEED_CATEGORIAS)
+            for index, name in enumerate(category_names)
         ]
         self.products: List[Mapping[str, Any]] = []
         self._next_id = 1

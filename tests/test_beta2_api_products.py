@@ -5,7 +5,12 @@ from fastapi.testclient import TestClient
 
 from bakery.api.app import create_app
 from bakery.desktop.client import ApiClient
-from bakery.persistence.schema import ESTADO_ACTIVO, ESTADO_INACTIVO, SEED_CATEGORIAS
+from bakery.persistence.schema import (
+    ESTADO_ACTIVO,
+    ESTADO_INACTIVO,
+    NOMBRE_CATEGORIA_PAN_PEQUENO,
+    SEED_CATEGORIAS,
+)
 
 
 def _client(tmp_path: Path) -> TestClient:
@@ -57,7 +62,9 @@ def test_list_categories(tmp_path: Path) -> None:
     with _client(tmp_path) as client:
         response = client.get("/categorias")
         assert response.status_code == 200
-        assert [item["nombre"] for item in response.json()] == list(SEED_CATEGORIAS)
+        assert [item["nombre"] for item in response.json()] == list(SEED_CATEGORIAS) + [
+            NOMBRE_CATEGORIA_PAN_PEQUENO
+        ]
 
 
 def test_create_edit_deactivate_and_listings(tmp_path: Path) -> None:
@@ -161,7 +168,9 @@ def test_api_client_product_methods(tmp_path: Path) -> None:
         )
         try:
             categories = api.list_categories()
-            assert [c["nombre"] for c in categories] == list(SEED_CATEGORIAS)
+            assert [c["nombre"] for c in categories] == list(SEED_CATEGORIAS) + [
+                NOMBRE_CATEGORIA_PAN_PEQUENO
+            ]
 
             product = api.create_product(
                 nombre="Galleta",

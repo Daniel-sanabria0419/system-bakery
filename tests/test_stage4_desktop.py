@@ -80,6 +80,10 @@ class FakeApiClient:
         self.request_count += 1
         return list(self.categories)
 
+    def list_products(self) -> List[Mapping[str, Any]]:
+        self.request_count += 1
+        return [dict(p) for p in self.products]
+
     def list_active_products(
         self,
         *,

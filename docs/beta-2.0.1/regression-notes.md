@@ -8,7 +8,7 @@ Comando:
 QT_QPA_PLATFORM=offscreen python3 -m pytest
 ```
 
-Al cierre de Etapa 8: **suite completa en verde** (incl. smoke Beta 2 y Beta 2.0.1).
+Al cierre de Etapa 8: **178 passed** (incl. smoke Beta 2 y Beta 2.0.1).
 
 ## Adaptaciones / comportamientos intencionales
 

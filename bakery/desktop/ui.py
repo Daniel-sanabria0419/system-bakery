@@ -888,15 +888,18 @@ class ProductFormDialog(QDialog):
         self._nombre = QLineEdit()
         self._nombre.setObjectName("product_nombre_input")
         self._nombre.setPlaceholderText("Nombre")
+        style.apply_class(self._nombre, style.PRODUCT_FORM_FIELD_CLASS)
         layout.addWidget(self._nombre)
 
         self._precio = QLineEdit()
         self._precio.setObjectName("product_precio_input")
         self._precio.setPlaceholderText("Precio (entero)")
+        style.apply_class(self._precio, style.PRODUCT_FORM_FIELD_CLASS)
         layout.addWidget(self._precio)
 
         self._categoria = QComboBox()
         self._categoria.setObjectName("product_categoria_combo")
+        style.apply_class(self._categoria, style.PRODUCT_FORM_FIELD_CLASS)
         for category in categories:
             self._categoria.addItem(category["nombre"], category["id_categoria"])
         layout.addWidget(self._categoria)
@@ -904,23 +907,24 @@ class ProductFormDialog(QDialog):
         self._descripcion = QLineEdit()
         self._descripcion.setObjectName("product_descripcion_input")
         self._descripcion.setPlaceholderText("Descripción (opcional)")
+        style.apply_class(self._descripcion, style.PRODUCT_FORM_FIELD_CLASS)
         layout.addWidget(self._descripcion)
 
         image_row = QHBoxLayout()
         self._image_status = QLabel("")
         self._image_status.setObjectName("product_image_status")
-        style.apply_class(self._image_status, "dialog-text")
+        style.apply_class(self._image_status, style.PRODUCT_FORM_LABEL_CLASS)
         image_row.addWidget(self._image_status, stretch=1)
         pick_image = QPushButton("Elegir imagen")
         pick_image.setObjectName("product_image_button")
-        style.apply_class(pick_image, "payment-method-button")
+        style.apply_class(pick_image, "product-form-button")
         pick_image.clicked.connect(self._on_pick_image)
         image_row.addWidget(pick_image)
         layout.addLayout(image_row)
 
         self._estado_label = QLabel("")
         self._estado_label.setObjectName("product_estado_label")
-        style.apply_class(self._estado_label, "dialog-text")
+        style.apply_class(self._estado_label, style.PRODUCT_FORM_LABEL_CLASS)
         layout.addWidget(self._estado_label)
 
         if product is not None:

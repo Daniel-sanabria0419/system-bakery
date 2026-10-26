@@ -107,6 +107,25 @@ def get_categoria(
     return dict(row) if row else None
 
 
+def get_categoria_by_nombre(
+    connection: sqlite3.Connection, nombre: str
+) -> Optional[Mapping]:
+    row = connection.execute(
+        """
+        SELECT id_categoria, nombre
+        FROM categorias
+        WHERE nombre = ?
+        """,
+        (nombre,),
+    ).fetchone()
+    return dict(row) if row else None
+
+
+_PRODUCTO_COLUMNS = (
+    "id_producto, nombre, precio, id_categoria, descripcion, id_estado, ruta_imagen"
+)
+
+
 def insert_producto(
     connection: sqlite3.Connection,
     *,
@@ -115,14 +134,15 @@ def insert_producto(
     id_categoria: int,
     descripcion: Optional[str],
     id_estado: int,
+    ruta_imagen: Optional[str] = None,
 ) -> int:
     cursor = connection.execute(
         """
         INSERT INTO productos (
-            nombre, precio, id_categoria, descripcion, id_estado
-        ) VALUES (?, ?, ?, ?, ?)
+            nombre, precio, id_categoria, descripcion, id_estado, ruta_imagen
+        ) VALUES (?, ?, ?, ?, ?, ?)
         """,
-        (nombre, precio, id_categoria, descripcion, id_estado),
+        (nombre, precio, id_categoria, descripcion, id_estado, ruta_imagen),
     )
     return int(cursor.lastrowid)
 
@@ -146,6 +166,21 @@ def update_producto(
     )
 
 
+def set_producto_ruta_imagen(
+    connection: sqlite3.Connection,
+    id_producto: int,
+    ruta_imagen: Optional[str],
+) -> None:
+    connection.execute(
+        """
+        UPDATE productos
+        SET ruta_imagen = ?
+        WHERE id_producto = ?
+        """,
+        (ruta_imagen, id_producto),
+    )
+
+
 def set_producto_estado(
     connection: sqlite3.Connection, id_producto: int, id_estado: int
 ) -> None:
@@ -163,8 +198,8 @@ def get_producto(
     connection: sqlite3.Connection, id_producto: int
 ) -> Optional[Mapping]:
     row = connection.execute(
-        """
-        SELECT id_producto, nombre, precio, id_categoria, descripcion, id_estado
+        f"""
+        SELECT {_PRODUCTO_COLUMNS}
         FROM productos
         WHERE id_producto = ?
         """,
@@ -175,8 +210,8 @@ def get_producto(
 
 def list_productos(connection: sqlite3.Connection) -> List[Mapping]:
     rows = connection.execute(
-        """
-        SELECT id_producto, nombre, precio, id_categoria, descripcion, id_estado
+        f"""
+        SELECT {_PRODUCTO_COLUMNS}
         FROM productos
         ORDER BY id_producto
         """
@@ -190,8 +225,8 @@ def list_active_productos(
     id_categoria: Optional[int] = None,
     precio: Optional[int] = None,
 ) -> List[Mapping]:
-    query = """
-        SELECT id_producto, nombre, precio, id_categoria, descripcion, id_estado
+    query = f"""
+        SELECT {_PRODUCTO_COLUMNS}
         FROM productos
         WHERE id_estado = ?
     """

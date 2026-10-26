@@ -22,7 +22,12 @@ from bakery.persistence.repositories import (
     list_active_productos,
     list_categorias,
 )
-from bakery.persistence.schema import ESTADO_ACTIVO, ESTADO_INACTIVO, SEED_CATEGORIAS
+from bakery.persistence.schema import (
+    ESTADO_ACTIVO,
+    ESTADO_INACTIVO,
+    NOMBRE_CATEGORIA_PAN_PEQUENO,
+    SEED_CATEGORIAS,
+)
 
 
 def _db(tmp_path: Path) -> Path:
@@ -35,7 +40,9 @@ def test_list_categorias_returns_seed(tmp_path: Path) -> None:
     connection = connect(_db(tmp_path))
     try:
         categories = list_categorias(connection)
-        assert [c["nombre"] for c in categories] == list(SEED_CATEGORIAS)
+        assert [c["nombre"] for c in categories] == list(SEED_CATEGORIAS) + [
+            NOMBRE_CATEGORIA_PAN_PEQUENO
+        ]
         assert list_categories(connection) == categories
     finally:
         connection.close()

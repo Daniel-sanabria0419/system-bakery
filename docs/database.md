@@ -8,15 +8,14 @@ SQLite
 
 La base de datos es local y debe funcionar sin Internet.
 
-## Esquema vigente (Beta 2.0)
+## Esquema vigente (Beta 2.0 + Beta 2.0.1 Etapa 1)
 
 Las tablas de catálogo y líneas (`categorias`, `productos`, `venta_lineas`) se introdujeron en **Beta 2.0 Etapa 1**.
 
 - **Ventas nuevas (Beta 2):** siempre persisten `ventas.valor_total` **y** una o más filas en `venta_lineas` (snapshot de nombre/precio).
 - **Legado Beta 1.x:** filas de `ventas` solo con `valor_total` **permanecen** sin `venta_lineas`. No se inventan líneas sintéticas.
 - Durante el cobro, la lista de compra sigue viviendo solo en memoria hasta confirmar.
-
-Beta 1.1 y 1.2 no cambiaron el esquema; este documento describe el esquema **actual** tras Beta 2.
+- **Beta 2.0.1 Etapa 1:** categoría «Pan pequeño» garantizada por nombre; columna nullable `productos.ruta_imagen`; carpetas `imagenes/categorias` y `imagenes/productos`.
 
 ## Tabla: medios_pago
 
@@ -43,7 +42,7 @@ Campos:
 | caja | Identificador de caja |
 | tendero | Identificador del tendero |
 
-## Tabla: categorias (Beta 2.0)
+## Tabla: categorias (Beta 2.0 / 2.0.1)
 
 Campos:
 
@@ -52,11 +51,15 @@ Campos:
 | id_categoria | Identificador único de la categoría |
 | nombre | Nombre de la categoría |
 
-Semilla inicial (idempotente si la tabla está vacía): Panadería, Pastelería, Bebidas, Snacks, Otros.
+Semilla inicial si la tabla está vacía: Panadería, Pastelería, Bebidas, Snacks, Otros.
 
-No hay CRUD de categorías en Beta 2.0; solo listado y asociación desde productos / ventas.
+Además, al inicializar se ejecuta un **ensure por nombre** de la categoría **Pan pequeño** (`NOMBRE_CATEGORIA_PAN_PEQUENO`). Si ya existe (mismo nombre exacto), no se duplica. Si la base ya tenía las cinco categorías de Beta 2.0, se **añade** Pan pequeño sin borrar las anteriores.
 
-## Tabla: productos (Beta 2.0)
+La lógica especial de Pan pequeño (versiones posteriores de 2.0.1) debe resolver la categoría por **nombre**, no por `id_categoria` fijo.
+
+No hay CRUD de categorías en Beta 2.0 / 2.0.1 Etapa 1; solo listado y asociación desde productos / ventas.
+
+## Tabla: productos (Beta 2.0 / 2.0.1)
 
 Campos:
 
@@ -68,8 +71,11 @@ Campos:
 | id_categoria | Categoría del producto |
 | descripcion | Descripción opcional (puede ser NULL) |
 | id_estado | Estado activo / inactivo (mismo criterio que medios: activo = 1) |
+| ruta_imagen | Ruta relativa opcional al archivo de imagen (nullable; p. ej. `imagenes/productos/...`) |
 
 Un producto desactivado se conserva (soft-delete). No se elimina físicamente un producto referenciado en `venta_lineas`.
+
+Las imágenes de producto viven bajo `imagenes/productos/`. Las de categoría (convención por archivo, sin columna obligatoria) bajo `imagenes/categorias/`.
 
 ## Tabla: venta_lineas (Beta 2.0)
 
@@ -83,7 +89,7 @@ Campos:
 | nombre_producto | Snapshot del nombre al momento de la venta |
 | precio_aplicado | Snapshot del precio aplicado (entero > 0) |
 | cantidad | Cantidad vendida (entero > 0) |
-| subtotal | Subtotal de la línea (entero > 0; precio × cantidad) |
+| subtotal | Subtotal de la línea (entero > 0; precio × cantidad en Beta 2.0) |
 
 Las ventas antiguas (solo `valor_total`, sin detalle de productos) **permanecen sin filas** en `venta_lineas`. No se inventan líneas sintéticas.
 
@@ -133,7 +139,8 @@ Un producto debe:
 
 - tener precio entero mayor que 0;
 - tener una categoría válida;
-- tener estado activo o inactivo.
+- tener estado activo o inactivo;
+- poder tener `ruta_imagen` NULL.
 
 Una línea de venta (cuando exista) debe:
 
@@ -155,7 +162,17 @@ La base de datos debe impedir, cuando sea apropiado:
 
 ## Migración
 
-Al llamar `initialize`, se ejecuta `CREATE TABLE IF NOT EXISTS` para todas las tablas (incluidas las nuevas). Es idempotente:
+Al llamar `initialize`, se ejecuta:
 
-- en una base nueva: crea el esquema completo y siembra medios y categorías;
-- en una base que solo tenía `medios_pago` / `ventas`: agrega las tablas faltantes sin alterar filas existentes de ventas.
+1. `CREATE TABLE IF NOT EXISTS` para todas las tablas;
+2. migración idempotente `ALTER TABLE productos ADD COLUMN ruta_imagen TEXT` si la columna falta (bases Beta 2.0 ya creadas);
+3. semilla de medios (si la tabla está vacía);
+4. semilla de categorías Beta 2.0 (si la tabla está vacía);
+5. ensure de «Pan pequeño» por nombre;
+6. creación idempotente de `imagenes/categorias` y `imagenes/productos` en la raíz del proyecto.
+
+Es idempotente:
+
+- en una base nueva: esquema completo, semillas y Pan pequeño;
+- en una base con las cinco categorías de Beta 2.0: se añade Pan pequeño y `ruta_imagen` sin alterar filas de ventas;
+- en una base solo-`medios_pago` / `ventas`: agrega tablas faltantes sin alterar ventas existentes.

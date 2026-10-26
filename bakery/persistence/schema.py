@@ -1,4 +1,6 @@
 import sqlite3
+from pathlib import Path
+from typing import Optional
 
 ESTADO_ACTIVO = 1
 ESTADO_INACTIVO = 0
@@ -11,6 +13,7 @@ SEED_MEDIOS_PAGO = (
     "Fiado",
 )
 
+# Semilla histórica Beta 2.0 (tabla vacía). «Pan pequeño» se garantiza aparte con ensure.
 SEED_CATEGORIAS = (
     "Panadería",
     "Pastelería",
@@ -18,6 +21,8 @@ SEED_CATEGORIAS = (
     "Snacks",
     "Otros",
 )
+
+NOMBRE_CATEGORIA_PAN_PEQUENO = "Pan pequeño"
 
 _CREATE_MEDIOS_PAGO = """
 CREATE TABLE IF NOT EXISTS medios_pago (
@@ -52,7 +57,8 @@ CREATE TABLE IF NOT EXISTS productos (
     precio INTEGER NOT NULL CHECK (precio > 0),
     id_categoria INTEGER NOT NULL REFERENCES categorias(id_categoria),
     descripcion TEXT,
-    id_estado INTEGER NOT NULL
+    id_estado INTEGER NOT NULL,
+    ruta_imagen TEXT
 )
 """
 
@@ -95,3 +101,54 @@ def seed_categorias(connection: sqlite3.Connection) -> None:
         "INSERT INTO categorias (nombre) VALUES (?)",
         [(nombre,) for nombre in SEED_CATEGORIAS],
     )
+
+
+def ensure_categoria(
+    connection: sqlite3.Connection, nombre: str
+) -> int:
+    """Inserta la categoría por nombre exacto si falta. No borra existentes."""
+    row = connection.execute(
+        "SELECT id_categoria FROM categorias WHERE nombre = ?",
+        (nombre,),
+    ).fetchone()
+    if row is not None:
+        return int(row[0])
+    cursor = connection.execute(
+        "INSERT INTO categorias (nombre) VALUES (?)",
+        (nombre,),
+    )
+    return int(cursor.lastrowid)
+
+
+def ensure_categoria_pan_pequeno(connection: sqlite3.Connection) -> int:
+    return ensure_categoria(connection, NOMBRE_CATEGORIA_PAN_PEQUENO)
+
+
+def _productos_has_column(connection: sqlite3.Connection, column: str) -> bool:
+    rows = connection.execute("PRAGMA table_info(productos)").fetchall()
+    names = {row[1] for row in rows}
+    return column in names
+
+
+def migrate_productos_ruta_imagen(connection: sqlite3.Connection) -> None:
+    """Añade productos.ruta_imagen si la tabla existe sin esa columna."""
+    tables = {
+        row[0]
+        for row in connection.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table'"
+        ).fetchall()
+    }
+    if "productos" not in tables:
+        return
+    if _productos_has_column(connection, "ruta_imagen"):
+        return
+    connection.execute("ALTER TABLE productos ADD COLUMN ruta_imagen TEXT")
+
+
+def ensure_imagenes_dirs(project_root: Optional[Path] = None) -> None:
+    """Crea imagenes/categorias y imagenes/productos si faltan (idempotente)."""
+    root = project_root
+    if root is None:
+        root = Path(__file__).resolve().parents[2]
+    for relative in ("imagenes/categorias", "imagenes/productos"):
+        (root / relative).mkdir(parents=True, exist_ok=True)

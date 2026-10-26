@@ -5,12 +5,25 @@ import pytest
 
 from bakery.persistence import initialize
 from bakery.persistence.connection import connect
-from bakery.persistence.repositories import insert_sale, list_active_payment_methods
+from bakery.persistence.repositories import (
+    get_categoria_by_nombre,
+    get_producto,
+    insert_producto,
+    insert_sale,
+    list_active_payment_methods,
+    list_categorias,
+    set_producto_ruta_imagen,
+)
 from bakery.persistence.schema import (
     ESTADO_ACTIVO,
+    NOMBRE_CATEGORIA_PAN_PEQUENO,
     SEED_CATEGORIAS,
     SEED_MEDIOS_PAGO,
 )
+
+
+def _expected_category_names() -> list:
+    return list(SEED_CATEGORIAS) + [NOMBRE_CATEGORIA_PAN_PEQUENO]
 
 
 def _db(tmp_path: Path) -> Path:
@@ -109,7 +122,12 @@ def test_new_db_creates_catalog_and_line_tables(tmp_path: Path) -> None:
                 "SELECT nombre FROM categorias ORDER BY id_categoria"
             ).fetchall()
         ]
-        assert names == list(SEED_CATEGORIAS)
+        assert names == _expected_category_names()
+        columns = {
+            row[1]
+            for row in connection.execute("PRAGMA table_info(productos)").fetchall()
+        }
+        assert "ruta_imagen" in columns
     finally:
         connection.close()
 
@@ -120,7 +138,9 @@ def test_seed_categorias_is_idempotent(tmp_path: Path) -> None:
     connection = connect(path)
     try:
         count = connection.execute("SELECT COUNT(*) FROM categorias").fetchone()[0]
-        assert count == len(SEED_CATEGORIAS)
+        assert count == len(_expected_category_names())
+        names = [c["nombre"] for c in list_categorias(connection)]
+        assert names.count(NOMBRE_CATEGORIA_PAN_PEQUENO) == 1
     finally:
         connection.close()
 
@@ -147,9 +167,196 @@ def test_migrate_legacy_db_keeps_old_ventas(tmp_path: Path) -> None:
         category_count = connection.execute(
             "SELECT COUNT(*) FROM categorias"
         ).fetchone()[0]
-        assert category_count == len(SEED_CATEGORIAS)
+        assert category_count == len(_expected_category_names())
+        assert get_categoria_by_nombre(connection, NOMBRE_CATEGORIA_PAN_PEQUENO) is not None
     finally:
         connection.close()
+
+
+def _beta2_five_categories_db(tmp_path: Path) -> Path:
+    """DB like Beta 2.0 after seed: five categories, productos without ruta_imagen."""
+    path = tmp_path / "beta2.sqlite3"
+    connection = sqlite3.connect(path)
+    try:
+        connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute(
+            """
+            CREATE TABLE medios_pago (
+                id_medio_pago INTEGER PRIMARY KEY,
+                nombre TEXT NOT NULL,
+                id_estado INTEGER NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE ventas (
+                id_venta TEXT PRIMARY KEY,
+                valor_total INTEGER NOT NULL CHECK (valor_total > 0),
+                fecha_venta TEXT NOT NULL,
+                id_medio_pago INTEGER NOT NULL REFERENCES medios_pago(id_medio_pago),
+                caja INTEGER NOT NULL DEFAULT 1,
+                tendero INTEGER NOT NULL DEFAULT 1
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE categorias (
+                id_categoria INTEGER PRIMARY KEY,
+                nombre TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE productos (
+                id_producto INTEGER PRIMARY KEY,
+                nombre TEXT NOT NULL,
+                precio INTEGER NOT NULL CHECK (precio > 0),
+                id_categoria INTEGER NOT NULL REFERENCES categorias(id_categoria),
+                descripcion TEXT,
+                id_estado INTEGER NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE venta_lineas (
+                id_linea INTEGER PRIMARY KEY,
+                id_venta TEXT NOT NULL REFERENCES ventas(id_venta),
+                id_producto INTEGER NOT NULL REFERENCES productos(id_producto),
+                nombre_producto TEXT NOT NULL,
+                precio_aplicado INTEGER NOT NULL CHECK (precio_aplicado > 0),
+                cantidad INTEGER NOT NULL CHECK (cantidad > 0),
+                subtotal INTEGER NOT NULL CHECK (subtotal > 0)
+            )
+            """
+        )
+        connection.execute(
+            "INSERT INTO medios_pago (nombre, id_estado) VALUES (?, ?)",
+            ("Efectivo", ESTADO_ACTIVO),
+        )
+        for nombre in SEED_CATEGORIAS:
+            connection.execute(
+                "INSERT INTO categorias (nombre) VALUES (?)",
+                (nombre,),
+            )
+        connection.execute(
+            """
+            INSERT INTO productos (nombre, precio, id_categoria, descripcion, id_estado)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            ("Torta", 20000, 2, None, ESTADO_ACTIVO),
+        )
+        connection.execute(
+            """
+            INSERT INTO ventas (
+                id_venta, valor_total, fecha_venta, id_medio_pago, caja, tendero
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+                20000,
+                "2026-10-24T12:00:00",
+                1,
+                1,
+                1,
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO venta_lineas (
+                id_venta, id_producto, nombre_producto,
+                precio_aplicado, cantidad, subtotal
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+                1,
+                "Torta",
+                20000,
+                1,
+                20000,
+            ),
+        )
+        connection.commit()
+    finally:
+        connection.close()
+    return path
+
+
+def test_ensure_pan_pequeno_on_existing_five_categories(tmp_path: Path) -> None:
+    path = _beta2_five_categories_db(tmp_path)
+    initialize(path)
+    connection = connect(path)
+    try:
+        names = [c["nombre"] for c in list_categorias(connection)]
+        assert names[:5] == list(SEED_CATEGORIAS)
+        assert NOMBRE_CATEGORIA_PAN_PEQUENO in names
+        assert names.count(NOMBRE_CATEGORIA_PAN_PEQUENO) == 1
+        pan = get_categoria_by_nombre(connection, NOMBRE_CATEGORIA_PAN_PEQUENO)
+        assert pan is not None
+        assert pan["nombre"] == NOMBRE_CATEGORIA_PAN_PEQUENO
+        sale = connection.execute(
+            "SELECT id_venta, valor_total FROM ventas WHERE id_venta = ?",
+            ("cccccccc-cccc-4ccc-8ccc-cccccccccccc",),
+        ).fetchone()
+        assert sale["valor_total"] == 20000
+        line = connection.execute(
+            "SELECT nombre_producto, subtotal FROM venta_lineas WHERE id_venta = ?",
+            ("cccccccc-cccc-4ccc-8ccc-cccccccccccc",),
+        ).fetchone()
+        assert line["nombre_producto"] == "Torta"
+        assert line["subtotal"] == 20000
+        columns = {
+            row[1]
+            for row in connection.execute("PRAGMA table_info(productos)").fetchall()
+        }
+        assert "ruta_imagen" in columns
+        product = get_producto(connection, 1)
+        assert product is not None
+        assert product["ruta_imagen"] is None
+    finally:
+        connection.close()
+
+
+def test_ruta_imagen_nullable_and_writable(tmp_path: Path) -> None:
+    connection = connect(_db(tmp_path))
+    try:
+        id_producto = insert_producto(
+            connection,
+            nombre="Pan rollo",
+            precio=300,
+            id_categoria=1,
+            descripcion=None,
+            id_estado=ESTADO_ACTIVO,
+        )
+        connection.commit()
+        product = get_producto(connection, id_producto)
+        assert product is not None
+        assert product["ruta_imagen"] is None
+        set_producto_ruta_imagen(
+            connection, id_producto, "imagenes/productos/pan_rollo.png"
+        )
+        connection.commit()
+        updated = get_producto(connection, id_producto)
+        assert updated is not None
+        assert updated["ruta_imagen"] == "imagenes/productos/pan_rollo.png"
+        set_producto_ruta_imagen(connection, id_producto, None)
+        connection.commit()
+        cleared = get_producto(connection, id_producto)
+        assert cleared is not None
+        assert cleared["ruta_imagen"] is None
+    finally:
+        connection.close()
+
+
+def test_imagenes_dirs_exist_after_initialize(tmp_path: Path) -> None:
+    initialize(tmp_path / "bakery.sqlite3")
+    root = Path(__file__).resolve().parents[1]
+    assert (root / "imagenes" / "categorias").is_dir()
+    assert (root / "imagenes" / "productos").is_dir()
 
 
 def test_producto_requires_positive_price_and_category(tmp_path: Path) -> None:

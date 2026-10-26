@@ -2,20 +2,20 @@
 
 ## Estado
 
-La sincronización con la base de datos en la nube está FUERA DEL ALCANCE.
+La sincronización con la base de datos en la nube está **FUERA DEL ALCANCE**.
 
-## Beta 1, Beta 1.1 y Beta 1.2
+Esto incluye Beta 1, Beta 1.1, Beta 1.2 y **Beta 2.0**.
 
-Las ventas se almacenan únicamente en SQLite local.
+## Comportamiento actual
 
-**Beta 1.1 y Beta 1.2 no introducen ni modifican ningún comportamiento de sincronización.**
+Las ventas (y el catálogo de productos) se almacenan únicamente en SQLite local.
 
-Los cambios de Beta 1.1 (lista de compra en memoria, calculadora local, navegación, popup de éxito) y de Beta 1.2 (UX táctil / estética en desktop) afectan solo al flujo de registro en desktop. El `POST /ventas` sigue persistiendo un único `valor_total` en SQLite.
+**Beta 2.0 no introduce ni modifica ningún comportamiento de sincronización.** Añade tablas locales (`categorias`, `productos`, `venta_lineas`) y cambia el contrato local de `POST /ventas`; todo sigue offline.
 
 No se debe implementar:
 
 - conexión con PostgreSQL;
-- subida automática de ventas;
+- subida automática de ventas o productos;
 - sincronización manual;
 - cola de sincronización;
 - resolución de conflictos;
@@ -25,7 +25,7 @@ No se debe implementar:
 
 ## Objetivo futuro
 
-En una versión posterior se implementará un mecanismo para sincronizar las ventas locales con una base de datos PostgreSQL ubicada en la nube.
+En una versión posterior se implementará un mecanismo para sincronizar los datos locales con una base de datos PostgreSQL ubicada en la nube.
 
 La sincronización deberá diseñarse teniendo en cuenta:
 
@@ -34,10 +34,10 @@ La sincronización deberá diseñarse teniendo en cuenta:
 - posibilidad de múltiples dispositivos;
 - prevención de duplicados;
 - reintentos;
-- integridad de los datos.
+- integridad de los datos (incluidas líneas con snapshot).
 
 Estas decisiones se definirán cuando se diseñe esa versión.
 
 ## Regla
 
-El agente NO debe implementar ninguna parte del sistema de sincronización durante Beta 1 ni Beta 1.1.
+El agente NO debe implementar ninguna parte del sistema de sincronización durante las betas documentadas, incluida Beta 2.0.

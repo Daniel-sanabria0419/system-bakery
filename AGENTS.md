@@ -4,9 +4,9 @@
 
 Este proyecto es una aplicación de escritorio para una panadería.
 
-La primera versión del proyecto es una Beta cuyo único objetivo funcional es registrar ventas.
+La primera versión del proyecto es una Beta cuyo objetivo funcional inicial fue registrar ventas. Con **Beta 2.0** el registro pasa a basarse en **productos** (catálogo + líneas de venta), manteniendo el flujo offline local.
 
-El objetivo de esta Beta es validar la arquitectura, la experiencia de usuario y el flujo básico de registro de ventas antes de agregar funcionalidades adicionales.
+El objetivo de las betas es validar arquitectura, experiencia de usuario y el flujo de registro de ventas antes de agregar funcionalidades adicionales no especificadas.
 
 ## Alcance de Beta 1
 
@@ -36,7 +36,7 @@ Preservar lo que ya funciona de Beta 1 y de Beta 1.1.
 
 ## Beta 1.2
 
-**Beta 1.2 está terminada.** Solo cambios estéticos / UX táctil sobre 1.1. Sin lógica de negocio nueva; mismos contratos API y SQLite. Etapas 0–5 hechas; la etapa 5 cerró la regresión (67 pruebas en verde).
+**Beta 1.2 está terminada.** Solo cambios estéticos / UX táctil sobre 1.1. Sin lógica de negocio nueva en su momento; mismos contratos API y SQLite de entonces. Etapas 0–5 hechas; la etapa 5 cerró la regresión (67 pruebas en verde).
 
 Alcance implementado:
 
@@ -53,32 +53,54 @@ Requisitos y etapas:
 - `docs/beta-1.2/stages.md`
 - `docs/beta-1.2/visual-guide.md`
 
-Preservar lo que ya funciona de Beta 1, 1.1 y 1.2.
+Preservar lo que ya funciona de Beta 1, 1.1 y 1.2 (salvo lo que Beta 2 cambia a propósito).
 
-Beta 2 no tiene requisitos: Daniel todavía no los ha planteado. No implementar una versión siguiente hasta que esté escrita en los documentos.
+## Beta 2.0
+
+**Beta 2.0 está implementada en código** (etapas 1–9; documentación de cierre = etapa 10). Introduce productos y ventas con líneas.
+
+Alcance implementado:
+
+1. Catálogo: categorías (semilla, sin CRUD UI) y productos (CRUD + activar/desactivar).
+2. Menú: botón «Productos» además de «Registrar venta».
+3. Venta: selección por categoría, cantidad, calculadora como búsqueda por precio exacto.
+4. No se agrega línea sin producto seleccionado (rechazo visible).
+5. `POST /ventas` con `id_medio_pago` + `lineas`; total calculado en backend.
+6. Snapshot histórico en `venta_lineas` (`nombre_producto`, `precio_aplicado`).
+7. Soft-delete de productos; desactivados fuera de ventas nuevas.
+8. Ventas antiguas solo-`valor_total` se conservan sin líneas (legado value-only).
+
+Requisitos y etapas:
+
+- `docs/product-requirements.md` (sección Beta 2.0)
+- `docs/architecture.md`
+- `docs/database.md`
+- `docs/beta-2/stages.md`
+- `docs/beta-2/regression-notes.md`
+
+No implementar una versión siguiente (Beta 3+) hasta que esté escrita en los documentos de requisitos.
 
 ## Fuera del alcance
 
 NO implementar, ni anticipar en una versión que todavía no está especificada:
 
-- Productos.
-- Inventario.
-- Recetas.
+- Inventario / stock.
+- Recetas / ingredientes / costos / márgenes.
 - Producción.
-- Clientes.
-- Proveedores.
-- Compras.
-- Usuarios.
-- Roles.
-- Login.
+- Clientes / pedidos.
+- Proveedores / compras a proveedores.
+- Usuarios / roles / login.
 - Reportes.
-- Edición de ventas.
-- Eliminación de ventas.
-- Corrección de ventas.
+- Historial avanzado de ventas.
+- Edición / eliminación / corrección de ventas.
+- Múltiples precios o variantes de producto.
+- CRUD de categorías en UI (en Beta 2 solo semilla + listado).
 - Sincronización con la nube.
 - PostgreSQL funcional.
 - IA dentro de la aplicación.
 - Funcionalidades no especificadas en los documentos de requisitos.
+
+**Nota:** el catálogo de **productos** y las **líneas de venta** sí están en alcance de Beta 2.0 (ver sección anterior). Lo demás de la lista histórica sigue fuera.
 
 Si una funcionalidad no está especificada en los documentos de requisitos, NO debe implementarse.
 

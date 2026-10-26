@@ -11,6 +11,76 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Beta 1 | Completada (referencia) | Registrar una venta y almacenarla localmente |
 | Beta 1.1 | Completada | Mejorar el flujo de registro con lista de compra en memoria y UX de calculadora |
 | Beta 1.2 | Completada | Ajustes estéticos / UX táctil; sin lógica de negocio nueva |
+| Beta 2.0 | Implementada (código); cierre documental Etapa 10 | Productos (CRUD), categorías, venta con líneas y búsqueda por precio |
+
+---
+
+# Beta 2.0 (implementada)
+
+## Objetivo
+
+Evolucionar el registro de ventas de una lógica basada en montos sueltos a una lógica basada en **productos**, preservando lo de Beta 1.2 que no conflictúa (UX táctil, capas, offline, dinero en enteros).
+
+Detalle de etapas: `docs/beta-2/stages.md`. Notas de regresión: `docs/beta-2/regression-notes.md`.
+
+## Productos
+
+Sección **Productos** desde el menú:
+
+- Crear: nombre, precio (entero > 0), categoría, descripción opcional; estado activo.
+- Editar: mismos campos permitidos.
+- Activar / desactivar (soft-delete): desactivado no aparece en ventas nuevas ni en búsqueda por precio; se conserva; no hay DELETE físico de productos usados en líneas.
+
+Cada producto tiene **un único precio actual**. Sin variantes ni listas de precios.
+
+## Categorías
+
+- Entidad independiente (`categorias`) con semilla inicial.
+- Asociación obligatoria al crear/editar producto.
+- Agrupación / filtro al seleccionar productos en una venta.
+- **Sin CRUD de categorías en UI** en Beta 2.0.
+
+## Registrar venta (vigente)
+
+- Catálogo de productos **activos** (por categoría) en el panel de venta.
+- Cantidad por línea; subtotal = precio × cantidad; total = suma de subtotales.
+- Calculadora: dígitos locales; actúa como **buscador por precio exacto** (candidatos activos con ese precio).
+- **AGREGAR** exige producto seleccionado; sin selección → rechazo con feedback visible (no se agrega monto suelto).
+- Lista de compra muestra nombre, cantidad y subtotal.
+- Medio de pago: mismo patrón 1.2 (botón + popup).
+- Confirmación previa → `POST /ventas` → popup de éxito → limpiar y permanecer en registrar venta.
+
+## Contrato de registro
+
+```text
+POST /ventas
+{
+  "id_medio_pago": int,
+  "lineas": [
+    { "id_producto": int, "cantidad": int, "precio_aplicado": int },
+    ...
+  ]
+}
+```
+
+El backend valida productos activos, calcula subtotales y `valor_total`, y persiste `ventas` + `venta_lineas` (con snapshot de nombre y precio) en una transacción. El shape antiguo solo-`valor_total` se rechaza.
+
+## Legado value-only
+
+Las ventas de Beta 1.x guardadas solo con `valor_total` **permanecen** sin filas en `venta_lineas`. No se inventan productos ni líneas sintéticas. Las ventas nuevas siempre tienen ≥ 1 línea.
+
+## Fuera del alcance de Beta 2.0
+
+No implementar:
+
+- historial avanzado de ventas;
+- edición / eliminación / corrección de ventas;
+- pedidos / clientes de pedidos;
+- recetas / ingredientes / costos / márgenes;
+- inventario / stock / producción;
+- múltiples precios o variantes;
+- CRUD UI de categorías;
+- sync nube, PostgreSQL funcional, login, reportes, IA.
 
 ---
 

@@ -2,6 +2,12 @@ from dataclasses import dataclass
 from typing import List, Mapping, Optional, Sequence
 
 from bakery.app.calculator import Calculator
+from bakery.app.pan_pequeno_pricing import (
+    PRECIO_UNITARIO_PAN_PEQUENO,
+    is_pan_pequeno,
+    quantity_from_value,
+    subtotal_for_quantity,
+)
 
 
 @dataclass(frozen=True)
@@ -28,6 +34,7 @@ class Purchase:
         nombre: str,
         precio_aplicado: int,
         cantidad: int,
+        subtotal: Optional[int] = None,
     ) -> bool:
         if isinstance(id_producto, bool) or not isinstance(id_producto, int):
             return False
@@ -45,8 +52,13 @@ class Purchase:
             or cantidad <= 0
         ):
             return False
-        subtotal = precio_aplicado * cantidad
-        if subtotal <= 0:
+        if subtotal is None:
+            computed = precio_aplicado * cantidad
+        else:
+            if isinstance(subtotal, bool) or not isinstance(subtotal, int) or subtotal <= 0:
+                return False
+            computed = subtotal
+        if computed <= 0:
             return False
         self._items.append(
             PurchaseLine(
@@ -54,7 +66,7 @@ class Purchase:
                 nombre=nombre.strip(),
                 precio_aplicado=precio_aplicado,
                 cantidad=cantidad,
-                subtotal=subtotal,
+                subtotal=computed,
             )
         )
         return True
@@ -108,11 +120,24 @@ class SaleDraft:
             return False
         if isinstance(precio, bool) or not isinstance(precio, int) or precio <= 0:
             return False
-        self._selected_product = {
+        nombre_categoria = product.get("nombre_categoria")
+        if nombre_categoria is not None and not isinstance(nombre_categoria, str):
+            return False
+        id_categoria = product.get("id_categoria")
+        if id_categoria is not None and (
+            isinstance(id_categoria, bool) or not isinstance(id_categoria, int)
+        ):
+            return False
+        selected = {
             "id_producto": id_producto,
             "nombre": nombre.strip(),
             "precio": precio,
         }
+        if id_categoria is not None:
+            selected["id_categoria"] = id_categoria
+        if isinstance(nombre_categoria, str) and nombre_categoria.strip():
+            selected["nombre_categoria"] = nombre_categoria.strip()
+        self._selected_product = selected
         return True
 
     def clear_product_selection(self) -> None:
@@ -123,6 +148,12 @@ class SaleDraft:
             return None
         return dict(self._selected_product)
 
+    def selected_is_pan_pequeno(self) -> bool:
+        product = self._selected_product
+        if product is None:
+            return False
+        return is_pan_pequeno(product.get("nombre_categoria"))
+
     def set_quantity(self, quantity: int) -> bool:
         if isinstance(quantity, bool) or not isinstance(quantity, int) or quantity <= 0:
             return False
@@ -132,16 +163,43 @@ class SaleDraft:
     def quantity(self) -> int:
         return self._quantity
 
+    def current_subtotal(self) -> Optional[int]:
+        """Subtotal de la selección actual (promo Pan pequeño vía módulo)."""
+        product = self._selected_product
+        if product is None:
+            return None
+        if is_pan_pequeno(product.get("nombre_categoria")):
+            return subtotal_for_quantity(self._quantity)
+        return product["precio"] * self._quantity
+
+    def apply_value(self, valor: int) -> bool:
+        """Para Pan pequeño: valor → cantidad/subtotal (ceil). Otras: no-op False."""
+        if not self.selected_is_pan_pequeno():
+            return False
+        try:
+            cantidad, _subtotal = quantity_from_value(valor)
+        except ValueError:
+            return False
+        self._quantity = cantidad
+        return True
+
     def add_to_purchase(self) -> bool:
         """Agrega línea del producto seleccionado. Rechaza sin producto."""
         product = self._selected_product
         if product is None:
             return False
+        if is_pan_pequeno(product.get("nombre_categoria")):
+            precio_aplicado = PRECIO_UNITARIO_PAN_PEQUENO
+            subtotal = subtotal_for_quantity(self._quantity)
+        else:
+            precio_aplicado = product["precio"]
+            subtotal = precio_aplicado * self._quantity
         if not self.purchase.add(
             id_producto=product["id_producto"],
             nombre=product["nombre"],
-            precio_aplicado=product["precio"],
+            precio_aplicado=precio_aplicado,
             cantidad=self._quantity,
+            subtotal=subtotal,
         ):
             return False
         self.entry.clear_entry()

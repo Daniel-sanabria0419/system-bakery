@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any, List, Optional
 
 from fastapi import FastAPI, HTTPException, Query, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from bakery.app.products import (
     ProductValidationError,
@@ -26,12 +26,18 @@ API_PORT = 8765
 
 
 class SaleLineCreate(BaseModel):
+    """Subtotal lo calcula el backend; no se acepta en el cuerpo."""
+
+    model_config = ConfigDict(extra="forbid")
+
     id_producto: int
     cantidad: int
     precio_aplicado: int
 
 
 class SaleCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     id_medio_pago: int
     lineas: List[SaleLineCreate] = Field(min_length=1)
 

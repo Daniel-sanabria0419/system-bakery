@@ -20,17 +20,79 @@ _PRODUCT_ID_SEQ = {"n": 1}
 
 
 class FakeApiClient:
-    def __init__(self, methods: List[Mapping[str, Any]] = None) -> None:
+    def __init__(
+        self,
+        methods: List[Mapping[str, Any]] = None,
+        *,
+        categories: List[Mapping[str, Any]] = None,
+        products: List[Mapping[str, Any]] = None,
+    ) -> None:
         self.request_count = 0
         self.sales: List[Mapping[str, Any]] = []
         self.methods = methods or [
             {"id_medio_pago": 1, "nombre": "Efectivo", "id_estado": 1},
             {"id_medio_pago": 2, "nombre": "Nequi", "id_estado": 1},
         ]
+        self.categories = categories or [
+            {"id_categoria": 1, "nombre": "Panadería"},
+            {"id_categoria": 2, "nombre": "Bebidas"},
+        ]
+        self.products = products or [
+            {
+                "id_producto": 1,
+                "nombre": "Pan",
+                "precio": 5000,
+                "id_categoria": 1,
+                "descripcion": None,
+                "id_estado": 1,
+            },
+            {
+                "id_producto": 2,
+                "nombre": "Café",
+                "precio": 3000,
+                "id_categoria": 2,
+                "descripcion": None,
+                "id_estado": 1,
+            },
+            {
+                "id_producto": 3,
+                "nombre": "Pan 2",
+                "precio": 5000,
+                "id_categoria": 1,
+                "descripcion": None,
+                "id_estado": 1,
+            },
+            {
+                "id_producto": 99,
+                "nombre": "Inactivo",
+                "precio": 5000,
+                "id_categoria": 1,
+                "descripcion": None,
+                "id_estado": 0,
+            },
+        ]
 
     def list_payment_methods(self) -> List[Mapping[str, Any]]:
         self.request_count += 1
         return list(self.methods)
+
+    def list_categories(self) -> List[Mapping[str, Any]]:
+        self.request_count += 1
+        return list(self.categories)
+
+    def list_active_products(
+        self,
+        *,
+        id_categoria: int = None,
+        precio: int = None,
+    ) -> List[Mapping[str, Any]]:
+        self.request_count += 1
+        rows = [p for p in self.products if p["id_estado"] == 1]
+        if id_categoria is not None:
+            rows = [p for p in rows if p["id_categoria"] == id_categoria]
+        if precio is not None:
+            rows = [p for p in rows if p["precio"] == precio]
+        return [dict(p) for p in rows]
 
     def create_sale(
         self, id_medio_pago: int, lineas: List[Mapping[str, Any]]
@@ -78,11 +140,24 @@ def _select_draft_product(
 
 
 def _enter_amount_and_agregar(
-    qtbot, window, digits: str, *, nombre: str = "Producto"
+    qtbot, window, digits: str, *, nombre: str = "Producto", id_producto: int = None
 ) -> None:
-    """Stub Etapa 5–6: selecciona producto en el draft (UI de selección = Etapa 7)."""
+    """Selecciona producto (UI o draft) y agrega con el pad."""
     precio = int(digits)
-    _select_draft_product(window, precio=precio, nombre=nombre)
+    product_button = None
+    if id_producto is not None:
+        product_button = window.findChild(QObject, f"sale_product_{id_producto}")
+    if product_button is None:
+        for product in getattr(window._register, "_active_products", []):
+            if product["precio"] == precio and product["nombre"] == nombre:
+                product_button = window.findChild(
+                    QObject, f"sale_product_{product['id_producto']}"
+                )
+                break
+    if product_button is not None:
+        _click(qtbot, product_button)
+    else:
+        _select_draft_product(window, precio=precio, nombre=nombre, id_producto=id_producto)
     for digit in digits:
         _click(qtbot, _find(window, f"digit_{digit}"))
     _click(qtbot, _find(window, "agregar_button"))
@@ -149,7 +224,8 @@ def test_menu_button_top_left_green_and_opens_register(qtbot) -> None:
     assert api.request_count == 0
     _click(qtbot, button)
     assert window.centralWidget().currentWidget() is window._register
-    assert api.request_count == 1
+    # medios-pago + categorías + productos activos
+    assert api.request_count == 3
 
 
 def test_menu_opens_register_and_loads_payment_methods(qtbot) -> None:
@@ -163,7 +239,7 @@ def test_menu_opens_register_and_loads_payment_methods(qtbot) -> None:
     payment_button = _find(window, "payment_button")
     assert payment_button.text() == "Seleccionar medio de pago"
     assert window.findChild(QObject, "payment_combo") is None
-    assert api.request_count == 1
+    assert api.request_count == 3
 
     attempts = {"n": 0}
 
@@ -298,7 +374,7 @@ def test_back_preserves_pending_purchase_and_payment(qtbot) -> None:
     requests_before_reenter = api.request_count
     _click(qtbot, _find(window, "menu_register_button"))
     assert window.centralWidget().currentWidget() is window._register
-    assert api.request_count == requests_before_reenter + 1
+    assert api.request_count == requests_before_reenter + 3
 
     assert _find(window, "purchase_list").text() == _line_text("Producto", 5000)
     assert _find(window, "purchase_total").text() == "Total: $ 5.000"
@@ -690,6 +766,22 @@ class DesktopApiViaTestClient:
     def list_products(self) -> List[Mapping[str, Any]]:
         self.request_count += 1
         response = self._client.get("/productos")
+        response.raise_for_status()
+        return response.json()
+
+    def list_active_products(
+        self,
+        *,
+        id_categoria: int = None,
+        precio: int = None,
+    ) -> List[Mapping[str, Any]]:
+        self.request_count += 1
+        params = {}
+        if id_categoria is not None:
+            params["id_categoria"] = id_categoria
+        if precio is not None:
+            params["precio"] = precio
+        response = self._client.get("/productos/activos", params=params or None)
         response.raise_for_status()
         return response.json()
 

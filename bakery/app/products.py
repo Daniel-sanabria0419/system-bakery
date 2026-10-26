@@ -5,6 +5,7 @@ from bakery.app.pan_pequeno_pricing import (
     PRECIO_UNITARIO_PAN_PEQUENO,
     is_pan_pequeno,
 )
+from bakery.app.product_images import normalize_ruta_imagen
 from bakery.persistence.repositories import (
     get_categoria,
     get_producto,
@@ -13,6 +14,7 @@ from bakery.persistence.repositories import (
     list_categorias,
     list_productos,
     set_producto_estado,
+    set_producto_ruta_imagen,
     update_producto,
 )
 from bakery.persistence.schema import ESTADO_ACTIVO, ESTADO_INACTIVO
@@ -33,12 +35,17 @@ def create_product(
     precio: int,
     id_categoria: int,
     descripcion: Optional[str] = None,
+    ruta_imagen: Optional[str] = None,
 ) -> Mapping:
     nombre_ok = _normalize_nombre(nombre)
     precio_ok = _require_positive_int(precio, "El precio debe ser un entero mayor que 0.")
     id_categoria_ok = _require_existing_categoria(connection, id_categoria)
     _require_pan_pequeno_precio(connection, id_categoria_ok, precio_ok)
     descripcion_ok = _normalize_descripcion(descripcion)
+    try:
+        ruta_ok = normalize_ruta_imagen(ruta_imagen)
+    except ValueError as error:
+        raise ProductValidationError(str(error)) from error
 
     id_producto = insert_producto(
         connection,
@@ -47,6 +54,7 @@ def create_product(
         id_categoria=id_categoria_ok,
         descripcion=descripcion_ok,
         id_estado=ESTADO_ACTIVO,
+        ruta_imagen=ruta_ok,
     )
     connection.commit()
     product = get_producto(connection, id_producto)
@@ -62,6 +70,8 @@ def update_product(
     precio: int,
     id_categoria: int,
     descripcion: Optional[str] = None,
+    ruta_imagen: Optional[str] = None,
+    actualizar_ruta_imagen: bool = False,
 ) -> Mapping:
     product = _require_product(connection, id_producto)
     nombre_ok = _normalize_nombre(nombre)
@@ -78,6 +88,29 @@ def update_product(
         id_categoria=id_categoria_ok,
         descripcion=descripcion_ok,
     )
+    if actualizar_ruta_imagen:
+        try:
+            ruta_ok = normalize_ruta_imagen(ruta_imagen)
+        except ValueError as error:
+            raise ProductValidationError(str(error)) from error
+        set_producto_ruta_imagen(connection, product["id_producto"], ruta_ok)
+    connection.commit()
+    updated = get_producto(connection, product["id_producto"])
+    assert updated is not None
+    return updated
+
+
+def set_product_image(
+    connection: sqlite3.Connection,
+    id_producto: int,
+    ruta_imagen: Optional[str],
+) -> Mapping:
+    product = _require_product(connection, id_producto)
+    try:
+        ruta_ok = normalize_ruta_imagen(ruta_imagen)
+    except ValueError as error:
+        raise ProductValidationError(str(error)) from error
+    set_producto_ruta_imagen(connection, product["id_producto"], ruta_ok)
     connection.commit()
     updated = get_producto(connection, product["id_producto"])
     assert updated is not None

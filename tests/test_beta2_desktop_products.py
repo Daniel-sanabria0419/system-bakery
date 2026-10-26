@@ -80,6 +80,7 @@ class FakeProductsApiClient:
         precio: int,
         id_categoria: int,
         descripcion: Optional[str] = None,
+        ruta_imagen: Optional[str] = None,
     ) -> Mapping[str, Any]:
         self.request_count += 1
         product = {
@@ -89,6 +90,7 @@ class FakeProductsApiClient:
             "id_categoria": id_categoria,
             "descripcion": descripcion,
             "id_estado": ESTADO_ACTIVO,
+            "ruta_imagen": ruta_imagen,
         }
         self._next_id += 1
         self.products.append(product)
@@ -102,6 +104,8 @@ class FakeProductsApiClient:
         precio: int,
         id_categoria: int,
         descripcion: Optional[str] = None,
+        ruta_imagen: Optional[str] = None,
+        actualizar_ruta_imagen: bool = False,
     ) -> Mapping[str, Any]:
         self.request_count += 1
         for index, product in enumerate(self.products):
@@ -113,6 +117,8 @@ class FakeProductsApiClient:
                     "id_categoria": id_categoria,
                     "descripcion": descripcion,
                 }
+                if actualizar_ruta_imagen:
+                    updated["ruta_imagen"] = ruta_imagen
                 self.products[index] = updated
                 return dict(updated)
         raise AssertionError(f"Producto {id_producto} no existe")

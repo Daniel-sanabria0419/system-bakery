@@ -117,7 +117,9 @@ QScrollArea#price_search_scroll > QWidget {
 }
 
 QPushButton[class="category-chip"],
-QPushButton[class="product-chip"] {
+QPushButton[class="product-chip"],
+QToolButton[class="category-chip"],
+QToolButton[class="product-chip"] {
     background-color: #64c466;
     color: #000000;
     font-size: 12px;
@@ -127,7 +129,9 @@ QPushButton[class="product-chip"] {
 }
 
 QPushButton[class="category-chip-selected"],
-QPushButton[class="product-chip-selected"] {
+QPushButton[class="product-chip-selected"],
+QToolButton[class="category-chip-selected"],
+QToolButton[class="product-chip-selected"] {
     background-color: #2E7D32;
     color: #FFFFFF;
     font-size: 12px;

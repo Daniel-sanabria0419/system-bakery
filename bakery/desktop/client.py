@@ -72,12 +72,14 @@ class ApiClient:
         precio: int,
         id_categoria: int,
         descripcion: Optional[str] = None,
+        ruta_imagen: Optional[str] = None,
     ) -> Mapping[str, Any]:
         payload = {
             "nombre": nombre,
             "precio": precio,
             "id_categoria": id_categoria,
             "descripcion": descripcion,
+            "ruta_imagen": ruta_imagen,
         }
         response = self._request("POST", "/productos", json=payload)
         response.raise_for_status()
@@ -91,12 +93,16 @@ class ApiClient:
         precio: int,
         id_categoria: int,
         descripcion: Optional[str] = None,
+        ruta_imagen: Optional[str] = None,
+        actualizar_ruta_imagen: bool = False,
     ) -> Mapping[str, Any]:
         payload = {
             "nombre": nombre,
             "precio": precio,
             "id_categoria": id_categoria,
             "descripcion": descripcion,
+            "ruta_imagen": ruta_imagen,
+            "actualizar_ruta_imagen": actualizar_ruta_imagen,
         }
         response = self._request("PUT", f"/productos/{id_producto}", json=payload)
         response.raise_for_status()

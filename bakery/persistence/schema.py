@@ -74,6 +74,17 @@ CREATE TABLE IF NOT EXISTS venta_lineas (
 )
 """
 
+_CREATE_SCHEMA_VERSION = """
+CREATE TABLE IF NOT EXISTS schema_version (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    version INTEGER NOT NULL CHECK (version >= 0)
+)
+"""
+
+
+def create_schema_version_table(connection: sqlite3.Connection) -> None:
+    connection.execute(_CREATE_SCHEMA_VERSION)
+
 
 def create_schema(connection: sqlite3.Connection) -> None:
     connection.execute(_CREATE_MEDIOS_PAGO)
@@ -81,6 +92,7 @@ def create_schema(connection: sqlite3.Connection) -> None:
     connection.execute(_CREATE_CATEGORIAS)
     connection.execute(_CREATE_PRODUCTOS)
     connection.execute(_CREATE_VENTA_LINEAS)
+    create_schema_version_table(connection)
 
 
 def seed_payment_methods(connection: sqlite3.Connection) -> None:

@@ -32,8 +32,9 @@ def is_pan_pequeno_nombre(nombre: Optional[str]) -> bool:
 def subtotal_for_quantity(cantidad: int) -> int:
     """Subtotal entero para una cantidad de Pan pequeño.
 
-    Promo solo si cantidad es múltiplo de 7: (cantidad // 7) * 2000.
-    Si no: cantidad * 300.
+    Promo solo si cantidad es múltiplo exacto de 7:
+    (cantidad // 7) * 2000. Ejemplos: 7→2000, 14→4000.
+    Si no (p. ej. 6 u 8): cantidad * 300. No hay “grupos + resto”.
     """
     cantidad_ok = _require_positive_int(cantidad, "La cantidad debe ser un entero mayor que 0.")
     if cantidad_ok % PROMO_CANTIDAD == 0:

@@ -86,7 +86,7 @@ No implementar una versión siguiente (Beta 3+) hasta que esté escrita en los d
 
 Alcance implementado:
 
-1. Categoría «Pan pequeño» (por nombre); precio unitario $300; promo automática 7 / $2000 (sin flag por producto).
+1. Categoría «Pan pequeño» (por nombre); precio unitario $300; promo automática 7 / $2000 **solo si la cantidad es múltiplo exacto de 7** (sin flag por producto; sin “grupos + resto”).
 2. Módulo central de precios (`pan_pequeno_pricing`): cantidades enteras, ceil hacia arriba.
 3. En cobro: calculadora por **valor** para Pan pequeño; otras categorías por unidades / búsqueda por precio.
 4. Chips de catálogo (Todos primero; métricas/color del scope); fondo de lista no negro.

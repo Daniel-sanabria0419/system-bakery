@@ -5,6 +5,10 @@ import pytest
 
 from bakery.persistence import initialize
 from bakery.persistence.connection import connect
+from bakery.persistence.migrations import (
+    CURRENT_SCHEMA_VERSION,
+    get_schema_version,
+)
 from bakery.persistence.repositories import (
     get_categoria_by_nombre,
     get_producto,
@@ -115,7 +119,14 @@ def test_new_db_creates_catalog_and_line_tables(tmp_path: Path) -> None:
                 "SELECT name FROM sqlite_master WHERE type = 'table'"
             ).fetchall()
         }
-        assert {"categorias", "productos", "venta_lineas", "medios_pago", "ventas"} <= tables
+        assert {
+            "categorias",
+            "productos",
+            "venta_lineas",
+            "medios_pago",
+            "ventas",
+            "schema_version",
+        } <= tables
         names = [
             row[0]
             for row in connection.execute(
@@ -123,6 +134,35 @@ def test_new_db_creates_catalog_and_line_tables(tmp_path: Path) -> None:
             ).fetchall()
         ]
         assert names == _expected_category_names()
+        columns = {
+            row[1]
+            for row in connection.execute("PRAGMA table_info(productos)").fetchall()
+        }
+        assert "ruta_imagen" in columns
+        assert get_schema_version(connection) == CURRENT_SCHEMA_VERSION
+    finally:
+        connection.close()
+
+
+def test_schema_version_migration_from_beta2_without_meta(tmp_path: Path) -> None:
+    path = _beta2_five_categories_db(tmp_path)
+    connection = connect(path)
+    try:
+        assert get_schema_version(connection) == 0
+        columns_before = {
+            row[1]
+            for row in connection.execute("PRAGMA table_info(productos)").fetchall()
+        }
+        assert "ruta_imagen" not in columns_before
+    finally:
+        connection.close()
+
+    initialize(path)
+    initialize(path)  # idempotente
+
+    connection = connect(path)
+    try:
+        assert get_schema_version(connection) == CURRENT_SCHEMA_VERSION
         columns = {
             row[1]
             for row in connection.execute("PRAGMA table_info(productos)").fetchall()

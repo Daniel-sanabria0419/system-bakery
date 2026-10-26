@@ -10,7 +10,7 @@ Base: Beta 2.0 en `main` (productos + ventas con líneas).
 
 | # | Tema | Decisión |
 |---|---|---|
-| 1 | Pan pequeño | Categoría por **nombre**; promo 7 / $2000; unitario $300 |
+| 1 | Pan pequeño | Categoría por **nombre**; promo 7 / $2000 **solo en múltiplos exactos de 7**; unitario $300 |
 | 2 | Precios | Módulo central `pan_pequeno_pricing` (ceil, enteros) |
 | 3 | Calculadora | Por **valor** si categoría Pan pequeño; por unidades en el resto |
 | 4 | UI cobro | Preview de redondeo antes de Agregar; `+/-` recalcula |

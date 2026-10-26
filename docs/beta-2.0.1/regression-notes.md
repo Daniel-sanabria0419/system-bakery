@@ -14,7 +14,7 @@ Al cierre de Etapa 8: **178 passed** (incl. smoke Beta 2 y Beta 2.0.1).
 
 | Tema | Nota |
 |---|---|
-| Pan pequeño | Subtotal vía `pan_pequeno_pricing`; `precio_aplicado` en línea = unitario lista ($300); subtotal de promo ≠ precio×cantidad cuando aplica 7/$2000 |
+| Pan pequeño | Subtotal vía `pan_pequeno_pricing`; promo **solo** si cantidad es múltiplo exacto de 7 (7→$2000, 8→$2400, 6→$1800); `precio_aplicado` = unitario lista ($300); subtotal de promo ≠ precio×cantidad solo en esos múltiplos |
 | Calculadora | Misma pad: en Pan pequeño interpreta **valor** (ceil); otras categorías = unidades / búsqueda por precio |
 | Chips | `QToolButton` + clases `category-chip` / `product-chip` (no `payment-method-button`) |
 | Imágenes | Sin archivo → sin icono / solo texto; no falla la UI |

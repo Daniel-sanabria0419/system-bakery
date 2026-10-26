@@ -27,11 +27,13 @@ Detalle de etapas: `docs/beta-2.0.1/stages.md`. Regresión: `docs/beta-2.0.1/reg
 ## Pan pequeño
 
 - Categoría garantizada por **nombre** (no por id fijo).
-- Precio unitario de lista: **$300**. Promo automática: cada grupo de **7** cuesta **$2000**.
+- Precio unitario de lista: **$300**.
+- Promo fija **solo si la cantidad es múltiplo exacto de 7**: cada bloque de exactamente 7 panes cuesta **$2000** (ahorro vs 7×$300). **No** se combina “grupos + resto”: 6 panes = $1800; 7 = $2000; 8 = $2400 (sin promo parcial); 14 = $4000.
+- La promo refleja “cada $2000 de pan” como combo cerrado de 7; cantidades que no cierran el combo se cobran a unitario.
 - Cantidades siempre enteras; valores inválidos redondean **hacia arriba** (ceil); el usuario ve el resultado antes de Agregar.
-- `+/-` recalcula cantidad y subtotal (promo incluida).
+- `+/-` recalcula cantidad y subtotal (promo solo si queda múltiplo de 7).
 - Otras categorías: por unidades; sin promo Pan pequeño.
-- En `venta_lineas`, `precio_aplicado` = unitario de lista; el subtotal puede reflejar la promo.
+- En `venta_lineas`, `precio_aplicado` = unitario de lista ($300); el `subtotal` puede ser distinto de `precio_aplicado × cantidad` cuando aplica la promo.
 
 ## UI catálogo / imágenes / formularios
 
@@ -73,7 +75,7 @@ Cada producto tiene **un único precio actual**. Sin variantes ni listas de prec
 ## Registrar venta (vigente)
 
 - Catálogo de productos **activos** (por categoría) en el panel de venta.
-- Cantidad por línea; subtotal = precio × cantidad; total = suma de subtotales.
+- Cantidad por línea; subtotal = precio × cantidad en el caso general; **excepción Beta 2.0.1:** Pan pequeño puede tener subtotal de promo (ver sección Pan pequeño). Total = suma de subtotales (siempre recalculado en backend).
 - Calculadora: dígitos locales; actúa como **buscador por precio exacto** (candidatos activos con ese precio).
 - **AGREGAR** exige producto seleccionado; sin selección → rechazo con feedback visible (no se agrega monto suelto).
 - Lista de compra muestra nombre, cantidad y subtotal.

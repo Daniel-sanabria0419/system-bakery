@@ -16,6 +16,7 @@ Las tablas de catálogo y líneas (`categorias`, `productos`, `venta_lineas`) se
 - **Legado Beta 1.x:** filas de `ventas` solo con `valor_total` **permanecen** sin `venta_lineas`. No se inventan líneas sintéticas.
 - Durante el cobro, la lista de compra sigue viviendo solo en memoria hasta confirmar.
 - **Beta 2.0.1 Etapa 1:** categoría «Pan pequeño» garantizada por nombre; columna nullable `productos.ruta_imagen`; carpetas `imagenes/categorias` y `imagenes/productos`.
+- **Meta:** tabla `schema_version` para migraciones ordenadas (ver sección Versión de esquema).
 
 ## Tabla: medios_pago
 
@@ -89,9 +90,11 @@ Campos:
 | nombre_producto | Snapshot del nombre al momento de la venta |
 | precio_aplicado | Snapshot del precio aplicado (entero > 0) |
 | cantidad | Cantidad vendida (entero > 0) |
-| subtotal | Subtotal de la línea (entero > 0; precio × cantidad en Beta 2.0) |
+| subtotal | Subtotal de la línea (entero > 0). En el caso general = `precio_aplicado × cantidad`. **Excepción Pan pequeño (Beta 2.0.1):** si la cantidad es múltiplo exacto de 7, el subtotal es `(cantidad // 7) × 2000`; si no, `cantidad × 300`. Por tanto `subtotal` puede ser ≠ `precio_aplicado × cantidad` cuando aplica la promo. |
 
 Las ventas antiguas (solo `valor_total`, sin detalle de productos) **permanecen sin filas** en `venta_lineas`. No se inventan líneas sintéticas.
+
+**Invariante de totales:** el ingreso de una venta es `ventas.valor_total` (= `SUM(venta_lineas.subtotal)` en ventas nuevas). No usar `SUM(precio_aplicado × cantidad)` como métrica de ingresos (inflaría Pan pequeño en promo).
 
 ## Valores de caja y tendero
 
@@ -160,12 +163,29 @@ La base de datos debe impedir, cuando sea apropiado:
 - líneas con cantidad ≤ 0, subtotal ≤ 0 o precio_aplicado ≤ 0;
 - referencias inexistentes a ventas o productos en `venta_lineas`.
 
+## Versión de esquema (`schema_version`)
+
+Tabla meta:
+
+| Campo | Descripción |
+|---|---|
+| version | Entero ≥ 0; una sola fila con la versión aplicada |
+
+`CURRENT_SCHEMA_VERSION` en código es la versión objetivo. Las migraciones viven en `bakery/persistence/migrations.py` como lista ordenada `(versión, función)` y se aplican en orden desde la versión actual hasta la objetivo. Cada paso es **idempotente** respecto al estado físico (p. ej. `ALTER` solo si falta la columna).
+
+Versión vigente:
+
+| Versión | Contenido |
+|---|---|
+| 0 | Sin meta (bases antiguas o vacías antes de este mecanismo) |
+| 1 | Baseline Beta 2.0.1: tablas de catálogo/líneas, `productos.ruta_imagen` si faltaba |
+
 ## Migración
 
 Al llamar `initialize`, se ejecuta:
 
-1. `CREATE TABLE IF NOT EXISTS` para todas las tablas;
-2. migración idempotente `ALTER TABLE productos ADD COLUMN ruta_imagen TEXT` si la columna falta (bases Beta 2.0 ya creadas);
+1. `CREATE TABLE IF NOT EXISTS` para todas las tablas de negocio (incl. `schema_version`);
+2. migraciones ordenadas hasta `CURRENT_SCHEMA_VERSION` (hoy: v1 = asegurar `ruta_imagen`);
 3. semilla de medios (si la tabla está vacía);
 4. semilla de categorías Beta 2.0 (si la tabla está vacía);
 5. ensure de «Pan pequeño» por nombre;
@@ -173,6 +193,7 @@ Al llamar `initialize`, se ejecuta:
 
 Es idempotente:
 
-- en una base nueva: esquema completo, semillas y Pan pequeño;
-- en una base con las cinco categorías de Beta 2.0: se añade Pan pequeño y `ruta_imagen` sin alterar filas de ventas;
-- en una base solo-`medios_pago` / `ventas`: agrega tablas faltantes sin alterar ventas existentes.
+- en una base nueva: esquema completo, `schema_version = CURRENT`, semillas y Pan pequeño;
+- en una base con las cinco categorías de Beta 2.0: se añade Pan pequeño y `ruta_imagen`, y se marca `schema_version`;
+- en una base solo-`medios_pago` / `ventas`: agrega tablas faltantes sin alterar ventas existentes;
+- re-ejecutar `initialize` no duplica datos ni re-aplica migraciones ya aplicadas.

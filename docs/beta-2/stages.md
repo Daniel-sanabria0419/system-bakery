@@ -30,7 +30,7 @@ Beta 2.0 introduce productos y ventas con líneas sobre la base Beta 1.2 (UX tá
 | 7 | UI cobro con productos | Hecha | #15 |
 | 8 | Integridad histórica / validaciones | Hecha | #16 |
 | 9 | Regresión + smoke | Hecha | #17 |
-| 10 | Documentación de cierre | En curso (este doc) | — |
+| 10 | Documentación de cierre | Hecha (pendiente OK final Daniel) | #18 |
 
 ## Resumen por etapa
 

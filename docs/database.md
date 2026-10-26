@@ -8,15 +8,15 @@ SQLite
 
 La base de datos es local y debe funcionar sin Internet.
 
-## Beta 1.1 y Beta 1.2 — esquema
+## Esquema vigente (Beta 2.0)
 
-**Beta 1.1 y Beta 1.2 no requieren cambios de esquema.**
+Las tablas de catálogo y líneas (`categorias`, `productos`, `venta_lineas`) se introdujeron en **Beta 2.0 Etapa 1**.
 
-La lista temporal de valores de la compra vive solo en memoria (capa de aplicación / desktop) durante el registro de la venta.
+- **Ventas nuevas (Beta 2):** siempre persisten `ventas.valor_total` **y** una o más filas en `venta_lineas` (snapshot de nombre/precio).
+- **Legado Beta 1.x:** filas de `ventas` solo con `valor_total` **permanecen** sin `venta_lineas`. No se inventan líneas sintéticas.
+- Durante el cobro, la lista de compra sigue viviendo solo en memoria hasta confirmar.
 
-Al confirmar, se persiste únicamente el total acumulado como `ventas.valor_total`, igual que en Beta 1.
-
-El resto de este documento describe el esquema vigente. Las tablas de catálogo y líneas (`categorias`, `productos`, `venta_lineas`) se introdujeron en **Beta 2.0 Etapa 1**. Hasta que exista el flujo de venta con productos, las ventas nuevas de Beta 1.x siguen guardándose solo en `ventas` (sin filas en `venta_lineas`).
+Beta 1.1 y 1.2 no cambiaron el esquema; este documento describe el esquema **actual** tras Beta 2.
 
 ## Tabla: medios_pago
 
@@ -89,7 +89,7 @@ Las ventas antiguas (solo `valor_total`, sin detalle de productos) **permanecen 
 
 ## Valores de caja y tendero
 
-Para todas las ventas (Beta 1 y Beta 1.1):
+Para todas las ventas:
 
 caja = 1
 
@@ -126,6 +126,8 @@ Una venta debe:
 - tener fecha y hora;
 - tener caja = 1;
 - tener tendero = 1.
+
+Una venta **nueva** (Beta 2) debe además tener ≥ 1 fila en `venta_lineas` cuya suma de subtotales coincida con `valor_total`.
 
 Un producto debe:
 

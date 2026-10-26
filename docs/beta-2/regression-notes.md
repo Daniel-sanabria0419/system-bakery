@@ -32,4 +32,4 @@ Cubierto por la suite (docs de cierre = Etapa 10):
 - [x] Snapshot histórico
 - [x] Pruebas nuevas y anteriores (adaptadas)
 - [x] Sin regresiones conocidas en suite
-- [ ] Documentación de producto/arquitectura alineada → **Etapa 10**
+- [x] Documentación de producto/arquitectura alineada → **Etapa 10** (`docs/beta-2/stages.md`, AGENTS, PRD, architecture, database, sync)

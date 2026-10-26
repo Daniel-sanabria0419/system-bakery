@@ -30,7 +30,7 @@ Base: Beta 2.0 en `main` (productos + ventas con líneas).
 | 5 | Chips catálogo + Todos | Hecha | #23 |
 | 6 | Imágenes alta/edición/chips | Hecha | #24 |
 | 7 | Estilo Crear / Editar | Hecha | #25 |
-| 8 | Regresión + docs de cierre | Hecha (pendiente OK final) | (esta) |
+| 8 | Regresión + docs de cierre | Hecha (pendiente OK final) | #26 |
 
 ## Fuera de alcance
 

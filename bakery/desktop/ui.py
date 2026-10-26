@@ -628,6 +628,12 @@ class RegisterSalePage(QWidget):
             enriched["nombre_categoria"] = nombre_categoria
         return enriched
 
+    def _select_all_categories(self) -> None:
+        self._selected_category_id = None
+        self._feedback.setText("")
+        self._rebuild_categories()
+        self._rebuild_products()
+
     def _select_category(self, id_categoria: int) -> None:
         self._selected_category_id = id_categoria
         self._feedback.setText("")
@@ -641,6 +647,7 @@ class RegisterSalePage(QWidget):
         self._draft.set_quantity(1)
         self._feedback.setText("")
         self._refresh_selection_ui()
+        self._rebuild_products()
         self._sync_quantity_section()
         self._refresh_mode_ui()
         if not self._draft.selected_is_pan_pequeno():
@@ -691,12 +698,26 @@ class RegisterSalePage(QWidget):
 
     def _rebuild_categories(self) -> None:
         self._clear_layout(self._categories_layout)
+        todos = QPushButton("Todos")
+        todos.setObjectName("sale_category_todos")
+        todos.setFixedSize(style.CATEGORY_CHIP_WIDTH, style.CATEGORY_CHIP_HEIGHT)
+        style.apply_class(
+            todos,
+            "category-chip-selected"
+            if self._selected_category_id is None
+            else "category-chip",
+        )
+        todos.clicked.connect(self._select_all_categories)
+        self._categories_layout.addWidget(todos)
+
         for category in self._categories:
             button = QPushButton(category["nombre"])
             button.setObjectName(f"sale_category_{category['id_categoria']}")
-            style.apply_class(button, "payment-method-button")
-            if category["id_categoria"] == self._selected_category_id:
-                button.setText(f"• {category['nombre']}")
+            button.setFixedSize(style.CATEGORY_CHIP_WIDTH, style.CATEGORY_CHIP_HEIGHT)
+            selected = category["id_categoria"] == self._selected_category_id
+            style.apply_class(
+                button, "category-chip-selected" if selected else "category-chip"
+            )
             button.clicked.connect(
                 lambda checked=False, cid=category["id_categoria"]: self._select_category(
                     cid
@@ -714,12 +735,16 @@ class RegisterSalePage(QWidget):
                 for product in products
                 if product["id_categoria"] == self._selected_category_id
             ]
+        selected = self._draft.selected_product()
+        selected_id = selected["id_producto"] if selected is not None else None
         for product in products:
-            button = QPushButton(
-                f"{product['nombre']} — {format_cop(product['precio'])}"
-            )
+            button = QPushButton(str(product["nombre"]))
             button.setObjectName(f"sale_product_{product['id_producto']}")
-            style.apply_class(button, "payment-method-button")
+            button.setFixedSize(style.PRODUCT_CHIP_WIDTH, style.PRODUCT_CHIP_HEIGHT)
+            is_selected = product["id_producto"] == selected_id
+            style.apply_class(
+                button, "product-chip-selected" if is_selected else "product-chip"
+            )
             button.clicked.connect(
                 lambda checked=False, p=product: self._select_product(p)
             )
@@ -740,12 +765,16 @@ class RegisterSalePage(QWidget):
             empty = QLabel("Sin productos a ese precio")
             empty.setObjectName("price_search_empty")
             self._search_layout.addWidget(empty)
+        selected = self._draft.selected_product()
+        selected_id = selected["id_producto"] if selected is not None else None
         for product in matches:
-            button = QPushButton(
-                f"{product['nombre']} — {format_cop(product['precio'])}"
-            )
+            button = QPushButton(str(product["nombre"]))
             button.setObjectName(f"price_search_product_{product['id_producto']}")
-            style.apply_class(button, "payment-method-button")
+            button.setFixedSize(style.PRODUCT_CHIP_WIDTH, style.PRODUCT_CHIP_HEIGHT)
+            is_selected = product["id_producto"] == selected_id
+            style.apply_class(
+                button, "product-chip-selected" if is_selected else "product-chip"
+            )
             button.clicked.connect(
                 lambda checked=False, p=product: self._select_product(p)
             )

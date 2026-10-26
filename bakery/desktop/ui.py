@@ -377,6 +377,12 @@ class RegisterSalePage(QWidget):
         self._feedback.setWordWrap(True)
         catalog_layout.addWidget(self._feedback)
 
+        qty_section = QWidget()
+        qty_section.setObjectName("quantity_section")
+        qty_section_layout = QVBoxLayout(qty_section)
+        qty_section_layout.setContentsMargins(0, 0, 0, 0)
+        qty_section_layout.setSpacing(style.PAGE_SPACING)
+
         qty_row = QHBoxLayout()
         qty_caption = QLabel("Cantidad")
         qty_caption.setObjectName("quantity_caption")
@@ -395,8 +401,17 @@ class RegisterSalePage(QWidget):
         style.apply_class(plus, "payment-method-button")
         plus.clicked.connect(self._quantity_plus)
         qty_row.addWidget(plus)
+        self._quantity_value_label = QLabel("")
+        self._quantity_value_label.setObjectName("quantity_value_label")
+        qty_row.addWidget(self._quantity_value_label)
         qty_row.addStretch(1)
-        catalog_layout.addLayout(qty_row)
+        qty_section_layout.addLayout(qty_row)
+
+        self._value_preview_label = QLabel("")
+        self._value_preview_label.setObjectName("sale_value_preview")
+        self._value_preview_label.setWordWrap(True)
+        qty_section_layout.addWidget(self._value_preview_label)
+        catalog_layout.addWidget(qty_section)
 
         catalog_layout.addWidget(QLabel("Categorías"))
         self._categories_host = QWidget()
@@ -424,18 +439,20 @@ class RegisterSalePage(QWidget):
         products_scroll.setWidget(self._products_host)
         catalog_layout.addWidget(products_scroll, stretch=2)
 
-        catalog_layout.addWidget(QLabel("Búsqueda por precio"))
+        self._search_caption = QLabel("Búsqueda por precio")
+        self._search_caption.setObjectName("price_search_caption")
+        catalog_layout.addWidget(self._search_caption)
         self._search_host = QWidget()
         self._search_host.setObjectName("price_search_list")
         self._search_layout = QVBoxLayout(self._search_host)
         self._search_layout.setContentsMargins(0, 0, 0, 0)
         self._search_layout.setSpacing(style.PAGE_SPACING)
-        search_scroll = QScrollArea()
-        search_scroll.setObjectName("price_search_scroll")
-        search_scroll.setWidgetResizable(True)
-        search_scroll.setFrameShape(QFrame.NoFrame)
-        search_scroll.setWidget(self._search_host)
-        catalog_layout.addWidget(search_scroll, stretch=1)
+        self._search_scroll = QScrollArea()
+        self._search_scroll.setObjectName("price_search_scroll")
+        self._search_scroll.setWidgetResizable(True)
+        self._search_scroll.setFrameShape(QFrame.NoFrame)
+        self._search_scroll.setWidget(self._search_host)
+        catalog_layout.addWidget(self._search_scroll, stretch=1)
 
         columns.addWidget(left, style.LEFT_COLUMN_STRETCH)
         columns.addWidget(catalog, style.RIGHT_COLUMN_STRETCH)
@@ -444,6 +461,8 @@ class RegisterSalePage(QWidget):
         self._refresh_display()
         self._refresh_submit()
         self._refresh_selection_ui()
+        self._sync_quantity_section()
+        self._refresh_mode_ui()
 
     def load_payment_methods(self) -> None:
         selected_id = self._selected_payment_id
@@ -471,18 +490,21 @@ class RegisterSalePage(QWidget):
         self._rebuild_products()
         self._rebuild_search()
         self._refresh_selection_ui()
+        self._sync_quantity_section()
+        self._refresh_mode_ui()
 
     def reset_form(self) -> None:
         self._draft.clear_purchase()
         self._clear_payment_selection()
         self._selected_category_id = None
         self._feedback.setText("")
-        self._sync_quantity_label()
         self._rebuild_categories()
         self._rebuild_products()
         self._rebuild_search()
         self._refresh_display()
         self._refresh_selection_ui()
+        self._sync_quantity_section()
+        self._refresh_mode_ui()
         self._refresh_submit()
 
     def _open_payment_dialog(self) -> None:
@@ -513,8 +535,8 @@ class RegisterSalePage(QWidget):
     def _digit(self, digit: str) -> None:
         self._draft.entry.press_digit(digit)
         self._feedback.setText("")
+        self._on_entry_changed()
         self._refresh_display()
-        self._rebuild_search()
         self._refresh_submit()
 
     def _action(self, name: str) -> None:
@@ -527,42 +549,84 @@ class RegisterSalePage(QWidget):
                 self._feedback.setText("No se pudo agregar la línea.")
             else:
                 self._feedback.setText("")
-                self._sync_quantity_label()
                 self._refresh_selection_ui()
+                self._sync_quantity_section()
+                self._refresh_mode_ui()
                 self._rebuild_search()
         elif name == "clear":
             self._draft.clear_purchase()
             self._selected_category_id = None
             self._feedback.setText("")
-            self._sync_quantity_label()
             self._rebuild_categories()
             self._rebuild_products()
             self._rebuild_search()
             self._refresh_selection_ui()
+            self._sync_quantity_section()
+            self._refresh_mode_ui()
         elif name == "borrar":
             self._draft.entry.backspace()
             self._feedback.setText("")
-            self._rebuild_search()
+            self._on_entry_changed()
         elif name == "zeros":
             self._draft.entry.press_zeros()
             self._feedback.setText("")
-            self._rebuild_search()
+            self._on_entry_changed()
         self._refresh_display()
         self._refresh_submit()
+
+    def _on_entry_changed(self) -> None:
+        """Tras dígitos: Pan pequeño convierte valor→cantidad; si no, busca precio."""
+        if self._draft.selected_is_pan_pequeno():
+            amount = self._draft.entry.current_amount()
+            if amount is not None and amount > 0:
+                self._draft.apply_value(amount)
+            self._sync_quantity_section()
+            self._refresh_mode_ui()
+            return
+        self._rebuild_search()
 
     def _quantity_minus(self) -> None:
         current = self._draft.quantity()
         if current <= 1:
             return
         self._draft.set_quantity(current - 1)
-        self._sync_quantity_label()
+        self._draft.entry.clear_entry()
+        self._feedback.setText("")
+        self._sync_quantity_section()
+        self._refresh_mode_ui()
+        self._refresh_display()
 
     def _quantity_plus(self) -> None:
         self._draft.set_quantity(self._draft.quantity() + 1)
-        self._sync_quantity_label()
+        self._draft.entry.clear_entry()
+        self._feedback.setText("")
+        self._sync_quantity_section()
+        self._refresh_mode_ui()
+        self._refresh_display()
 
-    def _sync_quantity_label(self) -> None:
+    def _sync_quantity_section(self) -> None:
         self._quantity_label.setText(str(self._draft.quantity()))
+        subtotal = self._draft.current_subtotal()
+        if subtotal is None:
+            self._quantity_value_label.setText("")
+        else:
+            self._quantity_value_label.setText(format_cop(subtotal))
+
+    def _categoria_nombre(self, id_categoria: object) -> Optional[str]:
+        if not isinstance(id_categoria, int) or isinstance(id_categoria, bool):
+            return None
+        for category in self._categories:
+            if category.get("id_categoria") == id_categoria:
+                nombre = category.get("nombre")
+                return nombre if isinstance(nombre, str) else None
+        return None
+
+    def _product_for_draft(self, product: Mapping) -> Mapping:
+        enriched = dict(product)
+        nombre_categoria = self._categoria_nombre(product.get("id_categoria"))
+        if nombre_categoria is not None:
+            enriched["nombre_categoria"] = nombre_categoria
+        return enriched
 
     def _select_category(self, id_categoria: int) -> None:
         self._selected_category_id = id_categoria
@@ -571,9 +635,17 @@ class RegisterSalePage(QWidget):
         self._rebuild_products()
 
     def _select_product(self, product: Mapping) -> None:
-        self._draft.select_product(product)
+        enriched = self._product_for_draft(product)
+        self._draft.select_product(enriched)
+        self._draft.entry.clear_entry()
+        self._draft.set_quantity(1)
         self._feedback.setText("")
         self._refresh_selection_ui()
+        self._sync_quantity_section()
+        self._refresh_mode_ui()
+        if not self._draft.selected_is_pan_pequeno():
+            self._rebuild_search()
+        self._refresh_display()
 
     def _refresh_selection_ui(self) -> None:
         selected = self._draft.selected_product()
@@ -582,6 +654,32 @@ class RegisterSalePage(QWidget):
         else:
             self._selection_label.setText(
                 f"Seleccionado: {selected['nombre']} — {format_cop(selected['precio'])}"
+            )
+
+    def _refresh_mode_ui(self) -> None:
+        """Preview Pan pequeño y visibilidad de búsqueda por precio."""
+        pan_mode = self._draft.selected_is_pan_pequeno()
+        self._search_caption.setVisible(not pan_mode)
+        self._search_scroll.setVisible(not pan_mode)
+        if not pan_mode:
+            self._value_preview_label.setText("")
+            return
+
+        quantity = self._draft.quantity()
+        subtotal = self._draft.current_subtotal()
+        if subtotal is None:
+            self._value_preview_label.setText("")
+            return
+
+        amount = self._draft.entry.current_amount()
+        if amount is not None and amount > 0 and amount != subtotal:
+            self._value_preview_label.setText(
+                f"{format_cop(amount)} → {format_cop(subtotal)} = {quantity} panes "
+                f"(redondeo)"
+            )
+        else:
+            self._value_preview_label.setText(
+                f"{format_cop(subtotal)} = {quantity} panes"
             )
 
     def _clear_layout(self, layout: QVBoxLayout) -> None:

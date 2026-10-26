@@ -27,7 +27,9 @@ __pycache__/
 
 backend/venv/
 __pycache__/
-.env# Imágenes de productos (mantener carpetas; no versionar binarios grandes)
+.env
+
+# Imágenes (mantener carpetas; no versionar binarios)
 imagenes/productos/*
 !imagenes/productos/.gitkeep
 imagenes/categorias/*

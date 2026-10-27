@@ -3,7 +3,9 @@ from typing import Any, List, Mapping, Optional
 from PySide6.QtCore import QObject, QTimer, Qt
 from PySide6.QtWidgets import QApplication, QDialog
 
+from bakery.desktop import style
 from bakery.desktop.main import create_window
+from bakery.desktop.style import load_theme_qss
 from bakery.desktop.ui import ProductFormDialog
 from bakery.persistence.schema import (
     ESTADO_ACTIVO,
@@ -247,3 +249,28 @@ def test_register_sale_still_opens_from_menu(qtbot) -> None:
     assert window._stack.currentWidget() is window._register
     assert _find(window, "submit_sale_button") is not None
     assert api.sales == []
+
+
+def test_products_list_background_is_white(qtbot) -> None:
+    """Etapa 5: listado Productos blanco; payment-method-button sigue negro."""
+    assert style.PRODUCTS_LIST_BACKGROUND == "#FFFFFF"
+    qss = load_theme_qss()
+    assert "QWidget#products_list" in qss
+    assert "QScrollArea#products_list_scroll" in qss
+    products_block = qss.split("QWidget#products_page")[1].split(
+        "QLabel[class=\"dialog-text\"]"
+    )[0]
+    assert "background-color: #FFFFFF" in products_block
+    assert (
+        'QPushButton[class="payment-method-button"]' in qss
+        and "background-color: #1A1A1A" in qss
+    )
+
+    api = FakeProductsApiClient()
+    window = create_window(api)
+    qtbot.addWidget(window)
+    window.show()
+    _click(qtbot, _find(window, "menu_products_button"))
+    assert _find(window, "products_page") is not None
+    assert _find(window, "products_list") is not None
+    assert _find(window, "products_list_scroll") is not None

@@ -66,6 +66,8 @@ SELECTED_PRODUCT_IMAGE_HEIGHT = 72
 
 # Formularios Crear/Editar producto (Beta 2.0.1 Etapa 7)
 APP_BACKGROUND = "#F5F0E8"
+# Listado CRUD Productos (Beta 2.0.2 Etapa 5)
+PRODUCTS_LIST_BACKGROUND = "#FFFFFF"
 PRODUCT_FORM_FIELD_BACKGROUND = "#FFFFFF"
 PRODUCT_FORM_FIELD_TEXT = "#000000"
 # Placeholder más oscuro que el fondo de la app (#F5F0E8) para diferenciarse.

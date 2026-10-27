@@ -19,7 +19,13 @@ def test_pan_pequeno_value_1900_previews_ceil_before_add(qtbot) -> None:
     assert window.findChild(QObject, "price_search_scroll") is None
     assert window.findChild(QObject, "price_search_caption") is None
     assert _find(window, "quantity_label").text() == "1"
-    assert _find(window, "quantity_value_label").text() == format_cop(300)
+    assert _find(window, "selected_product_label").text() == "Pan rollo"
+    assert _find(window, "selected_product_unit_price").text() == (
+        f"Unitario: {format_cop(300)}"
+    )
+    assert _find(window, "quantity_value_label").text() == (
+        f"Subtotal: {format_cop(300)}"
+    )
 
     for digit in "1900":
         _click(qtbot, _find(window, f"digit_{digit}"))
@@ -30,7 +36,9 @@ def test_pan_pequeno_value_1900_previews_ceil_before_add(qtbot) -> None:
     assert "7 panes" in preview
     assert "redondeo" in preview
     assert _find(window, "quantity_label").text() == "7"
-    assert _find(window, "quantity_value_label").text() == format_cop(2000)
+    assert _find(window, "quantity_value_label").text() == (
+        f"Subtotal: {format_cop(2000)}"
+    )
     assert _find(window, "purchase_list").text() == ""
 
     _click(qtbot, _find(window, "agregar_button"))
@@ -51,20 +59,28 @@ def test_pan_pequeno_plus_minus_transitions_6_7_8(qtbot) -> None:
     for _ in range(5):
         _click(qtbot, _find(window, "quantity_plus_button"))
     assert _find(window, "quantity_label").text() == "6"
-    assert _find(window, "quantity_value_label").text() == format_cop(1800)
+    assert _find(window, "quantity_value_label").text() == (
+        f"Subtotal: {format_cop(1800)}"
+    )
     assert "6 panes" in _find(window, "sale_value_preview").text()
 
     _click(qtbot, _find(window, "quantity_plus_button"))
     assert _find(window, "quantity_label").text() == "7"
-    assert _find(window, "quantity_value_label").text() == format_cop(2000)
+    assert _find(window, "quantity_value_label").text() == (
+        f"Subtotal: {format_cop(2000)}"
+    )
 
     _click(qtbot, _find(window, "quantity_plus_button"))
     assert _find(window, "quantity_label").text() == "8"
-    assert _find(window, "quantity_value_label").text() == format_cop(2400)
+    assert _find(window, "quantity_value_label").text() == (
+        f"Subtotal: {format_cop(2400)}"
+    )
 
     _click(qtbot, _find(window, "quantity_minus_button"))
     assert _find(window, "quantity_label").text() == "7"
-    assert _find(window, "quantity_value_label").text() == format_cop(2000)
+    assert _find(window, "quantity_value_label").text() == (
+        f"Subtotal: {format_cop(2000)}"
+    )
 
 
 def test_other_category_qty_only_no_promo_and_prefix_after_add(qtbot) -> None:
@@ -76,13 +92,19 @@ def test_other_category_qty_only_no_promo_and_prefix_after_add(qtbot) -> None:
 
     _click(qtbot, _find(window, "sale_product_5"))
     assert window.findChild(QObject, "price_search_scroll") is None
+    assert _find(window, "selected_product_label").text() == "Torta"
     assert NOMBRE_CATEGORIA_PAN_PEQUENO not in (
         _find(window, "selected_product_label").text()
+    )
+    assert _find(window, "selected_product_unit_price").text() == (
+        f"Unitario: {format_cop(20000)}"
     )
     _click(qtbot, _find(window, "quantity_plus_button"))
     _click(qtbot, _find(window, "quantity_plus_button"))
     assert _find(window, "quantity_label").text() == "3"
-    assert _find(window, "quantity_value_label").text() == format_cop(60000)
+    assert _find(window, "quantity_value_label").text() == (
+        f"Subtotal: {format_cop(60000)}"
+    )
     assert _find(window, "sale_value_preview").text() == ""
 
     _click(qtbot, _find(window, "agregar_button"))
@@ -130,3 +152,38 @@ def test_prefix_filters_product_grid_without_selection(qtbot) -> None:
     _click(qtbot, _find(window, "sale_category_2"))
     assert _find(window, "sale_product_2") is not None
     assert window.findChild(QObject, "sale_product_4") is None
+
+
+def test_selected_panel_image_unit_subtotal_and_qty_order(qtbot) -> None:
+    api = FakeApiClient()
+    window = create_window(api)
+    qtbot.addWidget(window)
+    window.show()
+    _click(qtbot, _find(window, "menu_register_button"))
+
+    panel = _find(window, "selected_product_panel")
+    assert panel is not None
+    assert _find(window, "selected_product_image") is not None
+    assert _find(window, "selected_product_label").text() == (
+        "Sin producto seleccionado"
+    )
+    assert _find(window, "selected_product_unit_price").text() == ""
+    assert _find(window, "quantity_value_label").text() == ""
+
+    qty_hbox = _find(window, "quantity_section").layout().itemAt(0).layout()
+    assert qty_hbox.itemAt(0).widget().objectName() == "quantity_label"
+    assert qty_hbox.itemAt(1).widget().objectName() == "quantity_minus_button"
+    assert qty_hbox.itemAt(2).widget().objectName() == "quantity_plus_button"
+
+    _click(qtbot, _find(window, "sale_product_1"))
+    assert _find(window, "selected_product_label").text() == "Pan"
+    assert _find(window, "selected_product_unit_price").text() == (
+        f"Unitario: {format_cop(5000)}"
+    )
+    assert _find(window, "quantity_value_label").text() == (
+        f"Subtotal: {format_cop(5000)}"
+    )
+    # Sin imagen en fake: no crashea.
+    image = _find(window, "selected_product_image")
+    pixmap = image.pixmap()
+    assert pixmap is None or pixmap.isNull()

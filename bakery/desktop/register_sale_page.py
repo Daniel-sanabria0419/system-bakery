@@ -4,6 +4,7 @@ from typing import List, Mapping, Optional
 
 import httpx
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QDialog,
     QFrame,
@@ -188,51 +189,74 @@ class RegisterSalePage(QWidget):
         catalog_layout.setContentsMargins(8, 8, 8, 8)
         catalog_layout.setSpacing(style.PAGE_SPACING)
 
+        selection_panel = QWidget()
+        selection_panel.setObjectName("selected_product_panel")
+        selection_row = QHBoxLayout(selection_panel)
+        selection_row.setContentsMargins(0, 0, 0, 0)
+        selection_row.setSpacing(style.PAGE_SPACING)
+
+        self._selection_image = QLabel()
+        self._selection_image.setObjectName("selected_product_image")
+        self._selection_image.setFixedSize(
+            style.SELECTED_PRODUCT_IMAGE_WIDTH,
+            style.SELECTED_PRODUCT_IMAGE_HEIGHT,
+        )
+        self._selection_image.setAlignment(Qt.AlignCenter)
+        self._selection_image.setScaledContents(False)
+        selection_row.addWidget(self._selection_image)
+
+        info_column = QVBoxLayout()
+        info_column.setContentsMargins(0, 0, 0, 0)
+        info_column.setSpacing(style.PAGE_SPACING)
         self._selection_label = QLabel("Sin producto seleccionado")
         self._selection_label.setObjectName("selected_product_label")
         self._selection_label.setWordWrap(True)
-        catalog_layout.addWidget(self._selection_label)
-
-        self._feedback = QLabel("")
-        self._feedback.setObjectName("sale_feedback")
-        self._feedback.setWordWrap(True)
-        catalog_layout.addWidget(self._feedback)
+        info_column.addWidget(self._selection_label)
+        self._selection_unit_label = QLabel("")
+        self._selection_unit_label.setObjectName("selected_product_unit_price")
+        info_column.addWidget(self._selection_unit_label)
+        self._quantity_value_label = QLabel("")
+        self._quantity_value_label.setObjectName("quantity_value_label")
+        info_column.addWidget(self._quantity_value_label)
+        info_column.addStretch(1)
+        selection_row.addLayout(info_column, stretch=1)
 
         qty_section = QWidget()
         qty_section.setObjectName("quantity_section")
         qty_section_layout = QVBoxLayout(qty_section)
         qty_section_layout.setContentsMargins(0, 0, 0, 0)
         qty_section_layout.setSpacing(style.PAGE_SPACING)
-
         qty_row = QHBoxLayout()
-        qty_caption = QLabel("Cantidad")
-        qty_caption.setObjectName("quantity_caption")
-        qty_row.addWidget(qty_caption)
+        qty_row.setSpacing(style.PAGE_SPACING)
+        # Orden scope: cantidad (número) luego −/+.
+        self._quantity_label = QLabel("1")
+        self._quantity_label.setObjectName("quantity_label")
+        self._quantity_label.setAlignment(Qt.AlignCenter)
+        qty_row.addWidget(self._quantity_label)
         minus = QPushButton("−")
         minus.setObjectName("quantity_minus_button")
         style.apply_class(minus, "payment-method-button")
         minus.clicked.connect(self._quantity_minus)
         qty_row.addWidget(minus)
-        self._quantity_label = QLabel("1")
-        self._quantity_label.setObjectName("quantity_label")
-        self._quantity_label.setAlignment(Qt.AlignCenter)
-        qty_row.addWidget(self._quantity_label)
         plus = QPushButton("+")
         plus.setObjectName("quantity_plus_button")
         style.apply_class(plus, "payment-method-button")
         plus.clicked.connect(self._quantity_plus)
         qty_row.addWidget(plus)
-        self._quantity_value_label = QLabel("")
-        self._quantity_value_label.setObjectName("quantity_value_label")
-        qty_row.addWidget(self._quantity_value_label)
-        qty_row.addStretch(1)
         qty_section_layout.addLayout(qty_row)
+        qty_section_layout.addStretch(1)
+        selection_row.addWidget(qty_section)
+        catalog_layout.addWidget(selection_panel)
 
         self._value_preview_label = QLabel("")
         self._value_preview_label.setObjectName("sale_value_preview")
         self._value_preview_label.setWordWrap(True)
-        qty_section_layout.addWidget(self._value_preview_label)
-        catalog_layout.addWidget(qty_section)
+        catalog_layout.addWidget(self._value_preview_label)
+
+        self._feedback = QLabel("")
+        self._feedback.setObjectName("sale_feedback")
+        self._feedback.setWordWrap(True)
+        catalog_layout.addWidget(self._feedback)
 
         categories_section = QWidget()
         categories_section.setObjectName("catalog_categories_section")
@@ -426,11 +450,16 @@ class RegisterSalePage(QWidget):
 
     def _sync_quantity_section(self) -> None:
         self._quantity_label.setText(str(self._draft.quantity()))
+        selected = self._draft.selected_product()
         subtotal = self._draft.current_subtotal()
-        if subtotal is None:
+        if selected is None or subtotal is None:
+            self._selection_unit_label.setText("")
             self._quantity_value_label.setText("")
-        else:
-            self._quantity_value_label.setText(format_cop(subtotal))
+            return
+        self._selection_unit_label.setText(
+            f"Unitario: {format_cop(selected['precio'])}"
+        )
+        self._quantity_value_label.setText(f"Subtotal: {format_cop(subtotal)}")
 
     def _categoria_nombre(self, id_categoria: object) -> Optional[str]:
         if not isinstance(id_categoria, int) or isinstance(id_categoria, bool):
@@ -476,10 +505,28 @@ class RegisterSalePage(QWidget):
         selected = self._draft.selected_product()
         if selected is None:
             self._selection_label.setText("Sin producto seleccionado")
-        else:
-            self._selection_label.setText(
-                f"Seleccionado: {selected['nombre']} — {format_cop(selected['precio'])}"
+            self._selection_image.clear()
+            self._selection_image.setText("")
+            return
+        self._selection_label.setText(str(selected["nombre"]))
+        image_path = resolve_relative_image(selected.get("ruta_imagen"))
+        if image_path is None:
+            self._selection_image.clear()
+            self._selection_image.setText("")
+            return
+        pixmap = QPixmap(str(image_path))
+        if pixmap.isNull():
+            self._selection_image.clear()
+            self._selection_image.setText("")
+            return
+        self._selection_image.setPixmap(
+            pixmap.scaled(
+                style.SELECTED_PRODUCT_IMAGE_WIDTH,
+                style.SELECTED_PRODUCT_IMAGE_HEIGHT,
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation,
             )
+        )
 
     def _refresh_mode_ui(self) -> None:
         """Preview Pan pequeño (valor→cantidad)."""

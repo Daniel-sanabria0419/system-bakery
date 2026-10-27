@@ -54,7 +54,11 @@ PRODUCT_CHIP_HEIGHT = 60
 CATALOG_CHIP_COLOR = "#64c466"
 CATALOG_CHIP_SELECTED_COLOR = "#2E7D32"
 CATALOG_BACKGROUND = "#F5F0E8"
+# Secciones categorías/productos en cobro (Beta 2.0.2 Etapa 3)
+CATALOG_SECTION_BACKGROUND = "#d7d4ce"
 CATALOG_TEXT_COLOR = "#000000"
+# Referencia visual ~6 chips/fila; el layout calcula por ancho (no fijo).
+CATALOG_WRAP_REFERENCE_COLUMNS = 6
 
 # Formularios Crear/Editar producto (Beta 2.0.1 Etapa 7)
 APP_BACKGROUND = "#F5F0E8"

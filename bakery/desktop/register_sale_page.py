@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QLayout,
     QMessageBox,
     QPushButton,
     QScrollArea,
@@ -33,6 +34,7 @@ from bakery.desktop.dialogs import (
     SelectPaymentMethodDialog,
 )
 from bakery.desktop.ui_helpers import (
+    FlowLayout,
     _BACK_BUTTON_ARROW,
     _PAYMENT_BUTTON_PLACEHOLDER,
     _apply_catalog_chip_icon,
@@ -232,31 +234,45 @@ class RegisterSalePage(QWidget):
         qty_section_layout.addWidget(self._value_preview_label)
         catalog_layout.addWidget(qty_section)
 
-        catalog_layout.addWidget(QLabel("Categorías"))
+        categories_section = QWidget()
+        categories_section.setObjectName("catalog_categories_section")
+        categories_section_layout = QVBoxLayout(categories_section)
+        categories_section_layout.setContentsMargins(8, 8, 8, 8)
+        categories_section_layout.setSpacing(style.PAGE_SPACING)
+        categories_caption = QLabel("Categorías")
+        categories_caption.setObjectName("categories_caption")
+        categories_section_layout.addWidget(categories_caption)
         self._categories_host = QWidget()
         self._categories_host.setObjectName("categories_list")
-        self._categories_layout = QVBoxLayout(self._categories_host)
-        self._categories_layout.setContentsMargins(0, 0, 0, 0)
-        self._categories_layout.setSpacing(style.PAGE_SPACING)
+        self._categories_layout = FlowLayout(self._categories_host)
         categories_scroll = QScrollArea()
         categories_scroll.setObjectName("categories_scroll")
         categories_scroll.setWidgetResizable(True)
         categories_scroll.setFrameShape(QFrame.NoFrame)
         categories_scroll.setWidget(self._categories_host)
-        catalog_layout.addWidget(categories_scroll, stretch=1)
+        categories_section_layout.addWidget(categories_scroll, stretch=1)
+        catalog_layout.addWidget(categories_section, stretch=1)
 
-        catalog_layout.addWidget(QLabel("Productos"))
+        catalog_layout.addWidget(_make_separator("catalog_sections_divider"))
+
+        products_section = QWidget()
+        products_section.setObjectName("catalog_products_section")
+        products_section_layout = QVBoxLayout(products_section)
+        products_section_layout.setContentsMargins(8, 8, 8, 8)
+        products_section_layout.setSpacing(style.PAGE_SPACING)
+        products_caption = QLabel("Productos")
+        products_caption.setObjectName("products_caption")
+        products_section_layout.addWidget(products_caption)
         self._products_host = QWidget()
         self._products_host.setObjectName("sale_products_list")
-        self._products_layout = QVBoxLayout(self._products_host)
-        self._products_layout.setContentsMargins(0, 0, 0, 0)
-        self._products_layout.setSpacing(style.PAGE_SPACING)
+        self._products_layout = FlowLayout(self._products_host)
         products_scroll = QScrollArea()
         products_scroll.setObjectName("sale_products_scroll")
         products_scroll.setWidgetResizable(True)
         products_scroll.setFrameShape(QFrame.NoFrame)
         products_scroll.setWidget(self._products_host)
-        catalog_layout.addWidget(products_scroll, stretch=2)
+        products_section_layout.addWidget(products_scroll, stretch=1)
+        catalog_layout.addWidget(products_section, stretch=2)
 
         columns.addWidget(left, style.LEFT_COLUMN_STRETCH)
         columns.addWidget(catalog, style.RIGHT_COLUMN_STRETCH)
@@ -488,7 +504,7 @@ class RegisterSalePage(QWidget):
                 f"{format_cop(subtotal)} = {quantity} panes"
             )
 
-    def _clear_layout(self, layout: QVBoxLayout) -> None:
+    def _clear_layout(self, layout: QLayout) -> None:
         while layout.count():
             item = layout.takeAt(0)
             widget = item.widget()
@@ -532,7 +548,6 @@ class RegisterSalePage(QWidget):
                 )
             )
             self._categories_layout.addWidget(button)
-        self._categories_layout.addStretch(1)
 
     def _rebuild_products(self) -> None:
         self._clear_layout(self._products_layout)
@@ -567,7 +582,6 @@ class RegisterSalePage(QWidget):
                 lambda checked=False, p=product: self._select_product(p)
             )
             self._products_layout.addWidget(button)
-        self._products_layout.addStretch(1)
 
     def _refresh_display(self) -> None:
         self._display.setText(self._draft.entry.display_text())

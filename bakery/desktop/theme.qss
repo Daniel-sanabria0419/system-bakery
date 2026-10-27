@@ -56,6 +56,16 @@ QPushButton[class="payment-method-button"] {
     font-size: 18px;
 }
 
+/* Listado Productos (CRUD) — fondo blanco; no tocar payment-method-button. */
+QWidget#products_page,
+QWidget#products_list,
+QScrollArea#products_list_scroll,
+QScrollArea#products_list_scroll > QWidget {
+    background-color: #FFFFFF;
+    color: #000000;
+    border: none;
+}
+
 QLabel[class="dialog-text"] {
     color: #1A1A1A;
     font-size: 28px;

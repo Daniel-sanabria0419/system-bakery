@@ -125,6 +125,24 @@ Requisitos y etapas:
 
 Preservar Beta 2.0.1. **No** features de Beta 2.1+.
 
+## Beta 2.0.3
+
+**Beta 2.0.3 está implementada** (etapas 1–3; PRs #34–#35). Pendiente OK final de Daniel para declarar cerrada. Solo UX de navegación de catálogo y métricas de chips sobre 2.0.2.
+
+Alcance implementado:
+
+1. Vista A (solo categorías, sin selección visual) / Vista B (productos + chip Volver).
+2. Chips más grandes; tipografía y tamaños editables en `bakery/desktop/style.py`.
+
+Requisitos y etapas:
+
+- `docs/product-requirements.md` (sección Beta 2.0.3)
+- `docs/architecture.md`
+- `docs/beta-2.0.3/stages.md`
+- `docs/beta-2.0.3/regression-notes.md`
+
+Preservar Beta 2.0.2. **No** features de Beta 2.1+.
+
 ## Fuera del alcance
 
 NO implementar, ni anticipar en una versión que todavía no está especificada:

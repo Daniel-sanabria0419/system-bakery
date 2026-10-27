@@ -12,6 +12,8 @@ Beta 1 estableció las capas. Beta 1.1 las reutiliza cambiando el flujo de regis
 
 **Beta 2.0.2** evoluciona solo UX de cobro/catálogo: prefijo de precio en grilla (capa `app` + desktop), wrap/`#d7d4ce`/panel seleccionado y listado Productos blanco — sin cambiar `POST /ventas` ni el módulo de promo.
 
+**Beta 2.0.3** añade navegación de catálogo en dos vistas (categorías ↔ productos + Volver) y métricas/tipografía de chips editables en `style.py` — sin cambiar API ni promo.
+
 ## Arquitectura general
 
 ```text
@@ -203,7 +205,15 @@ Detalle: `docs/beta-2.0.1/stages.md`.
 
 Detalle: `docs/beta-2.0.2/stages.md`.
 
-## Fuera de alcance arquitectónico (Beta 2.0 / 2.0.1 / 2.0.2)
+## Beta 2.0.3 (resumen)
+
+- Vista A (solo categorías) / Vista B (productos + chip Volver); `catalog_back_to_categories`.
+- Chips: `CATEGORY_CHIP_*` / `PRODUCT_CHIP_*` / `*_FONT_SIZE` en `style.py`; QSS vía `load_theme_qss`.
+- `CatalogChipButton` para nombres multilínea.
+
+Detalle: `docs/beta-2.0.3/stages.md`.
+
+## Fuera de alcance arquitectónico (Beta 2.0 / 2.0.1 / 2.0.2 / 2.0.3)
 
 - Historial avanzado / edición de ventas.
 - Inventario, recetas, producción, clientes, sync, login, reportes.

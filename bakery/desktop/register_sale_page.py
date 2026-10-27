@@ -16,7 +16,6 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSizePolicy,
-    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -35,6 +34,7 @@ from bakery.desktop.dialogs import (
     SelectPaymentMethodDialog,
 )
 from bakery.desktop.ui_helpers import (
+    CatalogChipButton,
     FlowLayout,
     _BACK_BUTTON_ARROW,
     _PAYMENT_BUTTON_PLACEHOLDER,
@@ -609,7 +609,7 @@ class RegisterSalePage(QWidget):
 
     def _rebuild_categories(self) -> None:
         self._clear_layout(self._categories_layout)
-        todos = QToolButton()
+        todos = CatalogChipButton()
         todos.setText("Todos")
         todos.setObjectName("sale_category_todos")
         todos.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
@@ -620,7 +620,7 @@ class RegisterSalePage(QWidget):
         self._categories_layout.addWidget(todos)
 
         for category in self._categories:
-            button = QToolButton()
+            button = CatalogChipButton()
             button.setText(str(category["nombre"]))
             button.setObjectName(f"sale_category_{category['id_categoria']}")
             button.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
@@ -647,7 +647,7 @@ class RegisterSalePage(QWidget):
     def _rebuild_products(self) -> None:
         self._clear_layout(self._products_layout)
         # Volver = chip en la misma grilla/wrap que los productos (no barra aparte).
-        catalog_back = QToolButton()
+        catalog_back = CatalogChipButton()
         catalog_back.setText("Volver")
         catalog_back.setObjectName("catalog_back_to_categories")
         catalog_back.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
@@ -672,7 +672,7 @@ class RegisterSalePage(QWidget):
         selected = self._draft.selected_product()
         selected_id = selected["id_producto"] if selected is not None else None
         for product in products:
-            button = QToolButton()
+            button = CatalogChipButton()
             button.setText(str(product["nombre"]))
             button.setObjectName(f"sale_product_{product['id_producto']}")
             button.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)

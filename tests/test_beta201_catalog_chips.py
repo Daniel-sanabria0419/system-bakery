@@ -1,12 +1,13 @@
 """Chips de catálogo, Todos primero, wrap, fondos sección y medios intactos."""
 
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QSize, QTimer
+from PySide6.QtGui import QColor, QIcon, QImage, QPixmap
 from PySide6.QtWidgets import QApplication, QFrame, QLayout, QPushButton
 
 from bakery.desktop import style
 from bakery.desktop.main import create_window
 from bakery.desktop.ui import SelectPaymentMethodDialog
-from bakery.desktop.ui_helpers import FlowLayout, catalog_chips_per_row
+from bakery.desktop.ui_helpers import CatalogChipButton, FlowLayout, catalog_chips_per_row
 from tests.test_stage4_desktop import FakeApiClient, _click, _find
 
 
@@ -195,3 +196,35 @@ def test_payment_method_popup_still_uses_black_buttons(qtbot) -> None:
     _click(qtbot, _find(window, "payment_button"))
     qtbot.waitUntil(lambda: "class" in seen, timeout=2000)
     assert seen["class"] == "payment-method-button"
+
+
+def test_long_product_name_wraps_onto_next_line(qtbot) -> None:
+    button = CatalogChipButton()
+    button.setText("Pan de queso integral grande")
+    button.setFixedSize(style.PRODUCT_CHIP_WIDTH, style.PRODUCT_CHIP_HEIGHT)
+    button.setIconSize(QSize(50, 50))
+    image = QImage(40, 40, QImage.Format_RGB32)
+    image.fill(QColor("#2244aa"))
+    button.setIcon(QIcon(QPixmap.fromImage(image)))
+    style.apply_class(button, "product-chip")
+    qtbot.addWidget(button)
+    button.show()
+    qtbot.waitExposed(button)
+
+    pixmap = button.grab()
+    grabbed = pixmap.toImage()
+    ink_rows = []
+    for y in range(button.iconSize().height(), pixmap.height() - 2):
+        dark = 0
+        for x in range(4, pixmap.width() - 4):
+            if grabbed.pixelColor(x, y).lightness() < 80:
+                dark += 1
+        if dark > 6:
+            ink_rows.append(y)
+    bands = 0
+    previous = None
+    for y in ink_rows:
+        if previous is None or y > previous + 1:
+            bands += 1
+        previous = y
+    assert bands >= 2

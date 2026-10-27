@@ -3,14 +3,17 @@
 from pathlib import Path
 from typing import List, Optional
 
-from PySide6.QtCore import QPoint, QRect, QSize, Qt
-from PySide6.QtGui import QIcon
+from PySide6.QtCore import QPoint, QRect, QRectF, QSize, Qt
+from PySide6.QtGui import QIcon, QTextOption
 from PySide6.QtWidgets import (
     QDialog,
     QFrame,
     QLayout,
     QLayoutItem,
     QPushButton,
+    QStyle,
+    QStyleOptionToolButton,
+    QStylePainter,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -66,7 +69,57 @@ def _apply_catalog_chip_icon(button: QToolButton, image_path: Optional[Path]) ->
         button.setIcon(QIcon())
         return
     button.setIcon(QIcon(str(image_path)))
-    button.setIconSize(QSize(36, 28))
+    button.setIconSize(QSize(60, 60))
+
+
+class CatalogChipButton(QToolButton):
+    """Chip de catálogo: el nombre parte de renglón en vez de cortarse con ..."""
+
+    def paintEvent(self, event) -> None:
+        painter = QStylePainter(self)
+        option = QStyleOptionToolButton()
+        self.initStyleOption(option)
+        label = option.text
+        icon = QIcon(option.icon)
+        option.text = ""
+        option.icon = QIcon()
+        painter.drawComplexControl(QStyle.CC_ToolButton, option)
+
+        pad = style.PRODUCT_CHIP_IMAGE_PADDING
+        contents = self.rect().adjusted(pad, pad, -pad, -pad)
+        icon_size = self.iconSize()
+        has_icon = (
+            not icon.isNull()
+            and icon_size.width() > 0
+            and icon_size.height() > 0
+        )
+        if has_icon:
+            icon_rect = QRect(
+                contents.x() + max(0, (contents.width() - icon_size.width()) // 2),
+                contents.y(),
+                min(icon_size.width(), contents.width()),
+                min(icon_size.height(), contents.height()),
+            )
+            icon.paint(painter, icon_rect, Qt.AlignCenter)
+            text_top = icon_rect.bottom() + 1 + pad
+            text_rect = QRect(
+                contents.x(),
+                text_top,
+                contents.width(),
+                max(0, contents.bottom() - text_top + 1),
+            )
+            alignment = Qt.AlignHCenter | Qt.AlignTop
+        else:
+            text_rect = QRect(contents)
+            alignment = Qt.AlignCenter
+        if not label or text_rect.height() <= 0:
+            return
+        painter.setFont(option.font)
+        painter.setPen(option.palette.color(option.palette.ColorRole.ButtonText))
+        text_option = QTextOption()
+        text_option.setWrapMode(QTextOption.WrapMode.WrapAtWordBoundaryOrAnywhere)
+        text_option.setAlignment(alignment)
+        painter.drawText(QRectF(text_rect), label, text_option)
 
 
 def _make_separator(object_name: str) -> QFrame:

@@ -142,25 +142,42 @@ QLabel#products_caption {
     color: #000000;
 }
 
+/* Tipografía: placeholders sustituidos desde style.py (load_theme_qss). */
 QPushButton[class="category-chip"],
+QToolButton[class="category-chip"] {
+    background-color: #64c466;
+    color: #000000;
+    font-size: __CATEGORY_CHIP_FONT_SIZE__px;
+    font-weight: bold;
+    padding: 4px;
+    border: none;
+}
+
 QPushButton[class="product-chip"],
-QToolButton[class="category-chip"],
 QToolButton[class="product-chip"] {
     background-color: #64c466;
     color: #000000;
-    font-size: 12px;
+    font-size: __PRODUCT_CHIP_FONT_SIZE__px;
     font-weight: bold;
     padding: 4px;
     border: none;
 }
 
 QPushButton[class="category-chip-selected"],
+QToolButton[class="category-chip-selected"] {
+    background-color: #2E7D32;
+    color: #FFFFFF;
+    font-size: __CATEGORY_CHIP_FONT_SIZE__px;
+    font-weight: bold;
+    padding: 4px;
+    border: 2px solid #1B5E20;
+}
+
 QPushButton[class="product-chip-selected"],
-QToolButton[class="category-chip-selected"],
 QToolButton[class="product-chip-selected"] {
     background-color: #2E7D32;
     color: #FFFFFF;
-    font-size: 12px;
+    font-size: __PRODUCT_CHIP_FONT_SIZE__px;
     font-weight: bold;
     padding: 4px;
     border: 2px solid #1B5E20;

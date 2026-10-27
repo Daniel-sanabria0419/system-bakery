@@ -127,7 +127,7 @@ Preservar Beta 2.0.1. **No** features de Beta 2.1+.
 
 ## Beta 2.0.3
 
-**Beta 2.0.3 está implementada** (etapas 1–3; PRs #34–#35). Pendiente OK final de Daniel para declarar cerrada. Solo UX de navegación de catálogo y métricas de chips sobre 2.0.2.
+**Beta 2.0.3 está implementada** (etapas 1–3; PRs #34–#36). Pendiente OK final de Daniel para declarar cerrada. Solo UX de navegación de catálogo y métricas de chips sobre 2.0.2.
 
 Alcance implementado:
 

@@ -61,11 +61,8 @@ PRODUCT_CHIP_FONT_SIZE = 16  # px
 # Separación de la foto: borde del chip y espacio hasta el nombre.
 PRODUCT_CHIP_IMAGE_PADDING = 6
 CATALOG_CHIP_COLOR = "#64c466"
-CATALOG_CHIP_SELECTED_COLOR = "#2E7D32"
-CATALOG_BACKGROUND = "#F5F0E8"
 # Secciones categorías/productos en cobro (Beta 2.0.2 Etapa 3)
 CATALOG_SECTION_BACKGROUND = "#d7d4ce"
-CATALOG_TEXT_COLOR = "#000000"
 # Referencia visual ~6 chips/fila; el layout calcula por ancho (no fijo).
 CATALOG_WRAP_REFERENCE_COLUMNS = 6
 
@@ -77,11 +74,9 @@ SELECTED_PRODUCT_IMAGE_HEIGHT = 72
 APP_BACKGROUND = "#F5F0E8"
 # Listado CRUD Productos (Beta 2.0.2 Etapa 5)
 PRODUCTS_LIST_BACKGROUND = "#FFFFFF"
-PRODUCT_FORM_FIELD_BACKGROUND = "#FFFFFF"
 PRODUCT_FORM_FIELD_TEXT = "#000000"
 # Placeholder más oscuro que el fondo de la app (#F5F0E8) para diferenciarse.
 PRODUCT_FORM_PLACEHOLDER = "#5C5346"
-PRODUCT_FORM_FIELD_BORDER = "#C4B8A8"
 PRODUCT_FORM_FIELD_CLASS = "product-form-field"
 PRODUCT_FORM_LABEL_CLASS = "product-form-label"
 

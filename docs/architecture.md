@@ -56,7 +56,7 @@ Menú principal
       |
       +-- Registrar venta
             - panel catálogo (categorías + productos activos + cantidad)
-            - entrada (calculadora = búsqueda por precio exacto)
+            - entrada (calculadora = filtro por prefijo de precio en grilla, 2.0.2+)
             - lista de compra (nombre × cantidad — subtotal)
             - total acumulado
             - medio de pago (botón → popup; sin QComboBox)
@@ -99,7 +99,7 @@ La presentación monetaria de la entrada actual vive en `Calculator.display_text
 
 Comportamiento vigente en código (conservado a propósito en Beta 2):
 
-- Sin dígitos / vacío → `"$ 0.00"` (desajuste histórico respecto a docs 1.1 que pedían `""`; no se corrigió en Beta 2 sin OK explícito).
+- Sin dígitos / vacío → `"$ 0"` (`format_cop(0)`).
 - Con dígitos → `format_cop(current_amount)` (ej. `1000` → `$ 1.000`).
 
 La UI desktop consume este texto; no recalcula el formato por su cuenta salvo ítems/total vía `format_cop`.
@@ -108,7 +108,7 @@ La UI desktop consume este texto; no recalcula el formato por su cuenta salvo í
 
 | Control | Responsabilidad |
 |---|---|
-| Dígitos | Actualizan la entrada; alimentan búsqueda local por precio exacto (candidatos activos) |
+| Dígitos | Actualizan la entrada; sin producto seleccionado filtran la grilla por prefijo de precio (2.0.2+) |
 | Catálogo / categoría | Selección de producto activo; cantidad |
 | **AGREGAR** | Si hay producto seleccionado → añade línea y limpia entrada; si no → rechazo visible |
 | **Borrar** | Elimina un dígito de la entrada; no modifica la compra |

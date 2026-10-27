@@ -63,7 +63,7 @@ Alcance implementado:
 
 1. Catálogo: categorías (semilla, sin CRUD UI) y productos (CRUD + activar/desactivar).
 2. Menú: botón «Productos» además de «Registrar venta».
-3. Venta: selección por categoría, cantidad, calculadora como búsqueda por precio exacto.
+3. Venta: selección por categoría, cantidad, calculadora como filtro de catálogo (en 2.0 era precio exacto; desde 2.0.2 es **prefijo** de precio en la grilla).
 4. No se agrega línea sin producto seleccionado (rechazo visible).
 5. `POST /ventas` con `id_medio_pago` + `lineas`; total calculado en backend.
 6. Snapshot histórico en `venta_lineas` (`nombre_producto`, `precio_aplicado`).
@@ -127,12 +127,12 @@ Preservar Beta 2.0.1. **No** features de Beta 2.1+.
 
 ## Beta 2.0.3
 
-**Beta 2.0.3 está implementada** (etapas 1–3; PRs #34–#36). Pendiente OK final de Daniel para declarar cerrada. Solo UX de navegación de catálogo y métricas de chips sobre 2.0.2.
+**Beta 2.0.3 está terminada** (etapas 1–3 en main vía #34–#36; OK final de Daniel 2026-10-27). Solo UX de navegación de catálogo y métricas de chips sobre 2.0.2.
 
 Alcance implementado:
 
 1. Vista A (solo categorías, sin selección visual) / Vista B (productos + chip Volver).
-2. Chips más grandes; tipografía y tamaños editables en `bakery/desktop/style.py`.
+2. Chips más grandes (métricas vigentes en `style.py`: 135×120); tipografía y tamaños editables en `bakery/desktop/style.py`.
 
 Requisitos y etapas:
 
@@ -140,6 +140,8 @@ Requisitos y etapas:
 - `docs/architecture.md`
 - `docs/beta-2.0.3/stages.md`
 - `docs/beta-2.0.3/regression-notes.md`
+
+Ops / backlog táctil (no implementar sin requisito): `docs/caja-tactil-setup.md`, `docs/tactil-prioridades-futuro.md`.
 
 Preservar Beta 2.0.2. **No** features de Beta 2.1+.
 

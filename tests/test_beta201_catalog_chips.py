@@ -42,7 +42,8 @@ def test_todos_first_and_category_chip_metrics(qtbot) -> None:
     assert first.text() == "Todos"
     assert first.width() == style.CATEGORY_CHIP_WIDTH
     assert first.height() == style.CATEGORY_CHIP_HEIGHT
-    assert first.property("class") == "category-chip-selected"
+    # Vista A: ningún chip seleccionado (Todos tampoco).
+    assert first.property("class") == "category-chip"
 
     category = _layout_widget(layout, "sale_category_1")
     assert category is not None
@@ -58,31 +59,32 @@ def test_category_filter_and_todos_shows_all(qtbot) -> None:
     window.show()
     _click(qtbot, _find(window, "menu_register_button"))
 
+    # Vista B vía Todos: todos los activos.
+    _click(qtbot, _find(window, "sale_category_todos"))
+    QApplication.processEvents()
     names = _product_object_names(window)
     assert "sale_product_1" in names
     assert "sale_product_2" in names
 
+    _click(qtbot, _find(window, "catalog_back_to_categories"))
     _click(qtbot, _layout_widget(window._register._categories_layout, "sale_category_2"))
     QApplication.processEvents()
     names = _product_object_names(window)
     assert "sale_product_1" not in names
     assert "sale_product_2" in names
+    # En Vista B las categorías están ocultas; el filtro sigue aplicado.
+    assert window._register._selected_category_id == 2
+
+    _click(qtbot, _find(window, "catalog_back_to_categories"))
     cats = window._register._categories_layout
-    assert _layout_widget(cats, "sale_category_2").property("class") == (
-        "category-chip-selected"
-    )
     assert _layout_widget(cats, "sale_category_todos").property("class") == (
         "category-chip"
     )
-
     _click(qtbot, _layout_widget(cats, "sale_category_todos"))
     QApplication.processEvents()
     names = _product_object_names(window)
     assert "sale_product_1" in names
     assert "sale_product_2" in names
-    assert _layout_widget(
-        window._register._categories_layout, "sale_category_todos"
-    ).property("class") == "category-chip-selected"
 
 
 def test_product_chip_size_selected_and_not_payment_class(qtbot) -> None:
@@ -91,6 +93,17 @@ def test_product_chip_size_selected_and_not_payment_class(qtbot) -> None:
     qtbot.addWidget(window)
     window.show()
     _click(qtbot, _find(window, "menu_register_button"))
+    _click(qtbot, _find(window, "sale_category_todos"))
+    QApplication.processEvents()
+
+    back = _layout_widget(
+        window._register._products_layout, "catalog_back_to_categories"
+    )
+    assert back is not None
+    assert back.width() == style.PRODUCT_CHIP_WIDTH
+    assert back.height() == style.PRODUCT_CHIP_HEIGHT
+    assert back.property("class") == "product-chip"
+    assert window._register._products_layout.itemAt(0).widget() is back
 
     product = _layout_widget(window._register._products_layout, "sale_product_1")
     assert product is not None
@@ -106,6 +119,7 @@ def test_product_chip_size_selected_and_not_payment_class(qtbot) -> None:
 
     assert style.CATALOG_SECTION_BACKGROUND == "#d7d4ce"
     assert style.CATALOG_CHIP_COLOR == "#64c466"
+    _click(qtbot, _find(window, "catalog_back_to_categories"))
     category = _layout_widget(window._register._categories_layout, "sale_category_1")
     assert category.property("class") != "payment-method-button"
     assert selected.property("class") != "payment-method-button"
@@ -120,12 +134,14 @@ def test_catalog_sections_background_divider_and_flow_layout(qtbot) -> None:
     _click(qtbot, _find(window, "menu_register_button"))
     QApplication.processEvents()
 
-    assert _find(window, "catalog_categories_section") is not None
-    assert _find(window, "catalog_products_section") is not None
+    assert _find(window, "catalog_categories_section").isVisibleTo(window)
+    assert not _find(window, "catalog_products_section").isVisibleTo(window)
     divider = _find(window, "catalog_sections_divider")
     assert divider is not None
     assert isinstance(divider, QFrame)
     assert divider.frameShape() == QFrame.HLine
+    # 2.0.3: nunca ambas secciones a la vez → divisor oculto.
+    assert not divider.isVisibleTo(window)
 
     assert isinstance(window._register._categories_layout, FlowLayout)
     assert isinstance(window._register._products_layout, FlowLayout)

@@ -15,6 +15,7 @@ def test_pan_pequeno_value_1900_previews_ceil_before_add(qtbot) -> None:
     window.show()
     _click(qtbot, _find(window, "menu_register_button"))
 
+    _click(qtbot, _find(window, "sale_category_todos"))
     _click(qtbot, _find(window, "sale_product_4"))
     assert window.findChild(QObject, "price_search_scroll") is None
     assert window.findChild(QObject, "price_search_caption") is None
@@ -55,6 +56,7 @@ def test_pan_pequeno_plus_minus_transitions_6_7_8(qtbot) -> None:
     window.show()
     _click(qtbot, _find(window, "menu_register_button"))
 
+    _click(qtbot, _find(window, "sale_category_todos"))
     _click(qtbot, _find(window, "sale_product_4"))
     for _ in range(5):
         _click(qtbot, _find(window, "quantity_plus_button"))
@@ -90,6 +92,7 @@ def test_other_category_qty_only_no_promo_and_prefix_after_add(qtbot) -> None:
     window.show()
     _click(qtbot, _find(window, "menu_register_button"))
 
+    _click(qtbot, _find(window, "sale_category_todos"))
     _click(qtbot, _find(window, "sale_product_5"))
     assert window.findChild(QObject, "price_search_scroll") is None
     assert _find(window, "selected_product_label").text() == "Torta"
@@ -111,6 +114,7 @@ def test_other_category_qty_only_no_promo_and_prefix_after_add(qtbot) -> None:
     assert _find(window, "purchase_list").text() == _line_text("Torta", 20000, 3)
     assert _find(window, "purchase_total").text() == f"Total: {format_cop(60000)}"
 
+    _click(qtbot, _find(window, "catalog_back_to_categories"))
     _click(qtbot, _find(window, "sale_category_todos"))
     for digit in "5000":
         _click(qtbot, _find(window, f"digit_{digit}"))
@@ -140,6 +144,7 @@ def test_prefix_filters_product_grid_without_selection(qtbot) -> None:
     window.show()
     _click(qtbot, _find(window, "menu_register_button"))
 
+    _click(qtbot, _find(window, "sale_category_todos"))
     assert _find(window, "sale_product_1") is not None
     assert _find(window, "sale_product_2") is not None
 
@@ -149,6 +154,7 @@ def test_prefix_filters_product_grid_without_selection(qtbot) -> None:
     assert _find(window, "sale_product_4") is not None
     assert window.findChild(QObject, "sale_product_1") is None
 
+    _click(qtbot, _find(window, "catalog_back_to_categories"))
     _click(qtbot, _find(window, "sale_category_2"))
     assert _find(window, "sale_product_2") is not None
     assert window.findChild(QObject, "sale_product_4") is None
@@ -175,6 +181,7 @@ def test_selected_panel_image_unit_subtotal_and_qty_order(qtbot) -> None:
     assert qty_hbox.itemAt(1).widget().objectName() == "quantity_minus_button"
     assert qty_hbox.itemAt(2).widget().objectName() == "quantity_plus_button"
 
+    _click(qtbot, _find(window, "sale_category_todos"))
     _click(qtbot, _find(window, "sale_product_1"))
     assert _find(window, "selected_product_label").text() == "Pan"
     assert _find(window, "selected_product_unit_price").text() == (

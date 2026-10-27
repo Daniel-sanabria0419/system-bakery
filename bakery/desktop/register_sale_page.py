@@ -55,6 +55,8 @@ class RegisterSalePage(QWidget):
         self._categories: List[Mapping] = []
         self._active_products: List[Mapping] = []
         self._selected_category_id: Optional[int] = None
+        # Vista A = solo categorías; Vista B = productos + volver (Beta 2.0.3).
+        self._catalog_view = "categories"
 
         root = QVBoxLayout(self)
         _apply_page_layout(root)
@@ -258,9 +260,9 @@ class RegisterSalePage(QWidget):
         self._feedback.setWordWrap(True)
         catalog_layout.addWidget(self._feedback)
 
-        categories_section = QWidget()
-        categories_section.setObjectName("catalog_categories_section")
-        categories_section_layout = QVBoxLayout(categories_section)
+        self._categories_section = QWidget()
+        self._categories_section.setObjectName("catalog_categories_section")
+        categories_section_layout = QVBoxLayout(self._categories_section)
         categories_section_layout.setContentsMargins(8, 8, 8, 8)
         categories_section_layout.setSpacing(style.PAGE_SPACING)
         categories_caption = QLabel("Categorías")
@@ -275,13 +277,14 @@ class RegisterSalePage(QWidget):
         categories_scroll.setFrameShape(QFrame.NoFrame)
         categories_scroll.setWidget(self._categories_host)
         categories_section_layout.addWidget(categories_scroll, stretch=1)
-        catalog_layout.addWidget(categories_section, stretch=1)
+        catalog_layout.addWidget(self._categories_section, stretch=1)
 
-        catalog_layout.addWidget(_make_separator("catalog_sections_divider"))
+        self._catalog_sections_divider = _make_separator("catalog_sections_divider")
+        catalog_layout.addWidget(self._catalog_sections_divider)
 
-        products_section = QWidget()
-        products_section.setObjectName("catalog_products_section")
-        products_section_layout = QVBoxLayout(products_section)
+        self._products_section = QWidget()
+        self._products_section.setObjectName("catalog_products_section")
+        products_section_layout = QVBoxLayout(self._products_section)
         products_section_layout.setContentsMargins(8, 8, 8, 8)
         products_section_layout.setSpacing(style.PAGE_SPACING)
         products_caption = QLabel("Productos")
@@ -296,12 +299,14 @@ class RegisterSalePage(QWidget):
         products_scroll.setFrameShape(QFrame.NoFrame)
         products_scroll.setWidget(self._products_host)
         products_section_layout.addWidget(products_scroll, stretch=1)
-        catalog_layout.addWidget(products_section, stretch=2)
+        catalog_layout.addWidget(self._products_section, stretch=2)
+        self._catalog_layout = catalog_layout
 
         columns.addWidget(left, style.LEFT_COLUMN_STRETCH)
         columns.addWidget(catalog, style.RIGHT_COLUMN_STRETCH)
         root.addLayout(columns, stretch=1)
 
+        self._apply_catalog_view()
         self._refresh_display()
         self._refresh_submit()
         self._refresh_selection_ui()
@@ -330,8 +335,10 @@ class RegisterSalePage(QWidget):
     def load_catalog(self) -> None:
         self._categories = list(self._api.list_categories())
         self._active_products = list(self._api.list_active_products())
+        self._catalog_view = "categories"
         self._rebuild_categories()
         self._rebuild_products()
+        self._apply_catalog_view()
         self._refresh_selection_ui()
         self._sync_quantity_section()
         self._refresh_mode_ui()
@@ -340,9 +347,11 @@ class RegisterSalePage(QWidget):
         self._draft.clear_purchase()
         self._clear_payment_selection()
         self._selected_category_id = None
+        self._catalog_view = "categories"
         self._feedback.setText("")
         self._rebuild_categories()
         self._rebuild_products()
+        self._apply_catalog_view()
         self._refresh_display()
         self._refresh_selection_ui()
         self._sync_quantity_section()
@@ -398,9 +407,11 @@ class RegisterSalePage(QWidget):
         elif name == "clear":
             self._draft.clear_purchase()
             self._selected_category_id = None
+            self._catalog_view = "categories"
             self._feedback.setText("")
             self._rebuild_categories()
             self._rebuild_products()
+            self._apply_catalog_view()
             self._refresh_selection_ui()
             self._sync_quantity_section()
             self._refresh_mode_ui()
@@ -477,17 +488,53 @@ class RegisterSalePage(QWidget):
             enriched["nombre_categoria"] = nombre_categoria
         return enriched
 
+    def _apply_catalog_view(self) -> None:
+        """Vista A: solo categorías. Vista B: productos + volver; categorías ocultas."""
+        show_categories = self._catalog_view == "categories"
+        self._categories_section.setVisible(show_categories)
+        self._products_section.setVisible(not show_categories)
+        # Nunca ambas a la vez: el divisor no aporta en A ni en B.
+        self._catalog_sections_divider.setVisible(False)
+        if show_categories:
+            self._catalog_layout.setStretch(
+                self._catalog_layout.indexOf(self._categories_section), 1
+            )
+            self._catalog_layout.setStretch(
+                self._catalog_layout.indexOf(self._products_section), 0
+            )
+        else:
+            self._catalog_layout.setStretch(
+                self._catalog_layout.indexOf(self._categories_section), 0
+            )
+            self._catalog_layout.setStretch(
+                self._catalog_layout.indexOf(self._products_section), 1
+            )
+
+    def _show_catalog_products_view(self) -> None:
+        self._catalog_view = "products"
+        self._apply_catalog_view()
+
+    def _back_to_categories(self) -> None:
+        self._selected_category_id = None
+        self._catalog_view = "categories"
+        self._feedback.setText("")
+        self._rebuild_categories()
+        self._rebuild_products()
+        self._apply_catalog_view()
+
     def _select_all_categories(self) -> None:
         self._selected_category_id = None
         self._feedback.setText("")
         self._rebuild_categories()
         self._rebuild_products()
+        self._show_catalog_products_view()
 
     def _select_category(self, id_categoria: int) -> None:
         self._selected_category_id = id_categoria
         self._feedback.setText("")
         self._rebuild_categories()
         self._rebuild_products()
+        self._show_catalog_products_view()
 
     def _select_product(self, product: Mapping) -> None:
         enriched = self._product_for_draft(product)
@@ -567,12 +614,8 @@ class RegisterSalePage(QWidget):
         todos.setObjectName("sale_category_todos")
         todos.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         todos.setFixedSize(style.CATEGORY_CHIP_WIDTH, style.CATEGORY_CHIP_HEIGHT)
-        style.apply_class(
-            todos,
-            "category-chip-selected"
-            if self._selected_category_id is None
-            else "category-chip",
-        )
+        # Vista A: ningún chip seleccionado (Todos tampoco).
+        style.apply_class(todos, "category-chip")
         todos.clicked.connect(self._select_all_categories)
         self._categories_layout.addWidget(todos)
 
@@ -585,7 +628,12 @@ class RegisterSalePage(QWidget):
             _apply_catalog_chip_icon(
                 button, category_image_path(int(category["id_categoria"]))
             )
-            selected = category["id_categoria"] == self._selected_category_id
+            # Solo marcar categoría si aún estamos en Vista B (sección oculta);
+            # en Vista A `_selected_category_id` es None → ninguna seleccionada.
+            selected = (
+                self._catalog_view == "products"
+                and category["id_categoria"] == self._selected_category_id
+            )
             style.apply_class(
                 button, "category-chip-selected" if selected else "category-chip"
             )
@@ -598,6 +646,17 @@ class RegisterSalePage(QWidget):
 
     def _rebuild_products(self) -> None:
         self._clear_layout(self._products_layout)
+        # Volver = chip en la misma grilla/wrap que los productos (no barra aparte).
+        catalog_back = QToolButton()
+        catalog_back.setText("Volver")
+        catalog_back.setObjectName("catalog_back_to_categories")
+        catalog_back.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+        catalog_back.setFixedSize(style.PRODUCT_CHIP_WIDTH, style.PRODUCT_CHIP_HEIGHT)
+        catalog_back.setToolTip("Volver a categorías")
+        style.apply_class(catalog_back, "product-chip")
+        catalog_back.clicked.connect(self._back_to_categories)
+        self._products_layout.addWidget(catalog_back)
+
         products = self._active_products
         if self._selected_category_id is not None:
             products = [

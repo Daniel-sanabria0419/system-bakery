@@ -75,12 +75,14 @@ def test_smoke_menu_products_prefix_pan_pequeno_checkout(qtbot) -> None:
     assert _find(window, "sale_product_4") is not None
     assert window.findChild(QObject, "sale_product_1") is None
 
-    # Prefijo acotado a categoría Bebidas
+    # Prefijo acotado a categoría Bebidas (volver → categoría)
+    _click(qtbot, _find(window, "catalog_back_to_categories"))
     _click(qtbot, _find(window, "sale_category_2"))
     assert _find(window, "sale_product_2") is not None
     assert window.findChild(QObject, "sale_product_4") is None
 
     # Pan pequeño: valor → cantidad (limpia prefijo al seleccionar)
+    _click(qtbot, _find(window, "catalog_back_to_categories"))
     _click(qtbot, _find(window, "sale_category_6"))
     _click(qtbot, _find(window, "sale_product_4"))
     assert _find(window, "selected_product_label").text() == "Pan rollo"

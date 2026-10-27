@@ -43,14 +43,16 @@ def test_smoke_menu_products_sale_checkout(qtbot) -> None:
     # Menú → Registrar venta → catálogo + cobro
     _click(qtbot, _find(window, "menu_register_button"))
     assert window._stack.currentWidget() is window._register
-    assert _find(window, "sale_product_1") is not None
+    assert _find(window, "sale_category_todos") is not None
 
     _click(qtbot, _find(window, "sale_category_1"))
+    assert _find(window, "sale_product_1") is not None
     _click(qtbot, _find(window, "sale_product_1"))
     _click(qtbot, _find(window, "quantity_plus_button"))
     _click(qtbot, _find(window, "agregar_button"))
     assert _find(window, "purchase_list").text() == _line_text("Pan", 5000, 2)
 
+    _click(qtbot, _find(window, "catalog_back_to_categories"))
     _click(qtbot, _find(window, "sale_category_todos"))
     for digit in "3000":
         _click(qtbot, _find(window, f"digit_{digit}"))

@@ -34,6 +34,7 @@ def test_inactive_products_not_listed(qtbot) -> None:
     qtbot.addWidget(window)
     window.show()
     _click(qtbot, _find(window, "menu_register_button"))
+    _click(qtbot, _find(window, "sale_category_todos"))
 
     assert window.findChild(QObject, "sale_product_99") is None
     assert _find(window, "sale_product_1") is not None
@@ -56,6 +57,7 @@ def test_multi_product_flow_with_quantity_and_price_prefix(qtbot) -> None:
     assert _find(window, "purchase_list").text() == _line_text("Pan", 5000, 2)
     assert _find(window, "sale_feedback").text() == ""
 
+    _click(qtbot, _find(window, "catalog_back_to_categories"))
     _click(qtbot, _find(window, "sale_category_todos"))
     for digit in "3000":
         _click(qtbot, _find(window, f"digit_{digit}"))
@@ -75,6 +77,7 @@ def test_volver_keeps_draft_success_clears(qtbot) -> None:
     window.show()
     _click(qtbot, _find(window, "menu_register_button"))
 
+    _click(qtbot, _find(window, "sale_category_todos"))
     _click(qtbot, _find(window, "sale_product_1"))
     _click(qtbot, _find(window, "agregar_button"))
     assert _find(window, "purchase_list").text() == _line_text("Pan", 5000)

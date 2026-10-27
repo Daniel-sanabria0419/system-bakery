@@ -88,7 +88,7 @@ Alcance implementado:
 
 1. Categoría «Pan pequeño» (por nombre); precio unitario $300; promo automática 7 / $2000 **solo si la cantidad es múltiplo exacto de 7** (sin flag por producto; sin “grupos + resto”).
 2. Módulo central de precios (`pan_pequeno_pricing`): cantidades enteras, ceil hacia arriba.
-3. En cobro: calculadora por **valor** para Pan pequeño; otras categorías por unidades / búsqueda por precio.
+3. En cobro: calculadora por **valor** para Pan pequeño; otras categorías por unidades (Beta 2.0.2 reemplaza la búsqueda exacta por prefijo en grilla).
 4. Chips de catálogo (Todos primero; métricas/color del scope); fondo de lista no negro.
 5. Imágenes de producto (`ruta_imagen`, carpeta `imagenes/productos/`); categorías por convención de archivo.
 6. Crear / Editar producto con el mismo lenguaje visual (placeholders/selects).
@@ -102,6 +102,28 @@ Requisitos y etapas:
 - `docs/beta-2.0.1/regression-notes.md`
 
 Preservar Beta 2.0. **No** motor genérico de promociones ni features de Beta 2.1+.
+
+## Beta 2.0.2
+
+**Beta 2.0.2 está implementada** (etapas 1–6; PRs #28–#33). Pendiente OK final de Daniel para declarar cerrada. Solo UX/layout y filtro de catálogo sobre 2.0.1.
+
+Alcance implementado:
+
+1. Prefijo de precio (`candidates_by_price_prefix`) sobre el string del entero; solo sin producto seleccionado; acotado a la categoría activa (Todos = todas).
+2. Sin UI «Búsqueda por precio»; dígitos filtran la grilla de productos.
+3. Con producto: Pan pequeño = valor→cantidad; resto = cantidad/`+/-` (sin prefijo).
+4. Catálogo: wrap por ancho (~6 de referencia); fondos `#d7d4ce`; divisor negro entre categorías y productos.
+5. Panel seleccionado: imagen, nombre, unitario + subtotal; cantidad luego −/+.
+6. Listado Productos (CRUD): fondo blanco (`#FFFFFF`).
+
+Requisitos y etapas:
+
+- `docs/product-requirements.md` (sección Beta 2.0.2)
+- `docs/architecture.md`
+- `docs/beta-2.0.2/stages.md`
+- `docs/beta-2.0.2/regression-notes.md`
+
+Preservar Beta 2.0.1. **No** features de Beta 2.1+.
 
 ## Fuera del alcance
 

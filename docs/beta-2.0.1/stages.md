@@ -14,7 +14,7 @@ Base: Beta 2.0 en `main` (productos + ventas con líneas).
 | 2 | Precios | Módulo central `pan_pequeno_pricing` (ceil, enteros) |
 | 3 | Calculadora | Por **valor** si categoría Pan pequeño; por unidades en el resto |
 | 4 | UI cobro | Preview de redondeo antes de Agregar; `+/-` recalcula |
-| 5 | Catálogo | Chips 93×70 / 87×60, `#64c466`; «Todos» primero |
+| 5 | Catálogo | Chips `#64c466`; «Todos» primero; métricas al cierre 2.0.1: 93×70 / 87×60 (vigente 2.0.3: 135×120 en `style.py`) |
 | 6 | Imágenes | `ruta_imagen` en productos; dirs `imagenes/…`; categorías por convención |
 | 7 | Formularios | Crear ≈ Editar; placeholder más oscuro que el fondo; texto negro |
 

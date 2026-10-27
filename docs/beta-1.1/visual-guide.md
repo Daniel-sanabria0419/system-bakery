@@ -49,8 +49,10 @@ Pantalla completa en [`bakery/desktop/ui.py`](../../bakery/desktop/ui.py) (`Main
 
 ```text
 [ Volver ]
-[ panel compra + pad ]  [ future_panel vacío ]
+[ panel compra + pad ]  [ future_panel  ← vacío en 1.1; catálogo desde Beta 2+ ]
 ```
+
+> Guía **histórica** de Beta 1.1. `#future_panel` hoy es el panel de catálogo (nombre legado).
 
 Pad:
 
@@ -82,7 +84,7 @@ Archivo principal: [`bakery/desktop/ui.py`](../../bakery/desktop/ui.py)
 | `digit_0` … `digit_9`, `digit_00` | Teclas | `pad-button` |
 | `borrar_button`, `clear_button`, `agregar_button` | Teclas | `pad-button` |
 | `submit_sale_button` | Pago | `pad-button` |
-| `future_panel` | Espacio derecho vacío | — |
+| `future_panel` | Espacio derecho (vacío en 1.1; catálogo desde Beta 2+) | — |
 | `confirm_*` / `sale_saved_*` | Diálogos | (sin clase por ahora) |
 
 ## Cómo cambiar cada aspecto
@@ -111,5 +113,5 @@ QPushButton[class="pad-button"] {
 
 - No define una paleta de marca definitiva (solo valores iniciales editables en QSS).
 - No introduce un framework de temas múltiples (dark/light).
-- No llena el `future_panel` con funcionalidades nuevas.
+- No llenaba el `future_panel` con funcionalidades nuevas (catálogo llegó en Beta 2+).
 - Cambiar solo `theme.qss` / métricas de `style.py` no altera la lógica de negocio.

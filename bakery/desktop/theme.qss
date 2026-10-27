@@ -142,8 +142,8 @@ QLabel#products_caption {
     color: #000000;
 }
 
-/* Tipografía: placeholders sustituidos desde style.py (load_theme_qss). */
-QPushButton[class="category-chip"],
+/* Tipografía: placeholders sustituidos desde style.py (load_theme_qss).
+   Chips son QToolButton (CatalogChipButton); no hay QPushButton chip. */
 QToolButton[class="category-chip"] {
     background-color: #64c466;
     color: #000000;
@@ -153,7 +153,6 @@ QToolButton[class="category-chip"] {
     border: none;
 }
 
-QPushButton[class="product-chip"],
 QToolButton[class="product-chip"] {
     background-color: #64c466;
     color: #000000;
@@ -163,7 +162,6 @@ QToolButton[class="product-chip"] {
     border: none;
 }
 
-QPushButton[class="category-chip-selected"],
 QToolButton[class="category-chip-selected"] {
     background-color: #2E7D32;
     color: #FFFFFF;
@@ -173,7 +171,6 @@ QToolButton[class="category-chip-selected"] {
     border: 2px solid #1B5E20;
 }
 
-QPushButton[class="product-chip-selected"],
 QToolButton[class="product-chip-selected"] {
     background-color: #2E7D32;
     color: #FFFFFF;

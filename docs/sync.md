@@ -4,13 +4,13 @@
 
 La sincronización con la base de datos en la nube está **FUERA DEL ALCANCE**.
 
-Esto incluye Beta 1, Beta 1.1, Beta 1.2 y **Beta 2.0**.
+Esto incluye Beta 1, Beta 1.1, Beta 1.2 y las **betas 2.0.x** (2.0, 2.0.1, 2.0.2, 2.0.3).
 
 ## Comportamiento actual
 
 Las ventas (y el catálogo de productos) se almacenan únicamente en SQLite local.
 
-**Beta 2.0 no introduce ni modifica ningún comportamiento de sincronización.** Añade tablas locales (`categorias`, `productos`, `venta_lineas`) y cambia el contrato local de `POST /ventas`; todo sigue offline.
+**Ninguna beta 2.0.x introduce ni modifica sincronización.** Beta 2.0 añadió tablas locales (`categorias`, `productos`, `venta_lineas`) y cambió el contrato local de `POST /ventas`; todo sigue offline.
 
 No se debe implementar:
 
@@ -40,4 +40,4 @@ Estas decisiones se definirán cuando se diseñe esa versión.
 
 ## Regla
 
-El agente NO debe implementar ninguna parte del sistema de sincronización durante las betas documentadas, incluida Beta 2.0.
+El agente NO debe implementar ninguna parte del sistema de sincronización durante las betas documentadas, incluidas las betas 2.0.x.

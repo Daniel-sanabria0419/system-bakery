@@ -11,14 +11,14 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Beta 1 | Completada (referencia) | Registrar una venta y almacenarla localmente |
 | Beta 1.1 | Completada | Mejorar el flujo de registro con lista de compra en memoria y UX de calculadora |
 | Beta 1.2 | Completada | Ajustes estéticos / UX táctil; sin lógica de negocio nueva |
-| Beta 2.0 | Implementada (código); cierre documental Etapa 10 | Productos (CRUD), categorías, venta con líneas y búsqueda por precio |
+| Beta 2.0 | Implementada (código); cierre documental Etapa 10 | Productos (CRUD), categorías, venta con líneas y filtro por precio |
 | Beta 2.0.1 | **Terminada** 2026-10-26 (OK final Daniel) | Pan pequeño (promo), cobro por valor, chips, imágenes, formularios |
 | Beta 2.0.2 | Implementada (código); pendiente OK final | Layout cobro, prefijo de precio, listado Productos blanco |
-| Beta 2.0.3 | Implementada (código); pendiente OK final | Navegación catálogo Vista A/B; chips más grandes / tipografía editable |
+| Beta 2.0.3 | **Terminada** 2026-10-27 (OK final Daniel) | Navegación catálogo Vista A/B; chips más grandes / tipografía editable |
 
 ---
 
-# Beta 2.0.3 (implementada; pendiente OK final)
+# Beta 2.0.3 (terminada)
 
 ## Objetivo
 
@@ -32,7 +32,7 @@ Detalle: `docs/beta-2.0.3/stages.md`. Regresión: `docs/beta-2.0.3/regression-no
 - Categoría o Todos → Vista B: productos + chip Volver en la grilla; categorías ocultas.
 - Volver restaura Vista A (listo para elegir otra vez).
 - Prefijo / Pan pequeño / panel seleccionado: sin cambio respecto a 2.0.2.
-- Tamaños y `font-size` de chips: constantes en `bakery/desktop/style.py`.
+- Tamaños y `font-size` de chips: constantes en `bakery/desktop/style.py` (vigente: categoría/producto **135×120**, fuente 16 px).
 
 ## Fuera del alcance de Beta 2.0.3
 
@@ -88,7 +88,7 @@ Detalle de etapas: `docs/beta-2.0.1/stages.md`. Regresión: `docs/beta-2.0.1/reg
 
 ## UI catálogo / imágenes / formularios
 
-- Botón **Todos** primero; chips categoría 93×70 y producto 87×60, color `#64c466`.
+- Botón **Todos** primero; chips color `#64c466`. Métricas al cierre de 2.0.1: 93×70 / 87×60; **vigentes** (Beta 2.0.3): `CATEGORY_CHIP_*` / `PRODUCT_CHIP_*` en `style.py` (**135×120**).
 - Estructura `imagenes/categorias` y `imagenes/productos`; asociar imagen al crear/editar producto; sin archivo no rompe la UI.
 - Crear y Editar producto: mismo estilo; placeholders más oscuros que el fondo; texto negro; select alineado a inputs.
 
@@ -125,9 +125,9 @@ Cada producto tiene **un único precio actual**. Sin variantes ni listas de prec
 
 ## Registrar venta (vigente)
 
-- Catálogo de productos **activos** (por categoría) en el panel de venta.
+- Catálogo de productos **activos** (por categoría) en el panel de venta (`#future_panel`; nombre legado; es el panel de catálogo).
 - Cantidad por línea; subtotal = precio × cantidad en el caso general; **excepción Beta 2.0.1:** Pan pequeño puede tener subtotal de promo (ver sección Pan pequeño). Total = suma de subtotales (siempre recalculado en backend).
-- Calculadora: dígitos locales; actúa como **buscador por precio exacto** (candidatos activos con ese precio).
+- Calculadora: dígitos locales. **Vigente (2.0.2+):** sin producto seleccionado, filtran la grilla por **prefijo** de precio (`candidates_by_price_prefix`). (En 2.0 la búsqueda era exacta; el helper/API exacta puede seguir existiendo, pero la UI de cobro usa prefijo.)
 - **AGREGAR** exige producto seleccionado; sin selección → rechazo con feedback visible (no se agrega monto suelto).
 - Lista de compra muestra nombre, cantidad y subtotal.
 - Medio de pago: mismo patrón 1.2 (botón + popup).

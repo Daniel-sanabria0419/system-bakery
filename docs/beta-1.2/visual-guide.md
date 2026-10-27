@@ -66,9 +66,11 @@ Pantalla completa en [`bakery/desktop/ui.py`](../../bakery/desktop/ui.py) (`Main
 
 ```text
 [ ← ] …stretch…   (flecha atrás a la izquierda; objectName back_button)
-[ purchase_panel ~1/3 ]  [ future_panel vacío ]
+[ purchase_panel ~1/3 ]  [ future_panel  ← catálogo desde Beta 2+ ]
 [ pad_panel ~2/3      ]
 ```
+
+> **Nota post–Beta 2:** `#future_panel` es el panel de **catálogo** (categorías/productos/chips/cantidad; Vista A/B en 2.0.3). El nombre `future_panel` es legado; en 1.2 estaba vacío a propósito. Métricas de chips vigentes: `CATEGORY_CHIP_*` / `PRODUCT_CHIP_*` en `style.py` (135×120). Esta guía documenta el look 1.2; no lista chips/formularios/Vista A/B.
 
 ### Botón volver (Etapa 2 + pulido post-1.2)
 
@@ -154,7 +156,7 @@ Archivo principal: [`bakery/desktop/ui.py`](../../bakery/desktop/ui.py)
 | `digit_0` … `digit_9`, `digit_00` | Teclas | `pad-button` |
 | `borrar_button`, `clear_button`, `agregar_button` | Teclas | `pad-button` |
 | `submit_sale_button` | Pago | `pad-button` |
-| `future_panel` | Espacio derecho vacío | — |
+| `future_panel` | Panel derecho (legado: vacío en 1.2; **desde Beta 2 = catálogo**) | — |
 | `confirm_dialog` | Popup confirmar venta | — |
 | `confirm_value_label`, `confirm_payment_label` | Texto del confirmar | `dialog-text` |
 | `confirm_button`, `cancel_button` | Confirmar / No (centrados) | `dialog-action-button` |
@@ -193,6 +195,6 @@ QPushButton[class="pad-button"] {
 
 - No define una paleta de marca definitiva más allá de los seis ajustes acordados y el pulido post-1.2 documentado aquí.
 - No introduce un framework de temas múltiples (dark/light).
-- No llena el `future_panel` con funcionalidades nuevas.
+- No llenaba el `future_panel` con funcionalidades nuevas (eso llegó en Beta 2+; el objectName se conservó).
 - No añade productos, sync, login ni lógica de negocio nueva.
 - Cambiar solo `theme.qss` / métricas de `style.py` no altera la lógica de negocio.

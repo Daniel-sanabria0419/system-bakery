@@ -2,7 +2,7 @@
 
 Documento de referencia de **Beta 2.0.3** (navegación catálogo Vista A/B + chips más grandes/tipografía editable). Alcance autoritativo y plan detallado viven en el Context del proyecto (`beta-2.0.3-scope.md`, `beta-2.0.3-plan.md`).
 
-**Estado:** etapas 1–3 en código (PRs #34–#36); **pendiente OK final de Daniel** para declarar la versión cerrada.
+**Estado:** etapas 1–3 en `main` (#34–#36); **Beta 2.0.3 cerrada** (OK final de Daniel, 2026-10-27).
 
 Base: Beta 2.0.2 en `main` (wrap, prefijo, panel seleccionado).
 
@@ -24,7 +24,7 @@ Base: Beta 2.0.2 en `main` (wrap, prefijo, panel seleccionado).
 | 0 | Análisis y diseño (Context) | Hecha | — |
 | 1 | Navegación Vista A / Vista B + Volver | Hecha | #34 |
 | 2 | Chips más grandes + tipografía en `style.py` | Hecha | #35 |
-| 3 | Regresión + docs + cierre Context | Hecha; pendiente OK final | #36 |
+| 3 | Regresión + docs + cierre Context | Hecha; versión cerrada | #36 |
 
 ## Constantes editables (Daniel)
 

@@ -99,6 +99,35 @@ def candidates_by_exact_price(
     return matches
 
 
+def candidates_by_price_prefix(
+    products: Sequence[Mapping], prefix: str
+) -> List[Mapping]:
+    """Filtra productos activos cuyo precio (string del entero) empieza con prefix.
+
+    Pensado para Calculator.digits() (p. ej. "4", "45"). Prefijo vacío o
+    no numérico → lista vacía (la UI no aplica filtro de precio en ese caso).
+    No formatea COP; sin floats. El acote por categoría lo hace el llamador.
+    """
+    if not isinstance(prefix, str) or not prefix or not prefix.isdigit():
+        return []
+    matches: List[Mapping] = []
+    for product in products:
+        product_price = product.get("precio")
+        if (
+            isinstance(product_price, bool)
+            or not isinstance(product_price, int)
+            or product_price <= 0
+        ):
+            continue
+        if not str(product_price).startswith(prefix):
+            continue
+        estado = product.get("id_estado")
+        if estado is not None and estado != 1:
+            continue
+        matches.append(product)
+    return matches
+
+
 class SaleDraft:
     """Orquesta entrada, producto seleccionado, cantidad y compra acumulada."""
 

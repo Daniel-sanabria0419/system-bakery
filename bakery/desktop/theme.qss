@@ -100,17 +100,36 @@ QScrollArea#purchase_list_scroll {
     border: none;
 }
 
-/* Catálogo venta Beta 2.0.1 — no reutilizar payment-method-button aquí. */
-QWidget#future_panel,
+/* Catálogo venta Beta 2.0.2 — secciones #d7d4ce; no payment-method-button. */
+QWidget#future_panel {
+    background-color: #F5F0E8;
+    color: #000000;
+    border: none;
+}
+
+QWidget#catalog_categories_section,
+QWidget#catalog_products_section,
 QWidget#categories_list,
 QWidget#sale_products_list,
 QScrollArea#categories_scroll,
 QScrollArea#sale_products_scroll,
 QScrollArea#categories_scroll > QWidget,
 QScrollArea#sale_products_scroll > QWidget {
-    background-color: #F5F0E8;
+    background-color: #d7d4ce;
     color: #000000;
     border: none;
+}
+
+QFrame#catalog_sections_divider {
+    color: #000000;
+    background-color: #000000;
+    min-height: 2px;
+    max-height: 2px;
+}
+
+QLabel#categories_caption,
+QLabel#products_caption {
+    color: #000000;
 }
 
 QPushButton[class="category-chip"],

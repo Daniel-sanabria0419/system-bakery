@@ -1,15 +1,16 @@
-"""Etapa 5: chips de catálogo, Todos primero, filtro y medios intactos."""
+"""Chips de catálogo, Todos primero, wrap, fondos sección y medios intactos."""
 
-from PySide6.QtCore import QTimer, Qt
-from PySide6.QtWidgets import QApplication, QPushButton, QVBoxLayout
+from PySide6.QtCore import QTimer
+from PySide6.QtWidgets import QApplication, QFrame, QLayout, QPushButton
 
 from bakery.desktop import style
 from bakery.desktop.main import create_window
 from bakery.desktop.ui import SelectPaymentMethodDialog
+from bakery.desktop.ui_helpers import FlowLayout, catalog_chips_per_row
 from tests.test_stage4_desktop import FakeApiClient, _click, _find
 
 
-def _layout_widget(layout: QVBoxLayout, object_name: str):
+def _layout_widget(layout: QLayout, object_name: str):
     for index in range(layout.count()):
         widget = layout.itemAt(index).widget()
         if widget is not None and widget.objectName() == object_name:
@@ -103,11 +104,44 @@ def test_product_chip_size_selected_and_not_payment_class(qtbot) -> None:
     assert selected is not None
     assert selected.property("class") == "product-chip-selected"
 
-    assert style.CATALOG_BACKGROUND == "#F5F0E8"
+    assert style.CATALOG_SECTION_BACKGROUND == "#d7d4ce"
     assert style.CATALOG_CHIP_COLOR == "#64c466"
     category = _layout_widget(window._register._categories_layout, "sale_category_1")
     assert category.property("class") != "payment-method-button"
     assert selected.property("class") != "payment-method-button"
+
+
+def test_catalog_sections_background_divider_and_flow_layout(qtbot) -> None:
+    api = FakeApiClient()
+    window = create_window(api)
+    qtbot.addWidget(window)
+    window.show()
+    window.resize(1200, 800)
+    _click(qtbot, _find(window, "menu_register_button"))
+    QApplication.processEvents()
+
+    assert _find(window, "catalog_categories_section") is not None
+    assert _find(window, "catalog_products_section") is not None
+    divider = _find(window, "catalog_sections_divider")
+    assert divider is not None
+    assert isinstance(divider, QFrame)
+    assert divider.frameShape() == QFrame.HLine
+
+    assert isinstance(window._register._categories_layout, FlowLayout)
+    assert isinstance(window._register._products_layout, FlowLayout)
+
+    host_width = max(window._register._categories_host.width(), 400)
+    expected = catalog_chips_per_row(host_width, style.CATEGORY_CHIP_WIDTH)
+    assert expected >= 1
+    assert style.CATALOG_WRAP_REFERENCE_COLUMNS == 6
+
+
+def test_catalog_chips_per_row_not_hardcoded_six() -> None:
+    narrow = catalog_chips_per_row(200, style.CATEGORY_CHIP_WIDTH)
+    wide = catalog_chips_per_row(700, style.CATEGORY_CHIP_WIDTH)
+    assert narrow == 2
+    assert wide >= 6
+    assert narrow != wide
 
 
 def test_payment_method_popup_still_uses_black_buttons(qtbot) -> None:

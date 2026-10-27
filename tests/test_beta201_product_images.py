@@ -134,14 +134,15 @@ def test_chips_without_image_do_not_crash(qtbot) -> None:
     window.show()
     _click(qtbot, _find(window, "menu_register_button"))
 
-    product = _find(window, "sale_product_1")
-    assert isinstance(product, QToolButton)
-    assert product.icon().isNull() or isinstance(product.icon(), QIcon)
-
     category = _find(window, "sale_category_1")
     assert isinstance(category, QToolButton)
     # Sin archivo de categoría: placeholder / solo texto, sin crash
     assert category.text() != ""
+
+    _click(qtbot, _find(window, "sale_category_todos"))
+    product = _find(window, "sale_product_1")
+    assert isinstance(product, QToolButton)
+    assert product.icon().isNull() or isinstance(product.icon(), QIcon)
 
 
 def test_api_ruta_imagen_create_and_edit_keeps(tmp_path: Path, monkeypatch) -> None:
@@ -249,6 +250,7 @@ def test_product_chip_shows_icon_when_file_exists(
     qtbot.addWidget(window)
     window.show()
     _click(qtbot, _find(window, "menu_register_button"))
+    _click(qtbot, _find(window, "sale_category_todos"))
 
     with_image = _find(window, "sale_product_1")
     without = _find(window, "sale_product_2")

@@ -60,6 +60,10 @@ CATALOG_TEXT_COLOR = "#000000"
 # Referencia visual ~6 chips/fila; el layout calcula por ancho (no fijo).
 CATALOG_WRAP_REFERENCE_COLUMNS = 6
 
+# Panel producto seleccionado (Beta 2.0.2 Etapa 4)
+SELECTED_PRODUCT_IMAGE_WIDTH = 72
+SELECTED_PRODUCT_IMAGE_HEIGHT = 72
+
 # Formularios Crear/Editar producto (Beta 2.0.1 Etapa 7)
 APP_BACKGROUND = "#F5F0E8"
 PRODUCT_FORM_FIELD_BACKGROUND = "#FFFFFF"

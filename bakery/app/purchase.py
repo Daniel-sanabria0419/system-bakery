@@ -157,6 +157,9 @@ class SaleDraft:
             isinstance(id_categoria, bool) or not isinstance(id_categoria, int)
         ):
             return False
+        ruta_imagen = product.get("ruta_imagen")
+        if ruta_imagen is not None and not isinstance(ruta_imagen, str):
+            return False
         selected = {
             "id_producto": id_producto,
             "nombre": nombre.strip(),
@@ -166,6 +169,8 @@ class SaleDraft:
             selected["id_categoria"] = id_categoria
         if isinstance(nombre_categoria, str) and nombre_categoria.strip():
             selected["nombre_categoria"] = nombre_categoria.strip()
+        if isinstance(ruta_imagen, str) and ruta_imagen.strip():
+            selected["ruta_imagen"] = ruta_imagen.strip()
         self._selected_product = selected
         return True
 

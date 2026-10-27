@@ -156,14 +156,21 @@ QToolButton[class="product-chip-selected"] {
     border: 2px solid #1B5E20;
 }
 
-QLabel#quantity_caption,
+QWidget#selected_product_panel,
+QWidget#quantity_section {
+    background-color: transparent;
+}
+
 QLabel#quantity_label,
 QLabel#quantity_value_label,
+QLabel#selected_product_unit_price,
 QLabel#sale_value_preview,
 QLabel#selected_product_label,
+QLabel#selected_product_image,
 QLabel#sale_feedback {
     color: #000000;
 }
+
 
 /* Formularios Crear / Editar producto — mismo lenguaje visual. */
 QDialog#product_form_dialog {

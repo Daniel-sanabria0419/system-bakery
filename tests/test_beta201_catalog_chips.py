@@ -155,9 +155,21 @@ def test_catalog_sections_background_divider_and_flow_layout(qtbot) -> None:
 def test_catalog_chips_per_row_not_hardcoded_six() -> None:
     narrow = catalog_chips_per_row(200, style.CATEGORY_CHIP_WIDTH)
     wide = catalog_chips_per_row(700, style.CATEGORY_CHIP_WIDTH)
-    assert narrow == 2
-    assert wide >= 6
-    assert narrow != wide
+    assert narrow >= 1
+    assert wide > narrow
+
+
+def test_chip_font_constants_injected_into_theme_qss() -> None:
+    """Daniel edita fuentes en style.py; load_theme_qss las inyecta en el QSS."""
+    assert style.CATEGORY_CHIP_FONT_SIZE >= 14
+    assert style.PRODUCT_CHIP_FONT_SIZE >= 14
+    assert style.CATEGORY_CHIP_WIDTH >= 100
+    assert style.PRODUCT_CHIP_WIDTH >= 100
+    qss = style.load_theme_qss()
+    assert f"font-size: {style.CATEGORY_CHIP_FONT_SIZE}px" in qss
+    assert f"font-size: {style.PRODUCT_CHIP_FONT_SIZE}px" in qss
+    assert "__CATEGORY_CHIP_FONT_SIZE__" not in qss
+    assert "__PRODUCT_CHIP_FONT_SIZE__" not in qss
 
 
 def test_payment_method_popup_still_uses_black_buttons(qtbot) -> None:

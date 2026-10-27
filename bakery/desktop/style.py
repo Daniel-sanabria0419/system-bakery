@@ -1,6 +1,7 @@
 """Layout metrics and QSS helpers for the desktop.
 
-Colores y tipografía viven en theme.qss.
+Métricas de layout y tipografía de chips de cobro: este archivo.
+Colores generales: theme.qss (la tipografía de chips se inyecta vía load_theme_qss).
 objectName y clases QSS: docs/beta-1.2/visual-guide.md.
 """
 
@@ -46,11 +47,17 @@ DIALOG_CONTENT_SPACING = 20
 BACK_BUTTON_MIN_WIDTH = 72
 BACK_BUTTON_MIN_HEIGHT = 29
 
-# Catálogo venta (Beta 2.0.1 Etapa 5): chips categorías / productos
-CATEGORY_CHIP_WIDTH = 93
-CATEGORY_CHIP_HEIGHT = 70
-PRODUCT_CHIP_WIDTH = 87
-PRODUCT_CHIP_HEIGHT = 60
+# ---------------------------------------------------------------------------
+# Chips de cobro (Beta 2.0.3 Etapa 2) — EDITAR AQUÍ tamaños y tipografía.
+# theme.qss sustituye __CATEGORY_CHIP_FONT_SIZE__ / __PRODUCT_CHIP_FONT_SIZE__
+# al cargar (load_theme_qss). Ancho/alto los aplica register_sale_page.
+# ---------------------------------------------------------------------------
+CATEGORY_CHIP_WIDTH = 120
+CATEGORY_CHIP_HEIGHT = 90
+CATEGORY_CHIP_FONT_SIZE = 16  # px
+PRODUCT_CHIP_WIDTH = 110
+PRODUCT_CHIP_HEIGHT = 80
+PRODUCT_CHIP_FONT_SIZE = 16  # px
 CATALOG_CHIP_COLOR = "#64c466"
 CATALOG_CHIP_SELECTED_COLOR = "#2E7D32"
 CATALOG_BACKGROUND = "#F5F0E8"
@@ -80,7 +87,13 @@ _THEME_PATH = Path(__file__).with_name("theme.qss")
 
 
 def load_theme_qss() -> str:
-    return _THEME_PATH.read_text(encoding="utf-8")
+    """Carga theme.qss e inyecta tipografía de chips desde las constantes de arriba."""
+    text = _THEME_PATH.read_text(encoding="utf-8")
+    return (
+        text.replace(
+            "__CATEGORY_CHIP_FONT_SIZE__", str(CATEGORY_CHIP_FONT_SIZE)
+        ).replace("__PRODUCT_CHIP_FONT_SIZE__", str(PRODUCT_CHIP_FONT_SIZE))
+    )
 
 
 def apply_class(widget: QWidget, class_name: str) -> None:

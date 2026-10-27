@@ -287,23 +287,9 @@ class RegisterSalePage(QWidget):
         products_section_layout = QVBoxLayout(self._products_section)
         products_section_layout.setContentsMargins(8, 8, 8, 8)
         products_section_layout.setSpacing(style.PAGE_SPACING)
-        products_header = QHBoxLayout()
-        products_header.setSpacing(style.PAGE_SPACING)
-        catalog_back = QPushButton(_BACK_BUTTON_ARROW)
-        catalog_back.setObjectName("catalog_back_to_categories")
-        style.apply_class(catalog_back, "back-button")
-        catalog_back.setMinimumSize(
-            style.BACK_BUTTON_MIN_WIDTH,
-            style.BACK_BUTTON_MIN_HEIGHT,
-        )
-        catalog_back.setToolTip("Volver a categorías")
-        catalog_back.clicked.connect(self._back_to_categories)
-        products_header.addWidget(catalog_back)
         products_caption = QLabel("Productos")
         products_caption.setObjectName("products_caption")
-        products_header.addWidget(products_caption)
-        products_header.addStretch(1)
-        products_section_layout.addLayout(products_header)
+        products_section_layout.addWidget(products_caption)
         self._products_host = QWidget()
         self._products_host.setObjectName("sale_products_list")
         self._products_layout = FlowLayout(self._products_host)
@@ -628,12 +614,8 @@ class RegisterSalePage(QWidget):
         todos.setObjectName("sale_category_todos")
         todos.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         todos.setFixedSize(style.CATEGORY_CHIP_WIDTH, style.CATEGORY_CHIP_HEIGHT)
-        style.apply_class(
-            todos,
-            "category-chip-selected"
-            if self._selected_category_id is None
-            else "category-chip",
-        )
+        # Vista A: ningún chip seleccionado (Todos tampoco).
+        style.apply_class(todos, "category-chip")
         todos.clicked.connect(self._select_all_categories)
         self._categories_layout.addWidget(todos)
 
@@ -646,7 +628,12 @@ class RegisterSalePage(QWidget):
             _apply_catalog_chip_icon(
                 button, category_image_path(int(category["id_categoria"]))
             )
-            selected = category["id_categoria"] == self._selected_category_id
+            # Solo marcar categoría si aún estamos en Vista B (sección oculta);
+            # en Vista A `_selected_category_id` es None → ninguna seleccionada.
+            selected = (
+                self._catalog_view == "products"
+                and category["id_categoria"] == self._selected_category_id
+            )
             style.apply_class(
                 button, "category-chip-selected" if selected else "category-chip"
             )
@@ -659,6 +646,17 @@ class RegisterSalePage(QWidget):
 
     def _rebuild_products(self) -> None:
         self._clear_layout(self._products_layout)
+        # Volver = chip en la misma grilla/wrap que los productos (no barra aparte).
+        catalog_back = QToolButton()
+        catalog_back.setText("Volver")
+        catalog_back.setObjectName("catalog_back_to_categories")
+        catalog_back.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+        catalog_back.setFixedSize(style.PRODUCT_CHIP_WIDTH, style.PRODUCT_CHIP_HEIGHT)
+        catalog_back.setToolTip("Volver a categorías")
+        style.apply_class(catalog_back, "product-chip")
+        catalog_back.clicked.connect(self._back_to_categories)
+        self._products_layout.addWidget(catalog_back)
+
         products = self._active_products
         if self._selected_category_id is not None:
             products = [

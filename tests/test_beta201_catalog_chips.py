@@ -42,7 +42,8 @@ def test_todos_first_and_category_chip_metrics(qtbot) -> None:
     assert first.text() == "Todos"
     assert first.width() == style.CATEGORY_CHIP_WIDTH
     assert first.height() == style.CATEGORY_CHIP_HEIGHT
-    assert first.property("class") == "category-chip-selected"
+    # Vista A: ningún chip seleccionado (Todos tampoco).
+    assert first.property("class") == "category-chip"
 
     category = _layout_widget(layout, "sale_category_1")
     assert category is not None
@@ -77,7 +78,7 @@ def test_category_filter_and_todos_shows_all(qtbot) -> None:
     _click(qtbot, _find(window, "catalog_back_to_categories"))
     cats = window._register._categories_layout
     assert _layout_widget(cats, "sale_category_todos").property("class") == (
-        "category-chip-selected"
+        "category-chip"
     )
     _click(qtbot, _layout_widget(cats, "sale_category_todos"))
     QApplication.processEvents()
@@ -94,6 +95,15 @@ def test_product_chip_size_selected_and_not_payment_class(qtbot) -> None:
     _click(qtbot, _find(window, "menu_register_button"))
     _click(qtbot, _find(window, "sale_category_todos"))
     QApplication.processEvents()
+
+    back = _layout_widget(
+        window._register._products_layout, "catalog_back_to_categories"
+    )
+    assert back is not None
+    assert back.width() == style.PRODUCT_CHIP_WIDTH
+    assert back.height() == style.PRODUCT_CHIP_HEIGHT
+    assert back.property("class") == "product-chip"
+    assert window._register._products_layout.itemAt(0).widget() is back
 
     product = _layout_widget(window._register._products_layout, "sale_product_1")
     assert product is not None

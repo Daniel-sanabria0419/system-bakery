@@ -28,7 +28,7 @@ Base: Beta 2.0.1 en `main` (Pan pequeño, chips, imágenes).
 | 3 | Wrap + `#d7d4ce` + divisor | Hecha | #30 |
 | 4 | Panel producto seleccionado | Hecha | #31 |
 | 5 | Fondo blanco listado Productos | Hecha | #32 |
-| 6 | Regresión + docs | Hecha (este PR); pendiente OK final | #33 |
+| 6 | Regresión + docs | Hecha; pendiente OK final | #33 |
 
 ## Fuera de alcance
 

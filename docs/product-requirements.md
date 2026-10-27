@@ -12,11 +12,11 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Beta 1.1 | Completada | Mejorar el flujo de registro con lista de compra en memoria y UX de calculadora |
 | Beta 1.2 | Completada | Ajustes estéticos / UX táctil; sin lógica de negocio nueva |
 | Beta 2.0 | Implementada (código); cierre documental Etapa 10 | Productos (CRUD), categorías, venta con líneas y búsqueda por precio |
-| Beta 2.0.1 | Implementada (código); pendiente OK final de cierre | Pan pequeño (promo), cobro por valor, chips, imágenes, formularios |
+| Beta 2.0.1 | **Terminada** 2026-10-26 (OK final Daniel) | Pan pequeño (promo), cobro por valor, chips, imágenes, formularios |
 
 ---
 
-# Beta 2.0.1 (implementada; cierre pendiente OK final)
+# Beta 2.0.1 (terminada)
 
 ## Objetivo
 

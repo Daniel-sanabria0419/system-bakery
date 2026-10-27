@@ -2,7 +2,7 @@
 
 Documento de referencia de **Beta 2.0.1** (Pan pequeño, calculadora por valor, UI de catálogo/imágenes/formularios). Alcance autoritativo y plan detallado viven en el Context del proyecto (`beta-2.0.1-scope.md`, `beta-2.0.1-plan.md`).
 
-**Estado:** etapas 1–8 implementadas en código; **cierre formal pendiente del OK final de Daniel**.
+**Estado:** etapas 1–8 en `main` (#19–#26); **Beta 2.0.1 cerrada** (OK final de Daniel, 2026-10-26).
 
 Base: Beta 2.0 en `main` (productos + ventas con líneas).
 
@@ -30,7 +30,7 @@ Base: Beta 2.0 en `main` (productos + ventas con líneas).
 | 5 | Chips catálogo + Todos | Hecha | #23 |
 | 6 | Imágenes alta/edición/chips | Hecha | #24 |
 | 7 | Estilo Crear / Editar | Hecha | #25 |
-| 8 | Regresión + docs de cierre | Hecha (pendiente OK final) | #26 |
+| 8 | Regresión + docs de cierre | Hecha; versión cerrada | #26 |
 
 ## Fuera de alcance
 

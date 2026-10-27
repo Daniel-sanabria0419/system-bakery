@@ -104,13 +104,10 @@ QScrollArea#purchase_list_scroll {
 QWidget#future_panel,
 QWidget#categories_list,
 QWidget#sale_products_list,
-QWidget#price_search_list,
 QScrollArea#categories_scroll,
 QScrollArea#sale_products_scroll,
-QScrollArea#price_search_scroll,
 QScrollArea#categories_scroll > QWidget,
-QScrollArea#sale_products_scroll > QWidget,
-QScrollArea#price_search_scroll > QWidget {
+QScrollArea#sale_products_scroll > QWidget {
     background-color: #F5F0E8;
     color: #000000;
     border: none;
@@ -145,9 +142,7 @@ QLabel#quantity_label,
 QLabel#quantity_value_label,
 QLabel#sale_value_preview,
 QLabel#selected_product_label,
-QLabel#sale_feedback,
-QLabel#price_search_caption,
-QLabel#price_search_empty {
+QLabel#sale_feedback {
     color: #000000;
 }
 

@@ -1,6 +1,6 @@
-"""Etapa 4: UI cobro — modo valor Pan pequeño y preview de redondeo."""
+"""UI cobro — modo valor Pan pequeño, prefijo sin selección, cantidad otras."""
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QObject
 
 from bakery.app.money import format_cop
 from bakery.desktop.main import create_window
@@ -16,8 +16,8 @@ def test_pan_pequeno_value_1900_previews_ceil_before_add(qtbot) -> None:
     _click(qtbot, _find(window, "menu_register_button"))
 
     _click(qtbot, _find(window, "sale_product_4"))
-    assert _find(window, "price_search_scroll").isHidden() is True
-    assert _find(window, "price_search_caption").isHidden() is True
+    assert window.findChild(QObject, "price_search_scroll") is None
+    assert window.findChild(QObject, "price_search_caption") is None
     assert _find(window, "quantity_label").text() == "1"
     assert _find(window, "quantity_value_label").text() == format_cop(300)
 
@@ -67,7 +67,7 @@ def test_pan_pequeno_plus_minus_transitions_6_7_8(qtbot) -> None:
     assert _find(window, "quantity_value_label").text() == format_cop(2000)
 
 
-def test_other_category_keeps_price_search_and_no_promo(qtbot) -> None:
+def test_other_category_qty_only_no_promo_and_prefix_after_add(qtbot) -> None:
     api = FakeApiClient()
     window = create_window(api)
     qtbot.addWidget(window)
@@ -75,8 +75,7 @@ def test_other_category_keeps_price_search_and_no_promo(qtbot) -> None:
     _click(qtbot, _find(window, "menu_register_button"))
 
     _click(qtbot, _find(window, "sale_product_5"))
-    assert _find(window, "price_search_scroll").isHidden() is False
-    assert _find(window, "price_search_caption").isHidden() is False
+    assert window.findChild(QObject, "price_search_scroll") is None
     assert NOMBRE_CATEGORIA_PAN_PEQUENO not in (
         _find(window, "selected_product_label").text()
     )
@@ -90,9 +89,12 @@ def test_other_category_keeps_price_search_and_no_promo(qtbot) -> None:
     assert _find(window, "purchase_list").text() == _line_text("Torta", 20000, 3)
     assert _find(window, "purchase_total").text() == f"Total: {format_cop(60000)}"
 
+    _click(qtbot, _find(window, "sale_category_todos"))
     for digit in "5000":
         _click(qtbot, _find(window, f"digit_{digit}"))
-    assert _find(window, "price_search_product_1") is not None
+    assert _find(window, "sale_product_1") is not None
+    assert window.findChild(QObject, "sale_product_2") is None
+    assert window.findChild(QObject, "sale_product_5") is None
 
 
 def test_reject_agregar_without_product_still_works(qtbot) -> None:
@@ -107,3 +109,24 @@ def test_reject_agregar_without_product_still_works(qtbot) -> None:
     _click(qtbot, _find(window, "agregar_button"))
     assert "Seleccione un producto" in _find(window, "sale_feedback").text()
     assert _find(window, "purchase_list").text() == ""
+
+
+def test_prefix_filters_product_grid_without_selection(qtbot) -> None:
+    api = FakeApiClient()
+    window = create_window(api)
+    qtbot.addWidget(window)
+    window.show()
+    _click(qtbot, _find(window, "menu_register_button"))
+
+    assert _find(window, "sale_product_1") is not None
+    assert _find(window, "sale_product_2") is not None
+
+    for digit in "3":
+        _click(qtbot, _find(window, f"digit_{digit}"))
+    assert _find(window, "sale_product_2") is not None
+    assert _find(window, "sale_product_4") is not None
+    assert window.findChild(QObject, "sale_product_1") is None
+
+    _click(qtbot, _find(window, "sale_category_2"))
+    assert _find(window, "sale_product_2") is not None
+    assert window.findChild(QObject, "sale_product_4") is None

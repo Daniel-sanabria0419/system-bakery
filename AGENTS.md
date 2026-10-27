@@ -82,7 +82,7 @@ No implementar una versión siguiente (Beta 3+) hasta que esté escrita en los d
 
 ## Beta 2.0.1
 
-**Beta 2.0.1 está implementada en código** (etapas 1–8; cierre formal pendiente del OK final de Daniel). Extiende Beta 2.0 con Pan pequeño y pulido de catálogo/imágenes/formularios.
+**Beta 2.0.1 está terminada** (etapas 1–8 en main vía #19–#26; OK final de Daniel 2026-10-26). Extiende Beta 2.0 con Pan pequeño y pulido de catálogo/imágenes/formularios.
 
 Alcance implementado:
 

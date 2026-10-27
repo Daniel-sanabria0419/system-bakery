@@ -10,6 +10,8 @@ Beta 1 estableció las capas. Beta 1.1 las reutiliza cambiando el flujo de regis
 
 **Beta 2.0.1** añade precios especiales de Pan pequeño (módulo en `app`), modo valor en cobro para esa categoría, chips de catálogo, imágenes de producto y estilo unificado de formularios — sin cambiar el contrato de `POST /ventas` ni inventar un motor genérico de promociones.
 
+**Beta 2.0.2** evoluciona solo UX de cobro/catálogo: prefijo de precio en grilla (capa `app` + desktop), wrap/`#d7d4ce`/panel seleccionado y listado Productos blanco — sin cambiar `POST /ventas` ni el módulo de promo.
+
 ## Arquitectura general
 
 ```text
@@ -174,7 +176,7 @@ No hay endpoint de calculadora ni HTTP por tecla. La búsqueda por precio en UI 
 1. Categorías como entidad mínima con semilla; sin CRUD UI.
 2. Snapshot en `venta_lineas` para integridad histórica.
 3. `POST /ventas` con líneas; total en backend; sin dual-shape legacy.
-4. Calculadora = búsqueda por precio + rechazo duro sin producto.
+4. Calculadora = búsqueda por precio + rechazo duro sin producto *(Beta 2.0.2: prefijo en grilla en lugar de UI de búsqueda exacta)*.
 5. UI Productos separada de UI de cobro.
 6. Solo soft-delete de productos.
 7. Ventas antiguas value-only sin backfill de líneas.
@@ -192,7 +194,16 @@ Detalle: `docs/beta-2/stages.md` y resumen de cierre en el Context del proyecto.
 
 Detalle: `docs/beta-2.0.1/stages.md`.
 
-## Fuera de alcance arquitectónico (Beta 2.0 / 2.0.1)
+## Beta 2.0.2 (resumen)
+
+- `candidates_by_price_prefix` en `purchase.py`; UI sin `price_search_*`.
+- Tres modos de pad: prefijo / valor Pan pequeño / cantidad.
+- `FlowLayout` + secciones `#d7d4ce` + divisor negro; panel seleccionado con imagen/unitario/subtotal.
+- Listado Productos: fondo `#FFFFFF` (QSS); no alterar `payment-method-button`.
+
+Detalle: `docs/beta-2.0.2/stages.md`.
+
+## Fuera de alcance arquitectónico (Beta 2.0 / 2.0.1 / 2.0.2)
 
 - Historial avanzado / edición de ventas.
 - Inventario, recetas, producción, clientes, sync, login, reportes.

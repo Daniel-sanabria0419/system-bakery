@@ -13,6 +13,34 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Beta 1.2 | Completada | Ajustes estéticos / UX táctil; sin lógica de negocio nueva |
 | Beta 2.0 | Implementada (código); cierre documental Etapa 10 | Productos (CRUD), categorías, venta con líneas y búsqueda por precio |
 | Beta 2.0.1 | **Terminada** 2026-10-26 (OK final Daniel) | Pan pequeño (promo), cobro por valor, chips, imágenes, formularios |
+| Beta 2.0.2 | Implementada (código); pendiente OK final | Layout cobro, prefijo de precio, listado Productos blanco |
+
+---
+
+# Beta 2.0.2 (implementada; pendiente OK final)
+
+## Objetivo
+
+Pulir el cobro: filtro por **prefijo** de precio en la grilla (sin UI de búsqueda exacta), layout wrap de categorías/productos, panel de selección mejorado y listado Productos con fondo blanco — sin motor de promos nuevo ni features 2.1+.
+
+Detalle: `docs/beta-2.0.2/stages.md`. Regresión: `docs/beta-2.0.2/regression-notes.md`.
+
+## Cobro / catálogo
+
+- Sin producto seleccionado: dígitos filtran productos por prefijo de `precio` (string del entero), acotado a la categoría activa (Todos = todas).
+- Con producto: Pan pequeño = valor→cantidad; resto = cantidad/`+/-`; sin filtro prefijo.
+- Sin bloque «Búsqueda por precio».
+- Categorías/productos en filas wrap según ancho (~6 de referencia, no fijo).
+- Fondos de sección `#d7d4ce`; divisor negro entre categorías y productos.
+- Panel seleccionado: imagen, nombre, unitario + subtotal; a la derecha cantidad luego −/+.
+
+## Pantalla Productos
+
+- Fondo del listado **blanco** (`#FFFFFF`).
+
+## Fuera del alcance de Beta 2.0.2
+
+Historial, órdenes, clientes, recetas, inventario, promos genéricas, Beta 2.1+.
 
 ---
 

@@ -102,13 +102,20 @@ def test_other_category_qty_only_no_promo_and_prefix_after_add(qtbot) -> None:
     assert _find(window, "selected_product_unit_price").text() == (
         f"Unitario: {format_cop(20000)}"
     )
+    assert _find(window, "sale_display").text() == format_cop(20000)
     _click(qtbot, _find(window, "quantity_plus_button"))
     _click(qtbot, _find(window, "quantity_plus_button"))
     assert _find(window, "quantity_label").text() == "3"
     assert _find(window, "quantity_value_label").text() == (
         f"Subtotal: {format_cop(60000)}"
     )
+    assert _find(window, "sale_display").text() == format_cop(60000)
     assert _find(window, "sale_value_preview").text() == ""
+
+    _click(qtbot, _find(window, "digit_5"))
+    assert "Use −/+" in _find(window, "sale_feedback").text()
+    assert _find(window, "sale_display").text() == format_cop(60000)
+    assert _find(window, "quantity_label").text() == "3"
 
     _click(qtbot, _find(window, "agregar_button"))
     assert _find(window, "purchase_list").text() == _line_text("Torta", 20000, 3)
@@ -121,6 +128,32 @@ def test_other_category_qty_only_no_promo_and_prefix_after_add(qtbot) -> None:
     assert _find(window, "sale_product_1") is not None
     assert window.findChild(QObject, "sale_product_2") is None
     assert window.findChild(QObject, "sale_product_5") is None
+
+
+def test_pad_shows_subtotal_and_pan_pequeno_typed_value(qtbot) -> None:
+    api = FakeApiClient()
+    window = create_window(api)
+    qtbot.addWidget(window)
+    window.show()
+    _click(qtbot, _find(window, "menu_register_button"))
+
+    _click(qtbot, _find(window, "sale_category_todos"))
+    _click(qtbot, _find(window, "sale_product_5"))
+    assert _find(window, "sale_display").text() == format_cop(20000)
+    _click(qtbot, _find(window, "quantity_plus_button"))
+    assert _find(window, "sale_display").text() == format_cop(40000)
+
+    _click(qtbot, _find(window, "clear_button"))
+    _click(qtbot, _find(window, "sale_category_todos"))
+    _click(qtbot, _find(window, "sale_product_4"))
+    assert _find(window, "sale_display").text() == format_cop(300)
+    for digit in "2000":
+        _click(qtbot, _find(window, f"digit_{digit}"))
+    assert _find(window, "sale_display").text() == format_cop(2000)
+    assert _find(window, "quantity_label").text() == "7"
+    _click(qtbot, _find(window, "quantity_plus_button"))
+    assert _find(window, "quantity_label").text() == "8"
+    assert _find(window, "sale_display").text() == format_cop(2400)
 
 
 def test_reject_agregar_without_product_still_works(qtbot) -> None:

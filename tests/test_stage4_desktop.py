@@ -385,7 +385,7 @@ def test_back_button_returns_to_menu_without_pending_purchase(qtbot) -> None:
 
     _click(qtbot, back)
     assert window.centralWidget().currentWidget() is window._menu
-    assert _find(window, "sale_display").text() == "$ 0.00"
+    assert _find(window, "sale_display").text() == "$ 0"
     assert _find(window, "purchase_list").text() == ""
 
 
@@ -428,7 +428,7 @@ def test_calculator_keys_do_not_call_api(qtbot) -> None:
     _enter_amount_and_agregar(qtbot, window, "2000")
 
     assert api.request_count == after_load
-    assert _find(window, "sale_display").text() == "$ 0.00"
+    assert _find(window, "sale_display").text() == "$ 0"
     assert _find(window, "purchase_list").text() == (
         f"{_line_text('Producto', 5000)}\n{_line_text('Producto', 2000)}"
     )
@@ -491,9 +491,9 @@ def test_clear_resets_entire_purchase(qtbot) -> None:
 
     _click(qtbot, _find(window, "clear_button"))
 
-    assert _find(window, "sale_display").text() == "$ 0.00"
+    assert _find(window, "sale_display").text() == "$ 0"
     assert _find(window, "purchase_list").text() == ""
-    assert _find(window, "purchase_total").text() == "Total: $0.00"
+    assert _find(window, "purchase_total").text() == "Total: $ 0"
     assert api.request_count == after_load
 
 
@@ -628,7 +628,7 @@ def test_cancel_confirmation_does_not_save(qtbot) -> None:
         and _find(window, "purchase_total").text() == "Total: $ 5.000"
     )
     assert api.sales == []
-    assert _find(window, "sale_display").text() == "$ 0.00"
+    assert _find(window, "sale_display").text() == "$ 0"
     assert window.findChild(QObject, "sale_saved_dialog") is None
 
 
@@ -702,9 +702,9 @@ def test_confirm_sale_posts_and_resets_form(qtbot) -> None:
 
     assert api.sales[0]["valor_total"] == 25000
     assert api.sales[0]["id_medio_pago"] == 1
-    assert _find(window, "sale_display").text() == "$ 0.00"
+    assert _find(window, "sale_display").text() == "$ 0"
     assert _find(window, "purchase_list").text() == ""
-    assert _find(window, "purchase_total").text() == "Total: $0.00"
+    assert _find(window, "purchase_total").text() == "Total: $ 0"
     assert _find(window, "payment_button").text() == "Seleccionar medio de pago"
     assert not _find(window, "submit_sale_button").isEnabled()
     assert window.centralWidget().currentWidget() is window._register

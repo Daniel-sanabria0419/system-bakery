@@ -113,6 +113,40 @@ def test_draft_other_category_stays_precio_times_cantidad() -> None:
     assert draft.purchase.items()[0].subtotal == 60000
 
 
+def test_pad_display_amount_modes() -> None:
+    draft = SaleDraft()
+    assert draft.pad_display_amount() == 0
+    draft.entry.press_digit("5")
+    assert draft.pad_display_amount() == 5
+
+    draft.entry.clear_entry()
+    draft.select_product(
+        {
+            "id_producto": 1,
+            "nombre": "Torta",
+            "precio": 3000,
+            "nombre_categoria": "Pastelería",
+        }
+    )
+    assert draft.pad_display_amount() == 3000
+    draft.set_quantity(2)
+    assert draft.pad_display_amount() == 6000
+
+    draft.clear_product_selection()
+    draft.set_quantity(1)
+    draft.select_product(_pan_pequeno_product())
+    assert draft.pad_display_amount() == 300
+    draft.entry.press_digit("2")
+    draft.entry.press_digit("0")
+    draft.entry.press_digit("0")
+    draft.entry.press_digit("0")
+    draft.apply_value(2000)
+    assert draft.pad_display_amount() == 2000
+    assert draft.quantity() == 7
+    draft.entry.clear_entry()
+    assert draft.pad_display_amount() == 2000
+
+
 # --- §21 otras categorías (persistencia) ---
 
 

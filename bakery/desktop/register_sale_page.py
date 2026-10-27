@@ -383,7 +383,17 @@ class RegisterSalePage(QWidget):
         else:
             self._payment_button.setText(_PAYMENT_BUTTON_PLACEHOLDER)
 
+    def _digits_blocked_for_quantity_only(self) -> bool:
+        """Producto no–Pan pequeño: cantidad solo con −/+ (Beta 2.0.2)."""
+        return (
+            self._draft.selected_product() is not None
+            and not self._draft.selected_is_pan_pequeno()
+        )
+
     def _digit(self, digit: str) -> None:
+        if self._digits_blocked_for_quantity_only():
+            self._feedback.setText("Use −/+ para la cantidad")
+            return
         self._draft.entry.press_digit(digit)
         self._feedback.setText("")
         self._on_entry_changed()
@@ -416,13 +426,19 @@ class RegisterSalePage(QWidget):
             self._sync_quantity_section()
             self._refresh_mode_ui()
         elif name == "borrar":
-            self._draft.entry.backspace()
-            self._feedback.setText("")
-            self._on_entry_changed()
+            if self._digits_blocked_for_quantity_only():
+                self._feedback.setText("Use −/+ para la cantidad")
+            else:
+                self._draft.entry.backspace()
+                self._feedback.setText("")
+                self._on_entry_changed()
         elif name == "zeros":
-            self._draft.entry.press_zeros()
-            self._feedback.setText("")
-            self._on_entry_changed()
+            if self._digits_blocked_for_quantity_only():
+                self._feedback.setText("Use −/+ para la cantidad")
+            else:
+                self._draft.entry.press_zeros()
+                self._feedback.setText("")
+                self._on_entry_changed()
         self._refresh_display()
         self._refresh_submit()
 
@@ -678,7 +694,9 @@ class RegisterSalePage(QWidget):
             button.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
             button.setFixedSize(style.PRODUCT_CHIP_WIDTH, style.PRODUCT_CHIP_HEIGHT)
             _apply_catalog_chip_icon(
-                button, resolve_relative_image(product.get("ruta_imagen"))
+                button,
+                resolve_relative_image(product.get("ruta_imagen")),
+                ensure_thumb=True,
             )
             is_selected = product["id_producto"] == selected_id
             style.apply_class(
@@ -690,7 +708,7 @@ class RegisterSalePage(QWidget):
             self._products_layout.addWidget(button)
 
     def _refresh_display(self) -> None:
-        self._display.setText(self._draft.entry.display_text())
+        self._display.setText(format_cop(self._draft.pad_display_amount()))
         items = self._draft.purchase.items()
         self._purchase_list.setText(
             "\n".join(
@@ -704,10 +722,7 @@ class RegisterSalePage(QWidget):
         self._purchase_list.adjustSize()
         self._purchase_list.setMinimumHeight(self._purchase_list.sizeHint().height())
         total = self._draft.total()
-        if total > 0:
-            self._purchase_total.setText(f"Total: {format_cop(total)}")
-        else:
-            self._purchase_total.setText("Total: $0.00")
+        self._purchase_total.setText(f"Total: {format_cop(total)}")
 
     def _refresh_submit(self) -> None:
         ready = self._draft.total() > 0 and self._selected_payment_id is not None

@@ -111,7 +111,7 @@ def test_press_zeros_on_single_zero_stays_zero() -> None:
 
 
 def test_display_text_empty_when_no_digits() -> None:
-    assert Calculator().display_text() == "$ 0.00"
+    assert Calculator().display_text() == "$ 0"
 
 
 def test_display_text_formats_while_typing() -> None:
@@ -150,7 +150,7 @@ def test_display_text_updates_on_backspace() -> None:
         "$ 125",
         "$ 12",
         "$ 1",
-        "$ 0.00",
+        "$ 0",
     ]
     for expected in expected_after_backspace:
         calculator.backspace()

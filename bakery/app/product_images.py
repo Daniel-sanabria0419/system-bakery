@@ -49,6 +49,25 @@ def category_image_path(id_categoria: int) -> Optional[Path]:
     return None
 
 
+PRODUCT_THUMB_MAX_EDGE = 120
+
+
+def product_thumb_path(full_image: Path) -> Path:
+    """Convención: {stem}_thumb{suffix} junto a la imagen completa."""
+    return full_image.with_name(f"{full_image.stem}_thumb{full_image.suffix}")
+
+
+def resolve_product_chip_image(ruta: Optional[str]) -> Optional[Path]:
+    """Prefiere thumbnail si existe; si no, la imagen completa (o None)."""
+    full = resolve_relative_image(ruta)
+    if full is None:
+        return None
+    thumb = product_thumb_path(full)
+    if thumb.is_file():
+        return thumb
+    return full
+
+
 def save_product_image(id_producto: int, source: Path) -> str:
     """Copia la imagen a imagenes/productos/{id}{ext} y devuelve ruta relativa."""
     if isinstance(id_producto, bool) or not isinstance(id_producto, int) or id_producto <= 0:
@@ -64,6 +83,9 @@ def save_product_image(id_producto: int, source: Path) -> str:
     for old in dest_dir.glob(f"{id_producto}.*"):
         if old.is_file():
             old.unlink()
+    for old_thumb in dest_dir.glob(f"{id_producto}_thumb.*"):
+        if old_thumb.is_file():
+            old_thumb.unlink()
     dest = dest_dir / f"{id_producto}{ext}"
     shutil.copy2(source_path, dest)
     return f"imagenes/productos/{id_producto}{ext}"

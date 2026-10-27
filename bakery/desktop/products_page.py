@@ -17,7 +17,8 @@ from PySide6.QtWidgets import (
 )
 
 from bakery.app.money import format_cop
-from bakery.app.product_images import save_product_image
+from bakery.app.product_images import resolve_relative_image, save_product_image
+from bakery.desktop.ui_helpers import clear_chip_icon_cache, ensure_product_thumbnail
 from bakery.desktop import style
 from bakery.desktop.client import ApiClient
 from bakery.desktop.dialogs import ProductFormDialog
@@ -142,6 +143,10 @@ class ProductsPage(QWidget):
         self, id_producto: int, source: Path, values: Mapping
     ) -> None:
         relative = save_product_image(int(id_producto), source)
+        full = resolve_relative_image(relative)
+        if full is not None:
+            clear_chip_icon_cache(full)
+            ensure_product_thumbnail(full)
         self._api.update_product(
             id_producto,
             nombre=values["nombre"],

@@ -14,10 +14,13 @@ from bakery.app.product_images import (
     imagenes_categorias_dir,
     imagenes_productos_dir,
     normalize_ruta_imagen,
+    product_thumb_path,
     project_root,
+    resolve_product_chip_image,
     resolve_relative_image,
     save_product_image,
 )
+from bakery.desktop.ui_helpers import ensure_product_thumbnail
 from bakery.app.products import create_product, update_product
 from bakery.desktop.main import create_window
 from bakery.desktop.ui import ProductFormDialog
@@ -81,6 +84,28 @@ def test_save_and_normalize_product_image(tmp_path: Path, monkeypatch) -> None:
     assert (tmp_path / relative).is_file()
     assert normalize_ruta_imagen(relative) == relative
     assert normalize_ruta_imagen(None) is None
+
+
+def test_chip_image_prefers_thumb_and_save_clears_old_thumb(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.setattr(
+        "bakery.app.product_images.project_root", lambda: tmp_path
+    )
+    source = _write_png(tmp_path / "origen.png")
+    relative = save_product_image(7, source)
+    full = tmp_path / relative
+    assert resolve_product_chip_image(relative) == full
+
+    thumb = ensure_product_thumbnail(full)
+    assert thumb == product_thumb_path(full)
+    assert thumb.is_file()
+    assert resolve_product_chip_image(relative) == thumb
+
+    replacement = _write_png(tmp_path / "otra.png")
+    save_product_image(7, replacement)
+    assert not thumb.is_file()
+    assert resolve_product_chip_image(relative) == (tmp_path / relative)
 
 
 def test_create_associate_persist_edit_keeps_image(tmp_path: Path, monkeypatch) -> None:

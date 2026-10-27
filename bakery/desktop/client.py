@@ -5,6 +5,44 @@ import httpx
 from bakery.api.app import API_HOST, API_PORT
 
 
+def _format_api_detail(detail: Any) -> Optional[str]:
+    if isinstance(detail, str) and detail.strip():
+        return detail.strip()
+    if isinstance(detail, list):
+        parts = []
+        for item in detail:
+            if isinstance(item, Mapping):
+                msg = item.get("msg")
+                if isinstance(msg, str) and msg.strip():
+                    parts.append(msg.strip())
+            elif isinstance(item, str) and item.strip():
+                parts.append(item.strip())
+        if parts:
+            return "; ".join(parts)
+    return None
+
+
+def raise_for_api_status(response: httpx.Response) -> None:
+    """Como raise_for_status, pero prioriza FastAPI `detail` legible."""
+    if response.is_success:
+        return
+    message: Optional[str] = None
+    try:
+        payload = response.json()
+    except ValueError:
+        payload = None
+    if isinstance(payload, Mapping):
+        message = _format_api_detail(payload.get("detail"))
+    if not message:
+        text = (response.text or "").strip()
+        message = text or f"Error HTTP {response.status_code}"
+    raise httpx.HTTPStatusError(
+        message,
+        request=response.request,
+        response=response,
+    )
+
+
 class ApiClient:
     def __init__(
         self,
@@ -21,7 +59,7 @@ class ApiClient:
 
     def list_payment_methods(self) -> List[Mapping[str, Any]]:
         response = self._request("GET", "/medios-pago")
-        response.raise_for_status()
+        raise_for_api_status(response)
         return response.json()
 
     def create_sale(
@@ -32,17 +70,17 @@ class ApiClient:
             "/ventas",
             json={"id_medio_pago": id_medio_pago, "lineas": list(lineas)},
         )
-        response.raise_for_status()
+        raise_for_api_status(response)
         return response.json()
 
     def list_categories(self) -> List[Mapping[str, Any]]:
         response = self._request("GET", "/categorias")
-        response.raise_for_status()
+        raise_for_api_status(response)
         return response.json()
 
     def list_products(self) -> List[Mapping[str, Any]]:
         response = self._request("GET", "/productos")
-        response.raise_for_status()
+        raise_for_api_status(response)
         return response.json()
 
     def list_active_products(
@@ -57,12 +95,12 @@ class ApiClient:
         if precio is not None:
             params["precio"] = precio
         response = self._request("GET", "/productos/activos", params=params or None)
-        response.raise_for_status()
+        raise_for_api_status(response)
         return response.json()
 
     def get_product(self, id_producto: int) -> Mapping[str, Any]:
         response = self._request("GET", f"/productos/{id_producto}")
-        response.raise_for_status()
+        raise_for_api_status(response)
         return response.json()
 
     def create_product(
@@ -82,7 +120,7 @@ class ApiClient:
             "ruta_imagen": ruta_imagen,
         }
         response = self._request("POST", "/productos", json=payload)
-        response.raise_for_status()
+        raise_for_api_status(response)
         return response.json()
 
     def update_product(
@@ -105,17 +143,17 @@ class ApiClient:
             "actualizar_ruta_imagen": actualizar_ruta_imagen,
         }
         response = self._request("PUT", f"/productos/{id_producto}", json=payload)
-        response.raise_for_status()
+        raise_for_api_status(response)
         return response.json()
 
     def activate_product(self, id_producto: int) -> Mapping[str, Any]:
         response = self._request("POST", f"/productos/{id_producto}/activar")
-        response.raise_for_status()
+        raise_for_api_status(response)
         return response.json()
 
     def deactivate_product(self, id_producto: int) -> Mapping[str, Any]:
         response = self._request("POST", f"/productos/{id_producto}/desactivar")
-        response.raise_for_status()
+        raise_for_api_status(response)
         return response.json()
 
     def _request(self, method: str, path: str, **kwargs) -> httpx.Response:

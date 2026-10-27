@@ -25,7 +25,7 @@ def test_reject_agregar_without_product_shows_feedback(qtbot) -> None:
 
     assert "Seleccione un producto" in _find(window, "sale_feedback").text()
     assert _find(window, "purchase_list").text() == ""
-    assert _find(window, "purchase_total").text() == "Total: $0.00"
+    assert _find(window, "purchase_total").text() == "Total: $ 0"
 
 
 def test_inactive_products_not_listed(qtbot) -> None:

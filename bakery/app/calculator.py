@@ -47,5 +47,5 @@ class Calculator:
         """Presentación monetaria de la entrada. Placeholder si no hay dígitos."""
         amount = self.current_amount()
         if amount is None:
-            return "$ 0.00"
+            return format_cop(0)
         return format_cop(amount)

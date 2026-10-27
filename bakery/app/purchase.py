@@ -206,6 +206,18 @@ class SaleDraft:
             return subtotal_for_quantity(self._quantity)
         return product["precio"] * self._quantity
 
+    def pad_display_amount(self) -> int:
+        """Monto del display del pad: entrada, valor tipado PP, o subtotal a agregar."""
+        if self._selected_product is None:
+            amount = self.entry.current_amount()
+            return 0 if amount is None else amount
+        if self.selected_is_pan_pequeno():
+            typed = self.entry.current_amount()
+            if typed is not None:
+                return typed
+        subtotal = self.current_subtotal()
+        return 0 if subtotal is None else subtotal
+
     def apply_value(self, valor: int) -> bool:
         """Para Pan pequeño: valor → cantidad/subtotal (ceil). Otras: no-op False."""
         if not self.selected_is_pan_pequeno():

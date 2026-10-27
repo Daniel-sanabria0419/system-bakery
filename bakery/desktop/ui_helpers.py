@@ -1,10 +1,10 @@
 """Helpers compartidos de layout/estilo para pantallas desktop."""
 
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from PySide6.QtCore import QPoint, QRect, QRectF, QSize, Qt
-from PySide6.QtGui import QIcon, QTextOption
+from PySide6.QtGui import QIcon, QImage, QTextOption
 from PySide6.QtWidgets import (
     QDialog,
     QFrame,
@@ -19,11 +19,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from bakery.app.product_images import PRODUCT_THUMB_MAX_EDGE, product_thumb_path
 from bakery.desktop import style
 
 _PAYMENT_BUTTON_PLACEHOLDER = "Seleccionar medio de pago"
 _PAYMENT_METHODS_PER_ROW = 5
 _BACK_BUTTON_ARROW = "←"
+_CHIP_ICON_SIZE = QSize(60, 60)
+_CHIP_ICON_CACHE: Dict[str, QIcon] = {}
 
 
 def _apply_page_layout(layout: QVBoxLayout) -> None:
@@ -64,12 +67,64 @@ def _apply_touch_dialog_layout(dialog: QDialog, layout: QVBoxLayout) -> None:
         dialog.setMinimumSize(style.DIALOG_MIN_WIDTH, style.DIALOG_MIN_HEIGHT)
 
 
-def _apply_catalog_chip_icon(button: QToolButton, image_path: Optional[Path]) -> None:
+def clear_chip_icon_cache(path: Optional[Path] = None) -> None:
+    """Invalida caché de iconos (toda o una ruta concreta + su thumb)."""
+    if path is None:
+        _CHIP_ICON_CACHE.clear()
+        return
+    keys = {str(path), str(product_thumb_path(path))}
+    for key in keys:
+        _CHIP_ICON_CACHE.pop(key, None)
+
+
+def ensure_product_thumbnail(
+    full_image: Path, *, max_edge: int = PRODUCT_THUMB_MAX_EDGE
+) -> Path:
+    """Crea/actualiza `{stem}_thumb{ext}` con QImage. Fallback: imagen completa."""
+    full_path = Path(full_image)
+    if not full_path.is_file():
+        return full_path
+    thumb = product_thumb_path(full_path)
+    try:
+        if thumb.is_file() and thumb.stat().st_mtime >= full_path.stat().st_mtime:
+            return thumb
+    except OSError:
+        pass
+    image = QImage(str(full_path))
+    if image.isNull():
+        return full_path
+    scaled = image.scaled(
+        max_edge,
+        max_edge,
+        Qt.KeepAspectRatio,
+        Qt.SmoothTransformation,
+    )
+    if not scaled.save(str(thumb)):
+        return full_path
+    clear_chip_icon_cache(full_path)
+    return thumb if thumb.is_file() else full_path
+
+
+def _apply_catalog_chip_icon(
+    button: QToolButton,
+    image_path: Optional[Path],
+    *,
+    ensure_thumb: bool = False,
+) -> None:
     if image_path is None:
         button.setIcon(QIcon())
+        button.setIconSize(_CHIP_ICON_SIZE)
         return
-    button.setIcon(QIcon(str(image_path)))
-    button.setIconSize(QSize(60, 60))
+    path = Path(image_path)
+    if ensure_thumb:
+        path = ensure_product_thumbnail(path)
+    key = str(path)
+    icon = _CHIP_ICON_CACHE.get(key)
+    if icon is None:
+        icon = QIcon(key)
+        _CHIP_ICON_CACHE[key] = icon
+    button.setIcon(icon)
+    button.setIconSize(_CHIP_ICON_SIZE)
 
 
 class CatalogChipButton(QToolButton):

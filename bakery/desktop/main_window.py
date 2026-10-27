@@ -1,11 +1,12 @@
 """Ventana principal y navegación entre pantallas."""
 
-from PySide6.QtWidgets import QMainWindow, QStackedWidget
+from PySide6.QtWidgets import QMainWindow, QMessageBox, QStackedWidget
 
 from bakery.desktop.client import ApiClient
 from bakery.desktop.menu_page import MenuPage
 from bakery.desktop.products_page import ProductsPage
 from bakery.desktop.register_sale_page import RegisterSalePage
+
 
 class MainWindow(QMainWindow):
     def __init__(self, api_client: ApiClient) -> None:
@@ -26,14 +27,29 @@ class MainWindow(QMainWindow):
         self._stack.setCurrentWidget(self._menu)
 
     def open_register_sale(self) -> None:
-        self._register.load_payment_methods()
-        self._register.load_catalog()
+        try:
+            self._register.load_payment_methods()
+            self._register.load_catalog()
+        except Exception as exc:
+            QMessageBox.warning(
+                self,
+                "Error",
+                f"No se pudo cargar Registrar venta.\n{exc}",
+            )
+            return
         self._stack.setCurrentWidget(self._register)
 
     def open_products(self) -> None:
-        self._products.reload()
+        try:
+            self._products.reload()
+        except Exception as exc:
+            QMessageBox.warning(
+                self,
+                "Error",
+                f"No se pudo cargar Productos.\n{exc}",
+            )
+            return
         self._stack.setCurrentWidget(self._products)
 
     def go_back_to_menu(self) -> None:
         self._stack.setCurrentWidget(self._menu)
-

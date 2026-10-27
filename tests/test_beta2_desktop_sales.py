@@ -41,7 +41,7 @@ def test_inactive_products_not_listed(qtbot) -> None:
     assert "Inactivo" not in names
 
 
-def test_multi_product_flow_with_quantity_and_price_search(qtbot) -> None:
+def test_multi_product_flow_with_quantity_and_price_prefix(qtbot) -> None:
     api = FakeApiClient()
     window = create_window(api)
     qtbot.addWidget(window)
@@ -56,10 +56,11 @@ def test_multi_product_flow_with_quantity_and_price_search(qtbot) -> None:
     assert _find(window, "purchase_list").text() == _line_text("Pan", 5000, 2)
     assert _find(window, "sale_feedback").text() == ""
 
+    _click(qtbot, _find(window, "sale_category_todos"))
     for digit in "3000":
         _click(qtbot, _find(window, f"digit_{digit}"))
-    assert _find(window, "price_search_product_2") is not None
-    _click(qtbot, _find(window, "price_search_product_2"))
+    assert _find(window, "sale_product_2") is not None
+    _click(qtbot, _find(window, "sale_product_2"))
     _click(qtbot, _find(window, "agregar_button"))
     assert _find(window, "purchase_list").text() == (
         f"{_line_text('Pan', 5000, 2)}\n{_line_text('Café', 3000)}"

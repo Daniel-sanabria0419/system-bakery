@@ -24,7 +24,7 @@ from bakery.app.product_images import (
     category_image_path,
     resolve_relative_image,
 )
-from bakery.app.purchase import SaleDraft, candidates_by_exact_price
+from bakery.app.purchase import SaleDraft, candidates_by_price_prefix
 from bakery.desktop import style
 from bakery.desktop.client import ApiClient
 from bakery.desktop.dialogs import (
@@ -258,21 +258,6 @@ class RegisterSalePage(QWidget):
         products_scroll.setWidget(self._products_host)
         catalog_layout.addWidget(products_scroll, stretch=2)
 
-        self._search_caption = QLabel("Búsqueda por precio")
-        self._search_caption.setObjectName("price_search_caption")
-        catalog_layout.addWidget(self._search_caption)
-        self._search_host = QWidget()
-        self._search_host.setObjectName("price_search_list")
-        self._search_layout = QVBoxLayout(self._search_host)
-        self._search_layout.setContentsMargins(0, 0, 0, 0)
-        self._search_layout.setSpacing(style.PAGE_SPACING)
-        self._search_scroll = QScrollArea()
-        self._search_scroll.setObjectName("price_search_scroll")
-        self._search_scroll.setWidgetResizable(True)
-        self._search_scroll.setFrameShape(QFrame.NoFrame)
-        self._search_scroll.setWidget(self._search_host)
-        catalog_layout.addWidget(self._search_scroll, stretch=1)
-
         columns.addWidget(left, style.LEFT_COLUMN_STRETCH)
         columns.addWidget(catalog, style.RIGHT_COLUMN_STRETCH)
         root.addLayout(columns, stretch=1)
@@ -307,7 +292,6 @@ class RegisterSalePage(QWidget):
         self._active_products = list(self._api.list_active_products())
         self._rebuild_categories()
         self._rebuild_products()
-        self._rebuild_search()
         self._refresh_selection_ui()
         self._sync_quantity_section()
         self._refresh_mode_ui()
@@ -319,7 +303,6 @@ class RegisterSalePage(QWidget):
         self._feedback.setText("")
         self._rebuild_categories()
         self._rebuild_products()
-        self._rebuild_search()
         self._refresh_display()
         self._refresh_selection_ui()
         self._sync_quantity_section()
@@ -371,14 +354,13 @@ class RegisterSalePage(QWidget):
                 self._refresh_selection_ui()
                 self._sync_quantity_section()
                 self._refresh_mode_ui()
-                self._rebuild_search()
+                self._rebuild_products()
         elif name == "clear":
             self._draft.clear_purchase()
             self._selected_category_id = None
             self._feedback.setText("")
             self._rebuild_categories()
             self._rebuild_products()
-            self._rebuild_search()
             self._refresh_selection_ui()
             self._sync_quantity_section()
             self._refresh_mode_ui()
@@ -394,7 +376,7 @@ class RegisterSalePage(QWidget):
         self._refresh_submit()
 
     def _on_entry_changed(self) -> None:
-        """Tras dígitos: Pan pequeño convierte valor→cantidad; si no, busca precio."""
+        """Tras dígitos: Pan pequeño = valor→cantidad; sin selección = prefijo; otro = qty."""
         if self._draft.selected_is_pan_pequeno():
             amount = self._draft.entry.current_amount()
             if amount is not None and amount > 0:
@@ -402,7 +384,10 @@ class RegisterSalePage(QWidget):
             self._sync_quantity_section()
             self._refresh_mode_ui()
             return
-        self._rebuild_search()
+        if self._draft.selected_product() is not None:
+            # Otro producto: dígitos no filtran ni cambian cantidad.
+            return
+        self._rebuild_products()
 
     def _quantity_minus(self) -> None:
         current = self._draft.quantity()
@@ -469,8 +454,6 @@ class RegisterSalePage(QWidget):
         self._rebuild_products()
         self._sync_quantity_section()
         self._refresh_mode_ui()
-        if not self._draft.selected_is_pan_pequeno():
-            self._rebuild_search()
         self._refresh_display()
 
     def _refresh_selection_ui(self) -> None:
@@ -483,11 +466,8 @@ class RegisterSalePage(QWidget):
             )
 
     def _refresh_mode_ui(self) -> None:
-        """Preview Pan pequeño y visibilidad de búsqueda por precio."""
-        pan_mode = self._draft.selected_is_pan_pequeno()
-        self._search_caption.setVisible(not pan_mode)
-        self._search_scroll.setVisible(not pan_mode)
-        if not pan_mode:
+        """Preview Pan pequeño (valor→cantidad)."""
+        if not self._draft.selected_is_pan_pequeno():
             self._value_preview_label.setText("")
             return
 
@@ -513,6 +493,8 @@ class RegisterSalePage(QWidget):
             item = layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
+                widget.hide()
+                widget.setParent(None)
                 widget.deleteLater()
 
     def _rebuild_categories(self) -> None:
@@ -561,6 +543,11 @@ class RegisterSalePage(QWidget):
                 for product in products
                 if product["id_categoria"] == self._selected_category_id
             ]
+        # Prefijo solo sin producto seleccionado (categoría ∩ prefijo).
+        if self._draft.selected_product() is None:
+            prefix = self._draft.entry.digits()
+            if prefix:
+                products = candidates_by_price_prefix(products, prefix)
         selected = self._draft.selected_product()
         selected_id = selected["id_producto"] if selected is not None else None
         for product in products:
@@ -581,41 +568,6 @@ class RegisterSalePage(QWidget):
             )
             self._products_layout.addWidget(button)
         self._products_layout.addStretch(1)
-
-    def _rebuild_search(self) -> None:
-        self._clear_layout(self._search_layout)
-        amount = self._draft.entry.current_amount()
-        if amount is None or amount <= 0:
-            empty = QLabel("Escriba un precio para buscar")
-            empty.setObjectName("price_search_empty")
-            self._search_layout.addWidget(empty)
-            self._search_layout.addStretch(1)
-            return
-        matches = candidates_by_exact_price(self._active_products, amount)
-        if not matches:
-            empty = QLabel("Sin productos a ese precio")
-            empty.setObjectName("price_search_empty")
-            self._search_layout.addWidget(empty)
-        selected = self._draft.selected_product()
-        selected_id = selected["id_producto"] if selected is not None else None
-        for product in matches:
-            button = QToolButton()
-            button.setText(str(product["nombre"]))
-            button.setObjectName(f"price_search_product_{product['id_producto']}")
-            button.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
-            button.setFixedSize(style.PRODUCT_CHIP_WIDTH, style.PRODUCT_CHIP_HEIGHT)
-            _apply_catalog_chip_icon(
-                button, resolve_relative_image(product.get("ruta_imagen"))
-            )
-            is_selected = product["id_producto"] == selected_id
-            style.apply_class(
-                button, "product-chip-selected" if is_selected else "product-chip"
-            )
-            button.clicked.connect(
-                lambda checked=False, p=product: self._select_product(p)
-            )
-            self._search_layout.addWidget(button)
-        self._search_layout.addStretch(1)
 
     def _refresh_display(self) -> None:
         self._display.setText(self._draft.entry.display_text())

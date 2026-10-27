@@ -52,12 +52,14 @@ BACK_BUTTON_MIN_HEIGHT = 29
 # theme.qss sustituye __CATEGORY_CHIP_FONT_SIZE__ / __PRODUCT_CHIP_FONT_SIZE__
 # al cargar (load_theme_qss). Ancho/alto los aplica register_sale_page.
 # ---------------------------------------------------------------------------
-CATEGORY_CHIP_WIDTH = 120
-CATEGORY_CHIP_HEIGHT = 90
+CATEGORY_CHIP_WIDTH = 135
+CATEGORY_CHIP_HEIGHT = 120
 CATEGORY_CHIP_FONT_SIZE = 16  # px
-PRODUCT_CHIP_WIDTH = 110
-PRODUCT_CHIP_HEIGHT = 80
+PRODUCT_CHIP_WIDTH = 135
+PRODUCT_CHIP_HEIGHT = 120
 PRODUCT_CHIP_FONT_SIZE = 16  # px
+# Separación de la foto: borde del chip y espacio hasta el nombre.
+PRODUCT_CHIP_IMAGE_PADDING = 6
 CATALOG_CHIP_COLOR = "#64c466"
 CATALOG_CHIP_SELECTED_COLOR = "#2E7D32"
 CATALOG_BACKGROUND = "#F5F0E8"

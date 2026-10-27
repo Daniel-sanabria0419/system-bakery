@@ -14,6 +14,29 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Beta 2.0 | Implementada (código); cierre documental Etapa 10 | Productos (CRUD), categorías, venta con líneas y búsqueda por precio |
 | Beta 2.0.1 | **Terminada** 2026-10-26 (OK final Daniel) | Pan pequeño (promo), cobro por valor, chips, imágenes, formularios |
 | Beta 2.0.2 | Implementada (código); pendiente OK final | Layout cobro, prefijo de precio, listado Productos blanco |
+| Beta 2.0.3 | Implementada (código); pendiente OK final | Navegación catálogo Vista A/B; chips más grandes / tipografía editable |
+
+---
+
+# Beta 2.0.3 (implementada; pendiente OK final)
+
+## Objetivo
+
+Mejorar el cobro: al elegir categoría o Todos, pasar a una vista solo de productos con chip Volver; chips más grandes y tipografía editable en `style.py` — sin lógica de negocio nueva ni features 2.1+.
+
+Detalle: `docs/beta-2.0.3/stages.md`. Regresión: `docs/beta-2.0.3/regression-notes.md`.
+
+## Cobro / catálogo
+
+- Vista A: solo categorías; ningún chip empieza seleccionado (Todos tampoco).
+- Categoría o Todos → Vista B: productos + chip Volver en la grilla; categorías ocultas.
+- Volver restaura Vista A (listo para elegir otra vez).
+- Prefijo / Pan pequeño / panel seleccionado: sin cambio respecto a 2.0.2.
+- Tamaños y `font-size` de chips: constantes en `bakery/desktop/style.py`.
+
+## Fuera del alcance de Beta 2.0.3
+
+Historial, órdenes, clientes, recetas, inventario, promos genéricas, Beta 2.1+.
 
 ---
 

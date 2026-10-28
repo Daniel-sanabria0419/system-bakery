@@ -15,22 +15,22 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Beta 2.0.1 | **Terminada** 2026-10-26 (OK final Daniel) | Pan pequeño (promo), cobro por valor, chips, imágenes, formularios |
 | Beta 2.0.2 | **Terminada** 2026-10-27 (OK final Daniel) | Layout cobro, prefijo de precio, listado Productos blanco |
 | Beta 2.0.3 | **Terminada** 2026-10-27 (OK final Daniel) | Navegación catálogo Vista A/B; chips más grandes / tipografía editable |
-| Beta 2.0.4 | **Implementada** (cierre etapas 6–7) | Migrar Pan pequeño a `promociones` + FK; cobro por FK/grupo |
+| Beta 2.0.4 | **Terminada** 2026-10-27 (OK final Daniel) | Migrar Pan pequeño a `promociones` + FK; cobro por FK/grupo |
 
 ---
 
-# Beta 2.0.4 (en curso)
+# Beta 2.0.4 (terminada)
 
 ## Objetivo
 
-Reemplazar la promo hardcodeada de Pan pequeño (`pan_pequeno_pricing` por nombre de categoría) por filas en `promociones` + `productos.promocion_id`, con cálculo tipado `cantidad_por_monto` y **agrupación en todo el carrito** (`todo_o_nada`). Etapa a etapa; cobro intacto hasta dual-path/cutover.
+Reemplazar la promo hardcodeada de Pan pequeño (`pan_pequeno_pricing` por nombre de categoría) por filas en `promociones` + `productos.promocion_id`, con cálculo tipado `cantidad_por_monto` y **agrupación en todo el carrito** (`todo_o_nada`).
 
-Detalle: `docs/beta-2.0.4/stages.md`. Plan: Context `docs/beta-2.0.4-promociones-plan.md`.
+Detalle: `docs/beta-2.0.4/stages.md`. Plan: Context `docs/beta-2.0.4-promociones-plan.md`. Cierre: Context `docs/beta-2.0.4-closure.md`.
 
-## Etapas 1–7
+## Etapas 1–7 (hechas #39–#44)
 
-- **Etapas 1–5 (hechas #39–#43):** schema, seed, dual-path, UI carrito, cutover (flag default True).
-- **Etapas 6–7 (este alcance):** snapshot `venta_lineas` (`id_promocion` / `nombre_promocion`); regresión + docs pantallas/reportes (`docs/beta-2.0.4/regression-notes.md`).
+- Schema, seed, dual-path, UI carrito, cutover (flag default True).
+- Snapshot `venta_lineas` (`id_promocion` / `nombre_promocion`); regresión + docs (`docs/beta-2.0.4/regression-notes.md`).
 - Cobro por FK/grupo `cantidad_por_monto` (`todo_o_nada`); sin montos por nombre de categoría.
 
 ## Fuera del alcance de Beta 2.0.4

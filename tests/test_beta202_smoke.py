@@ -88,14 +88,14 @@ def test_smoke_menu_products_prefix_pan_pequeno_checkout(qtbot) -> None:
     assert _find(window, "sale_product_2") is not None
     assert window.findChild(QObject, "sale_product_4") is None
 
-    # Pan pequeño: valor → cantidad (limpia prefijo al seleccionar)
+    # Pan pequeño: cantidad solo −/+ (Beta 2.0.6)
     _click(qtbot, _find(window, "catalog_back_to_categories"))
     _click(qtbot, _find(window, "sale_category_6"))
     _click(qtbot, _find(window, "sale_product_4"))
     assert _find(window, "selected_product_label").text() == "Pan rollo"
     assert "Unitario:" in _find(window, "selected_product_unit_price").text()
-    for digit in "2000":
-        _click(qtbot, _find(window, f"digit_{digit}"))
+    for _ in range(6):
+        _click(qtbot, _find(window, "quantity_plus_button"))
     preview = _find(window, "sale_value_preview").text()
     assert format_cop(2000) in preview
     assert _find(window, "quantity_label").text() == "7"

@@ -98,62 +98,37 @@ def test_draft_pan_pequeno_promo_and_normal_qty() -> None:
     assert sum(item.subtotal for item in draft.purchase.items()) == 4400
 
 
-def test_draft_apply_value_sets_quantity_for_pan_pequeno() -> None:
+def test_draft_pan_pequeno_quantity_only_preview() -> None:
+    """Beta 2.0.6: cobro solo por cantidad (−/+); sin tipado valor→qty."""
     draft = SaleDraft()
     draft.select_product(_pan_pequeno_product())
-    assert draft.apply_value(1900) is True
-    assert draft.quantity() == 7
-    # Sin dígitos en el pad: preview usa fórmula todo_o_nada.
+    draft.set_quantity(7)
     assert draft.current_subtotal() == 2000
+    draft.set_quantity(17)
+    assert draft.current_subtotal() == 5100
+    draft.set_quantity(34)
+    assert draft.current_subtotal() == 10200
 
 
-def test_draft_promo_pad_keeps_typed_subtotal_and_ceil_qty() -> None:
+def test_draft_agregar_qty_uses_promo_formula() -> None:
+    """Agregar con qty: motor todo_o_nada / híbrido (sin cobro_fijo tipado)."""
     draft = SaleDraft()
     draft.select_product(_pan_pequeno_product())
-    for digit in "10000":
-        draft.entry.press_digit(digit)
-    assert draft.apply_value(10000) is True
-    assert draft.quantity() == 34  # ceil(10000/300), no 35
-    assert draft.pad_display_amount() == 10000
-    assert draft.current_subtotal() == 10000  # no 10200 mientras tipa
-    draft.entry.clear_entry()
-    assert draft.current_subtotal() == 10200  # sin tipado → ref. todo_o_nada
-
-    draft.entry.clear_entry()
-    draft.set_quantity(1)
-    for digit in "5000":
-        draft.entry.press_digit(digit)
-    assert draft.apply_value(5000) is True
-    assert draft.quantity() == 17
-    assert draft.pad_display_amount() == 5000
-    assert draft.current_subtotal() == 5000
-
-
-def test_draft_agregar_keeps_typed_charge_not_todo_o_nada() -> None:
-    """Agregar con tipado: línea/total = tipado (no 17→5100 ni 34→10200)."""
-    draft = SaleDraft()
-    draft.select_product(_pan_pequeno_product())
-    for digit in "5000":
-        draft.entry.press_digit(digit)
-    assert draft.apply_value(5000) is True
+    draft.set_quantity(17)
     assert draft.add_to_purchase() is True
     line = draft.purchase.items()[0]
     assert line.cantidad == 17
-    assert line.subtotal == 5000
-    assert line.cobro_fijo is True
-    assert draft.total() == 5000
+    assert line.subtotal == 5100
+    assert draft.total() == 5100
 
     draft.select_product(_pan_pequeno_product(id_producto=2))
-    for digit in "10000":
-        draft.entry.press_digit(digit)
-    assert draft.apply_value(10000) is True
+    draft.set_quantity(34)
     assert draft.add_to_purchase() is True
     items = draft.purchase.items()
-    assert items[0].subtotal == 5000 and items[0].cobro_fijo is True
+    assert items[0].subtotal == 5100
     assert items[1].cantidad == 34
-    assert items[1].subtotal == 10000
-    assert items[1].cobro_fijo is True
-    assert draft.total() == 15000
+    assert items[1].subtotal == 10200
+    assert draft.total() == 15300
 
 
 def test_draft_other_category_stays_precio_times_cantidad() -> None:
@@ -172,18 +147,14 @@ def test_draft_other_category_stays_precio_times_cantidad() -> None:
     assert draft.selected_is_pan_pequeno() is False
     draft.set_quantity(3)
     assert draft.current_subtotal() == 60000
-    assert draft.apply_value(9000) is False
     assert draft.add_to_purchase() is True
     assert draft.purchase.items()[0].subtotal == 60000
 
 
-def test_pad_display_amount_modes() -> None:
+def test_draft_current_subtotal_modes() -> None:
     draft = SaleDraft()
-    assert draft.pad_display_amount() == 0
-    draft.entry.press_digit("5")
-    assert draft.pad_display_amount() == 5
+    assert draft.current_subtotal() is None
 
-    draft.entry.clear_entry()
     draft.select_product(
         {
             "id_producto": 1,
@@ -192,23 +163,16 @@ def test_pad_display_amount_modes() -> None:
             "nombre_categoria": "Pastelería",
         }
     )
-    assert draft.pad_display_amount() == 3000
+    assert draft.current_subtotal() == 3000
     draft.set_quantity(2)
-    assert draft.pad_display_amount() == 6000
+    assert draft.current_subtotal() == 6000
 
     draft.clear_product_selection()
     draft.set_quantity(1)
     draft.select_product(_pan_pequeno_product())
-    assert draft.pad_display_amount() == 300
-    draft.entry.press_digit("2")
-    draft.entry.press_digit("0")
-    draft.entry.press_digit("0")
-    draft.entry.press_digit("0")
-    draft.apply_value(2000)
-    assert draft.pad_display_amount() == 2000
-    assert draft.quantity() == 7
-    draft.entry.clear_entry()
-    assert draft.pad_display_amount() == 2000
+    assert draft.current_subtotal() == 300
+    draft.set_quantity(7)
+    assert draft.current_subtotal() == 2000
 
 
 # --- §21 otras categorías (persistencia) ---
@@ -388,7 +352,8 @@ def test_api_pan_pequeno_sale_and_reject_bad_price(tmp_path: Path) -> None:
         assert sale.status_code == 200
         assert sale.json()["valor_total"] == 2000
 
-        typed = client.post(
+        # Cobro qty-only: 17 panes → motor 5100 (sin subtotal tipado desde UI).
+        by_qty = client.post(
             "/ventas",
             json={
                 "id_medio_pago": 1,
@@ -397,10 +362,9 @@ def test_api_pan_pequeno_sale_and_reject_bad_price(tmp_path: Path) -> None:
                         "id_producto": product["id_producto"],
                         "cantidad": 17,
                         "precio_aplicado": 300,
-                        "subtotal": 5000,
                     }
                 ],
             },
         )
-        assert typed.status_code == 200
-        assert typed.json()["valor_total"] == 5000
+        assert by_qty.status_code == 200
+        assert by_qty.json()["valor_total"] == 5100

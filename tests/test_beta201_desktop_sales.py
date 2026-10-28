@@ -1,4 +1,4 @@
-"""UI cobro — modo valor Pan pequeño, prefijo sin selección, cantidad otras."""
+"""UI cobro — cantidad −/+, prefijo sin selección (pad temporal hasta 2.0.6 Etapa 2)."""
 
 import pytest
 from PySide6.QtCore import QObject
@@ -9,7 +9,8 @@ from bakery.persistence.schema import NOMBRE_CATEGORIA_PAN_PEQUENO
 from tests.test_stage4_desktop import FakeApiClient, _click, _find, _line_text
 
 
-def test_pan_pequeno_value_1900_previews_ceil_before_add(qtbot) -> None:
+def test_pan_pequeno_qty_only_blocks_digits_and_uses_plus(qtbot) -> None:
+    """Beta 2.0.6: con Pan pequeño seleccionado, dígitos no tipan; solo −/+."""
     api = FakeApiClient()
     window = create_window(api)
     qtbot.addWidget(window)
@@ -32,24 +33,25 @@ def test_pan_pequeno_value_1900_previews_ceil_before_add(qtbot) -> None:
     for digit in "1900":
         _click(qtbot, _find(window, f"digit_{digit}"))
 
-    # Pad conserva tipado; qty = ceil(1900/300)=7. Sin flecha 1900→2000.
-    assert _find(window, "sale_display").text() == format_cop(1900)
-    preview = _find(window, "sale_value_preview").text()
-    assert preview == f"{format_cop(1900)} = 7 panes"
-    assert "redondeo" not in preview
-    assert format_cop(2000) not in preview
+    assert "Use −/+" in _find(window, "sale_feedback").text()
+    assert _find(window, "sale_display").text() == format_cop(300)
+    assert _find(window, "quantity_label").text() == "1"
+
+    for _ in range(6):
+        _click(qtbot, _find(window, "quantity_plus_button"))
     assert _find(window, "quantity_label").text() == "7"
+    assert _find(window, "sale_display").text() == format_cop(2000)
+    preview = _find(window, "sale_value_preview").text()
+    assert preview == f"{format_cop(2000)} = 7 panes"
     assert _find(window, "quantity_value_label").text() == (
-        f"Subtotal: {format_cop(1900)}"
+        f"Subtotal: {format_cop(2000)}"
     )
-    assert _find(window, "purchase_list").text() == ""
 
     _click(qtbot, _find(window, "agregar_button"))
-    # Tipado 1900 se conserva en la línea (no todo_o_nada → 2000).
     assert _find(window, "purchase_list").text() == (
-        f"Pan rollo × 7 — {format_cop(1900)}"
+        f"Pan rollo × 7 — {format_cop(2000)}"
     )
-    assert _find(window, "purchase_total").text() == f"Total: {format_cop(1900)}"
+    assert _find(window, "purchase_total").text() == f"Total: {format_cop(2000)}"
 
 
 def test_pan_pequeno_plus_minus_transitions_6_7_8(qtbot) -> None:
@@ -133,7 +135,7 @@ def test_other_category_qty_only_no_promo_and_prefix_after_add(qtbot) -> None:
     assert window.findChild(QObject, "sale_product_5") is None
 
 
-def test_pad_shows_subtotal_and_pan_pequeno_typed_value(qtbot) -> None:
+def test_pad_shows_subtotal_and_pan_pequeno_qty_preview(qtbot) -> None:
     api = FakeApiClient()
     window = create_window(api)
     qtbot.addWidget(window)
@@ -152,23 +154,30 @@ def test_pad_shows_subtotal_and_pan_pequeno_typed_value(qtbot) -> None:
     assert _find(window, "sale_display").text() == format_cop(300)
     for digit in "2000":
         _click(qtbot, _find(window, f"digit_{digit}"))
-    assert _find(window, "sale_display").text() == format_cop(2000)
+    assert "Use −/+" in _find(window, "sale_feedback").text()
+    assert _find(window, "sale_display").text() == format_cop(300)
+    assert _find(window, "quantity_label").text() == "1"
+    for _ in range(6):
+        _click(qtbot, _find(window, "quantity_plus_button"))
     assert _find(window, "quantity_label").text() == "7"
+    assert _find(window, "sale_display").text() == format_cop(2000)
     _click(qtbot, _find(window, "quantity_plus_button"))
     assert _find(window, "quantity_label").text() == "8"
     assert _find(window, "sale_display").text() == format_cop(2400)
 
 
 @pytest.mark.parametrize(
-    ("digits", "quantity"),
+    ("quantity", "expected_subtotal"),
     [
-        ("5000", "17"),
-        ("8000", "27"),
-        ("10000", "34"),
+        (17, 5100),
+        (27, 8100),
+        (34, 10200),
     ],
 )
-def test_pad_keeps_typed_money_no_bump(qtbot, digits: str, quantity: str) -> None:
-    """Tipar 5000/8000/10000 no debe pasar a 5100/8100/10200 en pad ni tras Agregar."""
+def test_pan_pequeno_qty_uses_promo_formula(
+    qtbot, quantity: int, expected_subtotal: int
+) -> None:
+    """Cantidad vía −/+: cobro = fórmula promo (sin tipado)."""
     api = FakeApiClient()
     window = create_window(api)
     qtbot.addWidget(window)
@@ -177,25 +186,24 @@ def test_pad_keeps_typed_money_no_bump(qtbot, digits: str, quantity: str) -> Non
     _click(qtbot, _find(window, "sale_category_todos"))
     _click(qtbot, _find(window, "sale_product_4"))
 
-    for digit in digits:
-        _click(qtbot, _find(window, f"digit_{digit}"))
+    for _ in range(quantity - 1):
+        _click(qtbot, _find(window, "quantity_plus_button"))
 
-    typed = int(digits)
-    assert _find(window, "sale_display").text() == format_cop(typed)
-    assert _find(window, "quantity_label").text() == quantity
+    assert _find(window, "sale_display").text() == format_cop(expected_subtotal)
+    assert _find(window, "quantity_label").text() == str(quantity)
     assert _find(window, "quantity_value_label").text() == (
-        f"Subtotal: {format_cop(typed)}"
+        f"Subtotal: {format_cop(expected_subtotal)}"
     )
     preview = _find(window, "sale_value_preview").text()
-    assert preview == f"{format_cop(typed)} = {quantity} panes"
-    assert "→" not in preview
-    assert "redondeo" not in preview
+    assert preview == f"{format_cop(expected_subtotal)} = {quantity} panes"
 
     _click(qtbot, _find(window, "agregar_button"))
     assert _find(window, "purchase_list").text() == (
-        f"Pan rollo × {quantity} — {format_cop(typed)}"
+        f"Pan rollo × {quantity} — {format_cop(expected_subtotal)}"
     )
-    assert _find(window, "purchase_total").text() == f"Total: {format_cop(typed)}"
+    assert _find(window, "purchase_total").text() == (
+        f"Total: {format_cop(expected_subtotal)}"
+    )
 
 
 def test_reject_agregar_without_product_still_works(qtbot) -> None:

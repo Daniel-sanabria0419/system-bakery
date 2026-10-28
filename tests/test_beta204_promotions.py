@@ -254,7 +254,7 @@ def test_flag_on_draft_4_plus_4_is_2400(monkeypatch) -> None:
     assert draft.total() == 2400
 
 
-def test_flag_on_apply_value_ceil(monkeypatch) -> None:
+def test_flag_on_quantity_preview_promo(monkeypatch) -> None:
     monkeypatch.setattr(promotions_mod, "USE_PROMOCIONES_TABLE", True)
     draft = SaleDraft()
     draft.select_product(
@@ -268,8 +268,7 @@ def test_flag_on_apply_value_ceil(monkeypatch) -> None:
             "promocion_activo": ESTADO_ACTIVO,
         }
     )
-    assert draft.apply_value(1900) is True
-    assert draft.quantity() == 7
+    draft.set_quantity(7)
     assert draft.current_subtotal() == 2000
 
 

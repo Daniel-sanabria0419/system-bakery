@@ -1,7 +1,8 @@
-"""Motor de promociones tipadas (Beta 2.0.4).
+"""Motor de promociones tipadas (Beta 2.0.5 híbrido).
 
-Etapa 5 cutover: ``USE_PROMOCIONES_TABLE`` default True. El cobro usa FK +
-agrupación de carrito; no hay path de montos por nombre de categoría.
+Cutover 2.0.4: ``USE_PROMOCIONES_TABLE`` default True; cobro por FK.
+Beta 2.0.5: múltiplos exactos por ``id_producto`` + pool ``todo_o_nada``
+del mismo ``promocion_id``. Sin montos por nombre de categoría.
 Desactivar solo con ``BAKERY_USE_PROMOCIONES_TABLE=0`` (precio × cantidad plano).
 """
 
@@ -109,16 +110,40 @@ def quantity_from_value(valor: int, config: Mapping) -> Tuple[int, int]:
 
 
 def amount_for_cart_group(lines: Sequence[Mapping], config: Mapping) -> int:
-    """Suma cantidades del grupo y aplica §4.1."""
+    """Monto híbrido 2.0.5: exactos por ``id_producto`` + pool ``todo_o_nada``.
+
+    Cada línea debe traer ``id_producto`` y ``cantidad``. Se suman cantidades
+    del mismo SKU; si ``qty_sku % G == 0`` → combos; si no, entra al pool del
+    grupo y se aplica la misma política ``todo_o_nada`` al pool.
+    """
     if not lines:
         raise ValueError("El grupo de carrito no puede estar vacío.")
-    qty = 0
+    cfg = parse_cantidad_por_monto_config(config)
+    grupo_cantidad = cfg["grupo_cantidad"]
+    grupo_monto = cfg["grupo_monto"]
+    precio_base = cfg["precio_base"]
+    qty_by_sku: Dict[int, int] = {}
     for line in lines:
-        cantidad = line.get("cantidad")
-        qty += _require_positive_int(
-            cantidad, "La cantidad debe ser un entero mayor que 0."
+        id_producto = line.get("id_producto")
+        if isinstance(id_producto, bool) or not isinstance(id_producto, int):
+            raise ValueError("id_producto debe ser un entero.")
+        cantidad = _require_positive_int(
+            line.get("cantidad"), "La cantidad debe ser un entero mayor que 0."
         )
-    return amount_for_quantity(qty, config)
+        qty_by_sku[id_producto] = qty_by_sku.get(id_producto, 0) + cantidad
+    monto = 0
+    pool = 0
+    for qty_sku in qty_by_sku.values():
+        if qty_sku % grupo_cantidad == 0:
+            monto += (qty_sku // grupo_cantidad) * grupo_monto
+        else:
+            pool += qty_sku
+    if pool > 0:
+        if pool % grupo_cantidad == 0:
+            monto += (pool // grupo_cantidad) * grupo_monto
+        else:
+            monto += pool * precio_base
+    return monto
 
 
 def allocate_group_subtotals(
@@ -162,10 +187,11 @@ def compute_cart_line_subtotals(
     *,
     promos_by_id: Mapping[int, Mapping],
 ) -> List[int]:
-    """Subtotales por línea con agrupación por promocion_id activo.
+    """Subtotales por línea con motor híbrido 2.0.5 por promocion_id activo.
 
-    Cada línea: ``cantidad``, ``precio_aplicado``, ``promocion_id`` (opcional).
-    Líneas sin promo válida → ``precio_aplicado × cantidad``.
+    Cada línea: ``id_producto``, ``cantidad``, ``precio_aplicado``,
+    ``promocion_id`` (opcional). Líneas sin promo válida →
+    ``precio_aplicado × cantidad``.
     """
     if not lines:
         return []

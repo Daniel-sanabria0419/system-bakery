@@ -81,16 +81,44 @@ def test_parse_config_rejects_invalid() -> None:
 def test_amount_for_cart_group_4_plus_3_and_4_plus_4() -> None:
     assert (
         amount_for_cart_group(
-            [{"cantidad": 4}, {"cantidad": 3}], CANONICAL
+            [
+                {"id_producto": 1, "cantidad": 4},
+                {"id_producto": 2, "cantidad": 3},
+            ],
+            CANONICAL,
         )
         == 2000
     )
     assert (
         amount_for_cart_group(
-            [{"cantidad": 4}, {"cantidad": 4}], CANONICAL
+            [
+                {"id_producto": 1, "cantidad": 4},
+                {"id_producto": 2, "cantidad": 4},
+            ],
+            CANONICAL,
         )
         == 2400
     )
+
+
+def test_amount_for_cart_group_7_plus_5_hybrid() -> None:
+    """SKU exacto 7 toma promo; el 5 queda a precio base → 3500."""
+    assert (
+        amount_for_cart_group(
+            [
+                {"id_producto": 1, "cantidad": 7},
+                {"id_producto": 2, "cantidad": 5},
+            ],
+            CANONICAL,
+        )
+        == 3500
+    )
+
+
+def test_amount_for_cart_group_eight_alone_is_2400() -> None:
+    assert amount_for_cart_group(
+        [{"id_producto": 1, "cantidad": 8}], CANONICAL
+    ) == 2400
 
 
 def test_allocate_group_subtotals_sum_equals_monto() -> None:
@@ -109,14 +137,54 @@ def test_compute_cart_line_subtotals_mixed() -> None:
         "activo": ESTADO_ACTIVO,
     }
     lines = [
-        {"cantidad": 4, "precio_aplicado": 300, "promocion_id": 1},
-        {"cantidad": 3, "precio_aplicado": 300, "promocion_id": 1},
-        {"cantidad": 2, "precio_aplicado": 1500, "promocion_id": None},
+        {
+            "id_producto": 1,
+            "cantidad": 4,
+            "precio_aplicado": 300,
+            "promocion_id": 1,
+        },
+        {
+            "id_producto": 2,
+            "cantidad": 3,
+            "precio_aplicado": 300,
+            "promocion_id": 1,
+        },
+        {
+            "id_producto": 3,
+            "cantidad": 2,
+            "precio_aplicado": 1500,
+            "promocion_id": None,
+        },
     ]
     subs = compute_cart_line_subtotals(lines, promos_by_id={1: promo})
     assert sum(subs[:2]) == 2000
     assert subs[2] == 3000
     assert sum(subs) == 5000
+
+
+def test_compute_cart_line_subtotals_7_plus_5() -> None:
+    promo = {
+        "id": 1,
+        "tipo": TIPO_PROMOCION_CANTIDAD_POR_MONTO,
+        "configuracion": json.dumps(CANONICAL),
+        "activo": ESTADO_ACTIVO,
+    }
+    lines = [
+        {
+            "id_producto": 1,
+            "cantidad": 7,
+            "precio_aplicado": 300,
+            "promocion_id": 1,
+        },
+        {
+            "id_producto": 2,
+            "cantidad": 5,
+            "precio_aplicado": 300,
+            "promocion_id": 1,
+        },
+    ]
+    subs = compute_cart_line_subtotals(lines, promos_by_id={1: promo})
+    assert sum(subs) == 3500
 
 
 def test_flag_off_draft_uses_plain_precio_times_qty() -> None:

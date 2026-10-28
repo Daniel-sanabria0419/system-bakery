@@ -188,6 +188,7 @@ class FakeApiClient:
                         promo = None
             pending.append(
                 {
+                    "id_producto": int(line["id_producto"]),
                     "cantidad": int(line["cantidad"]),
                     "precio_aplicado": int(line["precio_aplicado"]),
                     "promocion_id": promo_id if promo is not None else None,

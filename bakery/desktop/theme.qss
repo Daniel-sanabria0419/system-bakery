@@ -11,20 +11,11 @@ QWidget#purchase_panel {
     background-color: #FFFFFF;
 }
 
-QFrame#entry_separator,
 QFrame#total_separator {
     color: #000000;
     background-color: #000000;
     min-height: 2px;
     max-height: 2px;
-}
-
-QPushButton[class="pad-button"] {
-    background-color: #D0D0D0;
-    color:rgb(0, 0, 0);
-    margin:  10px 3px;
-    font-size: 28px;   
-    font-weight: bold;
 }
 
 QPushButton[class="back-button"] {
@@ -44,9 +35,28 @@ QPushButton[class="menu-button"] {
 }
 
 QPushButton[class="payment-button"] {
-    background-color: #1A1A1A;
+    background-color: #9E9E9E;
     color: #FFFFFF;
     padding: 12px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* Acciones cobro 2.0.6 — colores desde style.py (load_theme_qss). */
+QPushButton[class="pagar-button"] {
+    background-color: __PAGAR_BUTTON_COLOR__;
+    color: #FFFFFF;
+    padding: 12px;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+QPushButton[class="borrar-todo-button"] {
+    background-color: __BORRAR_TODO_BUTTON_COLOR__;
+    color: #FFFFFF;
+    padding: 12px;
+    font-size: 18px;
+    font-weight: bold;
 }
 
 QPushButton[class="payment-method-button"] {
@@ -54,6 +64,10 @@ QPushButton[class="payment-method-button"] {
     color: #FFFFFF;
     padding: 16px 20px;
     font-size: 18px;
+}
+
+QWidget#sale_actions_panel {
+    background-color: transparent;
 }
 
 /* Listado Productos (CRUD) — fondo blanco; no tocar payment-method-button. */
@@ -84,22 +98,22 @@ QLabel[class="money-text"] {
     color: #1A1A1A;
 }
 
-QLabel#sale_display[class="money-text"],
+/* Footer Subtotal / Descuento / Total (Beta 2.0.6). */
+QLabel#purchase_subtotal[class="money-text"],
+QLabel#purchase_discount[class="money-text"],
 QLabel#purchase_total[class="money-text"] {
-    font-size: 36px;
+    font-size: __FOOTER_TOTALS_FONT_SIZE__px;
     font-weight: bold;
 }
 
-/* Solo líneas agregadas (etapa 3); no subir sale_display ni purchase_total. */
-QLabel#purchase_list[class="money-text"] {
+QLabel#purchase_total[class="money-text"] {
     font-size: 28px;
-    font-weight: bold;
 }
 
-
-QLabel#purchase_list {
+/* Filas de la tabla de compra. */
+QWidget#purchase_list {
     background-color: #FFFFFF;
-    color: #1A1A1A;   /* números oscuros sobre blanco */
+    color: #1A1A1A;
 }
 
 QScrollArea#purchase_list_scroll > QWidget {
@@ -108,6 +122,12 @@ QScrollArea#purchase_list_scroll > QWidget {
 QScrollArea#purchase_list_scroll {
     background-color: #FFFFFF;
     border: none;
+}
+
+QWidget#purchase_table_header QLabel {
+    color: #1A1A1A;
+    font-size: 14px;
+    font-weight: bold;
 }
 
 /* Catálogo venta Beta 2.0.2 — secciones #d7d4ce; no payment-method-button. */

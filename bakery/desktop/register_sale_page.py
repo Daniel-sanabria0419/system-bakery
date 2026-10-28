@@ -37,6 +37,7 @@ from bakery.desktop.ui_helpers import (
     FlowLayout,
     _BACK_BUTTON_ARROW,
     _PAYMENT_BUTTON_PLACEHOLDER,
+    _apply_action_button_size,
     _apply_catalog_chip_icon,
     _apply_page_layout,
     _make_separator,
@@ -251,7 +252,9 @@ class RegisterSalePage(QWidget):
         categories_scroll.setFrameShape(QFrame.NoFrame)
         categories_scroll.setWidget(self._categories_host)
         categories_section_layout.addWidget(categories_scroll, stretch=1)
-        right_layout.addWidget(self._categories_section, stretch=1)
+        right_layout.addWidget(
+            self._categories_section, stretch=style.CATALOG_SECTION_STRETCH
+        )
 
         self._catalog_sections_divider = _make_separator("catalog_sections_divider")
         right_layout.addWidget(self._catalog_sections_divider)
@@ -273,13 +276,16 @@ class RegisterSalePage(QWidget):
         products_scroll.setFrameShape(QFrame.NoFrame)
         products_scroll.setWidget(self._products_host)
         products_section_layout.addWidget(products_scroll, stretch=1)
-        right_layout.addWidget(self._products_section, stretch=2)
+        right_layout.addWidget(
+            self._products_section, stretch=style.CATALOG_SECTION_STRETCH
+        )
         self._catalog_layout = right_layout
 
         actions = QWidget()
         actions.setObjectName("sale_actions_panel")
+        actions.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
         actions_layout = QVBoxLayout(actions)
-        actions_layout.setContentsMargins(0, 0, 0, 0)
+        actions_layout.setContentsMargins(0, 8, 0, 0)
         actions_layout.setSpacing(style.PAGE_SPACING)
 
         actions_row = QHBoxLayout()
@@ -287,23 +293,26 @@ class RegisterSalePage(QWidget):
         self._payment_button = QPushButton(_PAYMENT_BUTTON_PLACEHOLDER)
         self._payment_button.setObjectName("payment_button")
         style.apply_class(self._payment_button, "payment-button")
+        _apply_action_button_size(self._payment_button)
         self._payment_button.clicked.connect(self._open_payment_dialog)
         actions_row.addWidget(self._payment_button, stretch=1)
 
         clear_cart = QPushButton("Borrar todo")
         clear_cart.setObjectName("borrar_todo_button")
-        style.apply_class(clear_cart, "payment-method-button")
+        style.apply_class(clear_cart, "borrar-todo-button")
+        _apply_action_button_size(clear_cart)
         clear_cart.clicked.connect(self._on_borrar_todo)
         actions_row.addWidget(clear_cart)
         actions_layout.addLayout(actions_row)
 
         self._submit = QPushButton("Pagar")
         self._submit.setObjectName("submit_sale_button")
-        style.apply_class(self._submit, "payment-button")
+        style.apply_class(self._submit, "pagar-button")
+        _apply_action_button_size(self._submit)
         self._submit.clicked.connect(self._on_submit)
         actions_layout.addWidget(self._submit)
 
-        right_layout.addWidget(actions)
+        right_layout.addWidget(actions, stretch=style.ACTIONS_PANEL_STRETCH)
 
         columns.addWidget(left, style.LEFT_COLUMN_STRETCH)
         columns.addWidget(right, style.RIGHT_COLUMN_STRETCH)
@@ -467,9 +476,11 @@ class RegisterSalePage(QWidget):
         self._categories_section.setVisible(show_categories)
         self._products_section.setVisible(not show_categories)
         self._catalog_sections_divider.setVisible(False)
+        catalog_stretch = style.CATALOG_SECTION_STRETCH
         if show_categories:
             self._catalog_layout.setStretch(
-                self._catalog_layout.indexOf(self._categories_section), 1
+                self._catalog_layout.indexOf(self._categories_section),
+                catalog_stretch,
             )
             self._catalog_layout.setStretch(
                 self._catalog_layout.indexOf(self._products_section), 0
@@ -479,7 +490,15 @@ class RegisterSalePage(QWidget):
                 self._catalog_layout.indexOf(self._categories_section), 0
             )
             self._catalog_layout.setStretch(
-                self._catalog_layout.indexOf(self._products_section), 1
+                self._catalog_layout.indexOf(self._products_section),
+                catalog_stretch,
+            )
+        # Acciones siempre stretch 0: no se encogen al crecer el catálogo.
+        actions = self.findChild(QWidget, "sale_actions_panel")
+        if actions is not None:
+            self._catalog_layout.setStretch(
+                self._catalog_layout.indexOf(actions),
+                style.ACTIONS_PANEL_STRETCH,
             )
 
     def _show_catalog_products_view(self) -> None:

@@ -8,7 +8,7 @@ Comando:
 QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest
 ```
 
-Al cierre de Etapas 6–7: suite completa en verde (incl. smokes 2.0–2.0.3 + `test_beta204_*`).
+Al cierre de Etapas 6–7: **241 passed** (incl. smokes 2.0–2.0.3 + `test_beta204_*`).
 
 ## Comportamientos intencionales
 

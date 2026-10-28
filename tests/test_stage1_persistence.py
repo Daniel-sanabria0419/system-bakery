@@ -145,7 +145,7 @@ def test_new_db_creates_catalog_and_line_tables(tmp_path: Path) -> None:
         promo_count = connection.execute(
             "SELECT COUNT(*) FROM promociones"
         ).fetchone()[0]
-        assert promo_count == 0
+        assert promo_count == 1
     finally:
         connection.close()
 

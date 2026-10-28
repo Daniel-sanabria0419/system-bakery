@@ -141,7 +141,8 @@ def test_new_db_has_promociones_and_promocion_id(tmp_path: Path) -> None:
         assert "promocion_id" in columns
         assert get_schema_version(connection) == CURRENT_SCHEMA_VERSION
         assert CURRENT_SCHEMA_VERSION == 2
-        assert list_promociones(connection) == []
+        promos = list_promociones(connection)
+        assert len(promos) == 1
         product_id = insert_producto(
             connection,
             nombre="Pan rollo",
@@ -153,6 +154,7 @@ def test_new_db_has_promociones_and_promocion_id(tmp_path: Path) -> None:
         connection.commit()
         product = get_producto(connection, product_id)
         assert product is not None
+        # Categoría 1 = Panadería (no Pan pequeño): sin backfill de promo.
         assert product["promocion_id"] is None
     finally:
         connection.close()
@@ -200,7 +202,8 @@ def test_migrate_v1_to_v2_round_trip_idempotent(tmp_path: Path) -> None:
         assert product is not None
         assert product["nombre"] == "Torta"
         assert product["promocion_id"] is None
-        assert list_promociones(connection) == []
+        promos = list_promociones(connection)
+        assert len(promos) == 1
     finally:
         connection.close()
 

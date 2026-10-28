@@ -2,7 +2,7 @@
 
 Documento de etapas de **Beta 2.0.4** (migración Pan pequeño → tabla `promociones` + FK `productos.promocion_id`, agrupación de carrito). Plan técnico: Context `docs/beta-2.0.4-promociones-plan.md`.
 
-**Estado:** en curso (Etapa 1). Base: `main` post Beta 2.0.3 / P1 #38.
+**Estado:** en curso (Etapa 2). Base: `main` con Etapa 1 mergeada (#39).
 
 ## Decisiones (resumen CLOSED)
 
@@ -17,16 +17,16 @@ Documento de etapas de **Beta 2.0.4** (migración Pan pequeño → tabla `promoc
 
 | Etapa | Nombre | Estado | Notas |
 |---|---|---|---|
-| 0 | Alcance documentado (decisiones CLOSED) | Hecha (plan Context) | PRD/`stages` en repo con Etapa 1 |
-| 1 | Schema (`promociones` + `promocion_id`) | En revisión | [#39](https://github.com/Daniel-sanabria0419/system-bakery/pull/39); sin seed; sin cambio de cobro; sin columnas snapshot en `venta_lineas` |
-| 2 | Seed + backfill | Pendiente | Promo + FK a productos Pan pequeño |
+| 0 | Alcance documentado (decisiones CLOSED) | Hecha (plan Context) | PRD/`stages` en repo |
+| 1 | Schema (`promociones` + `promocion_id`) | Hecha | [#39](https://github.com/Daniel-sanabria0419/system-bakery/pull/39) |
+| 2 | Seed + backfill | En revisión | Promo canónica + FK a productos Pan pequeño; cobro sigue por nombre de categoría |
 | 3 | Dual-path / feature flag | Pendiente | Flag off = cobro actual |
 | 4 | Recálculo carrito + UI subtotal/total | Pendiente | **Obligatoria** |
 | 5 | Cutover | Pendiente | Retirar path por nombre de categoría |
 | 6 | Tests + regresión | Pendiente | Incl. 4+3 / 4+4 |
 | 7 | Pantallas / docs / nota reportes | Pendiente | |
 
-## Etapa 1 — Schema (alcance de este PR)
+## Etapa 1 — Schema (hecha)
 
 Sin cambiar cobro ni precios.
 
@@ -36,7 +36,17 @@ Sin cambiar cobro ni precios.
 4. DDL en `create_schema` para bases nuevas.
 5. Repos mínimos + `promocion_id` expuesto en respuestas API de productos (aún sin usarlo en cobro).
 6. Tests de migración idempotente / round-trip v1→v2.
-7. **Sin seed** (Etapa 2). **Sin** columnas promo en `venta_lineas` (catálogo only; snapshot opcional en etapas posteriores).
+7. Sin seed (Etapa 2). Sin columnas promo en `venta_lineas`.
+
+## Etapa 2 — Seed + backfill (alcance de este PR)
+
+Cobro **sigue** por nombre de categoría (`pan_pequeno_pricing`). Sin dual-path.
+
+1. `ensure_promocion_pan_pequeno`: promo `cantidad_por_monto` con config `{precio_base: 300, grupo_cantidad: 7, grupo_monto: 2000, modo: ceil, politica_resto: todo_o_nada}`, `activo=1`.
+2. `backfill_productos_promocion_pan_pequeno`: asigna `promocion_id` a todos los productos de categoría «Pan pequeño».
+3. Ambos en `initialize` (idempotentes).
+4. Tests FK / config / idempotencia (`tests/test_beta204_seed.py`).
+5. **Sin** motor nuevo, flag ni cambio de precios en cobro.
 
 ## Fuera de alcance de Beta 2.0.4
 
@@ -46,4 +56,4 @@ CRUD rico de promociones en UI, otros `tipo` ≠ `cantidad_por_monto`, inventari
 
 Comando canónico: `QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest`
 
-Etapa 1: `tests/test_beta204_schema.py` (+ regresión de persistencia existente).
+Etapa 1: `tests/test_beta204_schema.py`. Etapa 2: `tests/test_beta204_seed.py`.

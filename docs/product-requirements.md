@@ -15,7 +15,7 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Beta 2.0.1 | **Terminada** 2026-10-26 (OK final Daniel) | Pan pequeño (promo), cobro por valor, chips, imágenes, formularios |
 | Beta 2.0.2 | **Terminada** 2026-10-27 (OK final Daniel) | Layout cobro, prefijo de precio, listado Productos blanco |
 | Beta 2.0.3 | **Terminada** 2026-10-27 (OK final Daniel) | Navegación catálogo Vista A/B; chips más grandes / tipografía editable |
-| Beta 2.0.4 | **En curso** (Etapa 1 schema) | Migrar Pan pequeño a `promociones` + FK; agrupación carrito en etapas siguientes |
+| Beta 2.0.4 | **En curso** (Etapa 2 seed) | Migrar Pan pequeño a `promociones` + FK; agrupación carrito en etapas siguientes |
 
 ---
 
@@ -27,11 +27,11 @@ Reemplazar la promo hardcodeada de Pan pequeño (`pan_pequeno_pricing` por nombr
 
 Detalle: `docs/beta-2.0.4/stages.md`. Plan: Context `docs/beta-2.0.4-promociones-plan.md`.
 
-## Etapa 1 (schema) — en este alcance
+## Etapas 1–2
 
-- Tabla `promociones` y FK nullable `productos.promocion_id`.
-- `schema_version` = 2; repos mínimos; API productos expone `promocion_id`.
-- **Sin** seed, **sin** cambio de precios/cobro, **sin** columnas promo en `venta_lineas`.
+- **Etapa 1 (hecha #39):** tabla `promociones` y FK nullable `productos.promocion_id`; `schema_version` = 2; API expone `promocion_id`.
+- **Etapa 2 (este alcance):** seed promo `cantidad_por_monto` (300 / 7 / 2000, ceil, todo_o_nada) + backfill FK a productos Pan pequeño.
+- **Sin** cambio de motor de precios/cobro, **sin** dual-path, **sin** columnas promo en `venta_lineas`.
 
 ## Fuera del alcance de Beta 2.0.4
 

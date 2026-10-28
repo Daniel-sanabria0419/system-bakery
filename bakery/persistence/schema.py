@@ -1,3 +1,4 @@
+import json
 import sqlite3
 from pathlib import Path
 from typing import Optional
@@ -23,6 +24,17 @@ SEED_CATEGORIAS = (
 )
 
 NOMBRE_CATEGORIA_PAN_PEQUENO = "Pan pequeño"
+
+# Semilla Beta 2.0.4 Etapa 2 (cobro sigue por nombre de categoría hasta dual-path).
+NOMBRE_PROMOCION_PAN_PEQUENO = "Pan pequeño 7 por 2000"
+TIPO_PROMOCION_CANTIDAD_POR_MONTO = "cantidad_por_monto"
+PROMOCION_PAN_PEQUENO_CONFIG = {
+    "precio_base": 300,
+    "grupo_cantidad": 7,
+    "grupo_monto": 2000,
+    "modo": "ceil",
+    "politica_resto": "todo_o_nada",
+}
 
 _CREATE_MEDIOS_PAGO = """
 CREATE TABLE IF NOT EXISTS medios_pago (
@@ -146,6 +158,69 @@ def ensure_categoria(
 
 def ensure_categoria_pan_pequeno(connection: sqlite3.Connection) -> int:
     return ensure_categoria(connection, NOMBRE_CATEGORIA_PAN_PEQUENO)
+
+
+def promocion_pan_pequeno_config_json() -> str:
+    """JSON canónico de la promo Pan pequeño (orden de claves estable)."""
+    return json.dumps(PROMOCION_PAN_PEQUENO_CONFIG, separators=(",", ":"), sort_keys=True)
+
+
+def ensure_promocion_pan_pequeno(connection: sqlite3.Connection) -> int:
+    """Inserta o actualiza la promo canónica Pan pequeño. Idempotente."""
+    config_json = promocion_pan_pequeno_config_json()
+    row = connection.execute(
+        "SELECT id FROM promociones WHERE nombre = ?",
+        (NOMBRE_PROMOCION_PAN_PEQUENO,),
+    ).fetchone()
+    if row is not None:
+        promo_id = int(row[0])
+        connection.execute(
+            """
+            UPDATE promociones
+            SET tipo = ?, configuracion = ?, activo = ?
+            WHERE id = ?
+            """,
+            (
+                TIPO_PROMOCION_CANTIDAD_POR_MONTO,
+                config_json,
+                ESTADO_ACTIVO,
+                promo_id,
+            ),
+        )
+        return promo_id
+    cursor = connection.execute(
+        """
+        INSERT INTO promociones (nombre, tipo, configuracion, activo)
+        VALUES (?, ?, ?, ?)
+        """,
+        (
+            NOMBRE_PROMOCION_PAN_PEQUENO,
+            TIPO_PROMOCION_CANTIDAD_POR_MONTO,
+            config_json,
+            ESTADO_ACTIVO,
+        ),
+    )
+    return int(cursor.lastrowid)
+
+
+def backfill_productos_promocion_pan_pequeno(
+    connection: sqlite3.Connection,
+) -> int:
+    """Asigna promocion_id a todos los productos de categoría Pan pequeño.
+
+    Retorna el id de la promo. Idempotente. No toca productos de otras categorías.
+    """
+    id_categoria = ensure_categoria_pan_pequeno(connection)
+    promo_id = ensure_promocion_pan_pequeno(connection)
+    connection.execute(
+        """
+        UPDATE productos
+        SET promocion_id = ?
+        WHERE id_categoria = ?
+        """,
+        (promo_id, id_categoria),
+    )
+    return promo_id
 
 
 def _productos_has_column(connection: sqlite3.Connection, column: str) -> bool:

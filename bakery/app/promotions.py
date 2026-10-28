@@ -2,8 +2,9 @@
 
 Cutover 2.0.4: ``USE_PROMOCIONES_TABLE`` default True; cobro por FK.
 JSON de DB slim: ``{"precio_base": N, "modo": "ceil"}``.
-Cobro: menor múltiplo de 1000 con ``ceil(monto / precio_base) >= cantidad``
-(p. ej. 17 → 5000). ``modo: ceil`` también define valor→qty.
+Cobro: promo solo si la cantidad es un nudo de la tabla ceil en miles
+(p. ej. 17 → 5000); si no, ``cantidad × precio_base`` (8 → 2400).
+``modo: ceil`` también define valor→qty.
 Desactivar con ``BAKERY_USE_PROMOCIONES_TABLE=0``.
 """
 
@@ -24,9 +25,10 @@ from bakery.persistence.schema import (
 # Flag de cobro. Default True tras cutover (Etapa 5).
 USE_PROMOCIONES_TABLE = True
 
-# Pasos de la tabla valor→cantidad (1000→4, 2000→7, …). El cobro es el menor
-# múltiplo de esta escala con ceil(monto / precio_base) >= cantidad del grupo.
+# Tabla valor→cantidad en miles, de 1000 a 10000. Promo solo si la cantidad
+# del grupo es exactamente ceil(monto / precio_base) para uno de esos montos.
 PROMO_MONTO_ESCALA = 1000
+PROMO_TABLA_MILES = 10
 
 # DB seed: solo precio_base + modo. El motor acepta grupo_*/politica opcionales
 # (p. ej. re-parse del dict normalizado) y rellena defaults si faltan.
@@ -116,30 +118,32 @@ def parse_cantidad_por_monto_config(configuracion: object) -> Dict[str, Any]:
 
 
 def amount_for_quantity(cantidad: int, config: Mapping) -> int:
-    """Menor múltiplo de ``PROMO_MONTO_ESCALA`` con ``ceil(monto / precio_base) >= cantidad``.
+    """Promo solo en los nudos exactos de la tabla ceil (miles, hasta 10000).
 
-    Inversa de la tabla valor→cantidad. Con precio_base 300 y escala 1000:
-    4→1000, 7→2000, 10→3000, 14→4000, 17→5000, 20→6000, 24→7000,
-    27→8000, 30→9000, 34→10000. Entre nudos sube al siguiente múltiplo
-    (8→3000, 12→4000).
+    Con precio_base 300: 4→1000, 7→2000, 10→3000, 14→4000, 17→5000,
+    20→6000, 24→7000, 27→8000, 30→9000, 34→10000.
+    Cualquier otra cantidad: ``cantidad × precio_base``
+    (1→300, 8→2400, 12→3600).
     """
     cantidad_ok = _require_positive_int(
         cantidad, "La cantidad debe ser un entero mayor que 0."
     )
     cfg = parse_cantidad_por_monto_config(config)
     precio_base = cfg["precio_base"]
-    # Menor entero con ceil(m / precio_base) >= cantidad, luego al múltiplo
-    # de la escala (la tabla valor→cantidad va de mil en mil).
-    minimo = precio_base * (cantidad_ok - 1) + 1
-    pasos = (minimo + PROMO_MONTO_ESCALA - 1) // PROMO_MONTO_ESCALA
-    return pasos * PROMO_MONTO_ESCALA
+    monto = PROMO_MONTO_ESCALA
+    tope = PROMO_TABLA_MILES * PROMO_MONTO_ESCALA
+    while monto <= tope:
+        if (monto + precio_base - 1) // precio_base == cantidad_ok:
+            return monto
+        monto += PROMO_MONTO_ESCALA
+    return cantidad_ok * precio_base
 
 
 def quantity_from_value(valor: int, config: Mapping) -> Tuple[int, int]:
     """Pad valor→cantidad: ``ceil(valor / precio_base)`` (sin cambio).
 
-    El segundo valor es el cobro de esa qty en la escala de miles
-    (puede diferir del valor tipado).
+    El segundo valor es el cobro de esa qty (nudo de la tabla, o
+    cantidad × precio_base). Puede diferir del valor tipado.
     """
     valor_ok = _require_positive_int(valor, "El valor debe ser un entero mayor que 0.")
     cfg = parse_cantidad_por_monto_config(config)
@@ -152,7 +156,7 @@ def amount_for_cart_group(lines: Sequence[Mapping], config: Mapping) -> int:
     """Monto del grupo: suma la qty y luego ``amount_for_quantity``.
 
     El agrupamiento es anterior a la fórmula.
-    Ej.: 4+3 → 2000; 7+5 → 4000; 8 → 3000; 17 → 5000.
+    Ej.: 4+3 → 2000; 7+5 → 3600; 8 → 2400; 17 → 5000.
     """
     if not lines:
         raise ValueError("El grupo de carrito no puede estar vacío.")

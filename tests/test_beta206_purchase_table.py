@@ -140,7 +140,7 @@ def test_footer_8_panes_descuento_0(qtbot, monkeypatch) -> None:
     _click(qtbot, _find(window, "sale_product_10"))
     _set_quantity(qtbot, window, 8)
     _click(qtbot, _find(window, "agregar_button"))
-    _assert_footer(window, subtotal=2400, discount=0, total=3000)
+    _assert_footer(window, subtotal=2400, discount=0, total=2400)
 
 
 def test_footer_4_plus_3_and_delete_recalculates(qtbot, monkeypatch) -> None:
@@ -168,7 +168,7 @@ def test_footer_4_plus_3_and_delete_recalculates(qtbot, monkeypatch) -> None:
     _click(qtbot, _find(window, "purchase_row_0_delete"))
     assert _purchase_row_count(window) == 1
     assert _find(window, "purchase_row_0_producto").text() == "Pan B"
-    _assert_footer(window, subtotal=900, discount=0, total=1000)
+    _assert_footer(window, subtotal=900, discount=0, total=900)
     # X no toca selección ni medio.
     assert _find(window, "selected_product_label").text() == "Torta"
 

@@ -100,7 +100,7 @@ def test_desktop_flag_on_4_plus_3_list_and_total_2000(qtbot, monkeypatch) -> Non
     _click(qtbot, _find(window, "sale_category_todos"))
     _click(qtbot, _find(window, "sale_product_10"))
     assert _find(window, "quantity_value_label").text() == (
-        f"Subtotal: {format_cop(1000)}"
+        f"Subtotal: {format_cop(300)}"
     )
     _set_quantity(qtbot, window, 4)
     assert _find(window, "quantity_value_label").text() == (
@@ -112,7 +112,7 @@ def test_desktop_flag_on_4_plus_3_list_and_total_2000(qtbot, monkeypatch) -> Non
     _click(qtbot, _find(window, "sale_product_11"))
     _set_quantity(qtbot, window, 3)
     assert _find(window, "quantity_value_label").text() == (
-        f"Subtotal: {format_cop(1000)}"
+        f"Subtotal: {format_cop(900)}"
     )
     _click(qtbot, _find(window, "agregar_button"))
 
@@ -125,7 +125,7 @@ def test_desktop_flag_on_4_plus_3_list_and_total_2000(qtbot, monkeypatch) -> Non
     assert _find(window, "purchase_total").text() == f"Total: {format_cop(2000)}"
 
 
-def test_desktop_flag_on_4_plus_4_total_3000(qtbot, monkeypatch) -> None:
+def test_desktop_flag_on_4_plus_4_total_2400(qtbot, monkeypatch) -> None:
     monkeypatch.setattr(promotions_mod, "USE_PROMOCIONES_TABLE", True)
     api = _api_with_two_pan_products()
     window = create_window(api)
@@ -142,8 +142,8 @@ def test_desktop_flag_on_4_plus_4_total_3000(qtbot, monkeypatch) -> None:
     _click(qtbot, _find(window, "agregar_button"))
 
     subtotals = _parse_line_subtotals(_purchase_list_text(window))
-    assert sum(subtotals) == 3000
-    assert _find(window, "purchase_total").text() == f"Total: {format_cop(3000)}"
+    assert sum(subtotals) == 2400
+    assert _find(window, "purchase_total").text() == f"Total: {format_cop(2400)}"
 
 
 def test_desktop_flag_off_4_plus_3_plain_2100(qtbot, monkeypatch) -> None:

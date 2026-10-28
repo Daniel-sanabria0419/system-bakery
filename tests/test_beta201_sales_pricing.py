@@ -91,11 +91,11 @@ def test_draft_pan_pequeno_promo_and_normal_qty() -> None:
 
     draft.select_product(_pan_pequeno_product(id_producto=2))
     draft.set_quantity(8)
-    assert draft.current_subtotal() == 3000  # preview de la selección sola
+    assert draft.current_subtotal() == 2400  # preview de la selección sola
     assert draft.add_to_purchase() is True
-    # 7+8=15 → escala ceil 5000
-    assert draft.total() == 5000
-    assert sum(item.subtotal for item in draft.purchase.items()) == 5000
+    # 7+8=15 fuera de tabla: 15 × 300 = 4500
+    assert draft.total() == 4500
+    assert sum(item.subtotal for item in draft.purchase.items()) == 4500
 
 
 def test_draft_pan_pequeno_quantity_only_preview() -> None:
@@ -130,9 +130,9 @@ def test_draft_agregar_qty_uses_promo_formula() -> None:
     assert draft.add_to_purchase() is True
     items = draft.purchase.items()
     assert items[1].cantidad == 34
-    # Mismo promo: 17+34=51 → menor múltiplo de 1000 que cubre 51 = 16000
-    assert draft.total() == 16000
-    assert sum(item.subtotal for item in items) == 16000
+    # Mismo promo: 17+34=51 fuera de tabla → 51 × 300 = 15300
+    assert draft.total() == 15300
+    assert sum(item.subtotal for item in items) == 15300
 
 
 def test_draft_other_category_stays_precio_times_cantidad() -> None:
@@ -174,7 +174,7 @@ def test_draft_current_subtotal_modes() -> None:
     draft.clear_product_selection()
     draft.set_quantity(1)
     draft.select_product(_pan_pequeno_product())
-    assert draft.current_subtotal() == 1000
+    assert draft.current_subtotal() == 300
     draft.set_quantity(7)
     assert draft.current_subtotal() == 2000
 
@@ -250,9 +250,9 @@ def test_register_sale_pan_pequeno_promo_and_normal(tmp_path: Path) -> None:
                 }
             ],
         )
-        assert sale8["valor_total"] == 3000
+        assert sale8["valor_total"] == 2400
         lines8 = list_venta_lineas(connection, sale8["id_venta"])
-        assert lines8[0]["subtotal"] == 3000
+        assert lines8[0]["subtotal"] == 2400
     finally:
         connection.close()
 

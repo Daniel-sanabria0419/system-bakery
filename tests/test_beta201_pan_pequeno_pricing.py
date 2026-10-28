@@ -34,12 +34,14 @@ def test_is_pan_pequeno_by_name_and_mapping() -> None:
 @pytest.mark.parametrize(
     ("cantidad", "subtotal"),
     [
-        (1, 1000),
-        (2, 1000),
-        (6, 2000),
-        (8, 3000),
-        (13, 4000),
-        (15, 5000),
+        (1, 300),
+        (2, 600),
+        (3, 900),
+        (5, 1500),
+        (6, 1800),
+        (8, 2400),
+        (9, 2700),
+        (12, 3600),
     ],
 )
 def test_subtotal_cantidades_normales(cantidad: int, subtotal: int) -> None:
@@ -68,9 +70,9 @@ def test_subtotal_tabla_ceil(cantidad: int, subtotal: int) -> None:
 @pytest.mark.parametrize(
     ("valor", "cantidad", "subtotal_ref"),
     [
-        (1800, 6, 2000),
+        (1800, 6, 1800),
         (2000, 7, 2000),
-        (2400, 8, 3000),
+        (2400, 8, 2400),
         (9000, 30, 9000),
         (10000, 34, 10000),
     ],
@@ -102,23 +104,23 @@ def test_quantity_from_value_redondeo_ceil(
 @pytest.mark.parametrize(
     ("cantidad", "subtotal"),
     [
-        (6, 2000),
+        (6, 1800),
         (7, 2000),
-        (8, 3000),
-        (13, 4000),
+        (8, 2400),
+        (13, 3900),
         (14, 4000),
-        (15, 5000),
+        (15, 4500),
         (17, 5000),
         (20, 6000),
-        (21, 7000),
-        (22, 7000),
+        (21, 6300),
+        (22, 6600),
         (24, 7000),
         (27, 8000),
-        (28, 9000),
-        (29, 9000),
+        (28, 8400),
+        (29, 8700),
         (34, 10000),
-        (35, 11000),
-        (36, 11000),
+        (35, 10500),
+        (36, 10800),
     ],
 )
 def test_subtotal_transiciones_plus_minus(cantidad: int, subtotal: int) -> None:

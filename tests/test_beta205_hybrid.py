@@ -53,7 +53,7 @@ def _pan(id_producto: int, nombre: str) -> dict:
                 {"id_producto": 1, "cantidad": 7},
                 {"id_producto": 2, "cantidad": 5},
             ],
-            4000,
+            3600,
         ),
         (
             [
@@ -62,7 +62,7 @@ def _pan(id_producto: int, nombre: str) -> dict:
             ],
             2000,
         ),
-        ([{"id_producto": 1, "cantidad": 8}], 3000),
+        ([{"id_producto": 1, "cantidad": 8}], 2400),
         ([{"id_producto": 1, "cantidad": 17}], 5000),
         ([{"id_producto": 1, "cantidad": 24}], 7000),
         ([{"id_producto": 1, "cantidad": 27}], 8000),
@@ -79,7 +79,7 @@ def _pan(id_producto: int, nombre: str) -> dict:
                 {"id_producto": 1, "cantidad": 4},
                 {"id_producto": 2, "cantidad": 4},
             ],
-            3000,
+            2400,
         ),
         (
             [
@@ -108,7 +108,7 @@ def test_same_sku_two_lines_aggregate_to_exact() -> None:
     )
 
 
-def test_draft_7_plus_5_is_4000() -> None:
+def test_draft_7_plus_5_is_3600() -> None:
     draft = SaleDraft()
     draft.select_product(_pan(1, "Chino"))
     draft.set_quantity(7)
@@ -116,8 +116,8 @@ def test_draft_7_plus_5_is_4000() -> None:
     draft.select_product(_pan(2, "Calado"))
     draft.set_quantity(5)
     assert draft.add_to_purchase() is True
-    assert draft.total() == 4000
-    assert sum(item.subtotal for item in draft.purchase.items()) == 4000
+    assert draft.total() == 3600
+    assert sum(item.subtotal for item in draft.purchase.items()) == 3600
 
 
 def test_draft_4_plus_3_still_2000() -> None:
@@ -131,12 +131,12 @@ def test_draft_4_plus_3_still_2000() -> None:
     assert draft.total() == 2000
 
 
-def test_draft_eight_alone_3000() -> None:
+def test_draft_eight_alone_2400() -> None:
     draft = SaleDraft()
     draft.select_product(_pan(1, "A"))
     draft.set_quantity(8)
     draft.add_to_purchase()
-    assert draft.total() == 3000
+    assert draft.total() == 2400
     assert draft.discount() == 0
 
 
@@ -158,7 +158,7 @@ def test_preview_selection_unchanged_before_add() -> None:
     draft.add_to_purchase()
     draft.select_product(_pan(2, "B"))
     draft.set_quantity(3)
-    assert draft.current_subtotal() == 1000  # selección sola, antes de agrupar
+    assert draft.current_subtotal() == 900  # 3 × 300, selección sola
     assert draft.add_to_purchase() is True
     assert draft.total() == 2000
 
@@ -179,4 +179,4 @@ def test_compute_subtotals_sum_matches_hybrid() -> None:
         },
     ]
     subs = compute_cart_line_subtotals(lines, promos_by_id={1: _promo()})
-    assert sum(subs) == 4000
+    assert sum(subs) == 3600

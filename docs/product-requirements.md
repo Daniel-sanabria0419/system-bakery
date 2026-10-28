@@ -16,7 +16,7 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Beta 2.0.2 | **Terminada** 2026-10-27 (OK final Daniel) | Layout cobro, prefijo de precio, listado Productos blanco |
 | Beta 2.0.3 | **Terminada** 2026-10-27 (OK final Daniel) | Navegación catálogo Vista A/B; chips más grandes / tipografía editable |
 | Beta 2.0.4 | **Terminada** 2026-10-27 (OK final Daniel) | Migrar Pan pequeño a `promociones` + FK; cobro por FK/grupo |
-| Beta 2.0.5 | **En curso** | Cobro `cantidad_por_monto`: menor múltiplo de 1000 con `ceil(monto/precio_base) >= qty` |
+| Beta 2.0.5 | **En curso** | Promo `cantidad_por_monto` solo en los nudos de la tabla ceil; el resto × `precio_base` |
 
 ---
 
@@ -24,14 +24,15 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 
 ## Objetivo
 
-Cobrar `cantidad_por_monto` con la inversa de la tabla valor→cantidad: tras agrupar por `promocion_id`, el monto es el menor múltiplo de 1000 tal que `ceil(monto / precio_base) >= cantidad` del grupo.
+Cobrar `cantidad_por_monto` después de agrupar por `promocion_id`: solo las cantidades de la tabla ceil en miles (1000 a 10000) usan ese monto; cualquier otra cantidad del grupo es `cantidad × precio_base`.
 
 Detalle: `docs/beta-2.0.5/stages.md`. Diseño: Context `docs/beta-2.0.5-promo-por-producto-y-grupo.md`.
 
 ## Comportamiento
 
-- Cobro: menor múltiplo de 1000 con `ceil(monto / precio_base) >= cantidad` del grupo (4→1000, 7→2000, 10→3000, 14→4000, 17→5000, 20→6000, 24→7000, 27→8000, 30→9000, 34→10000).
-- Carrito: suma qty del mismo `promocion_id` y después esa fórmula (4+3→2000; 7+5→4000).
+- Promo solo en los nudos exactos (4→1000, 7→2000, 10→3000, 14→4000, 17→5000, 20→6000, 24→7000, 27→8000, 30→9000, 34→10000).
+- Fuera de tabla: `cantidad × precio_base` (1→300, 8→2400, 12→3600). No se sube al siguiente mil.
+- Carrito: suma qty del mismo `promocion_id` y después esa regla (4+3→2000; 7+5→3600).
 - JSON slim `precio_base`+`modo`; ceil valor→qty sin cambio.
 
 ## Fuera del alcance de Beta 2.0.5

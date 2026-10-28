@@ -53,14 +53,14 @@ def _pan(id_producto: int, nombre: str) -> dict:
                 {"id_producto": 1, "cantidad": 7},
                 {"id_producto": 2, "cantidad": 5},
             ],
-            3600,
+            3500,
         ),
         (
             [
                 {"id_producto": 1, "cantidad": 4},
                 {"id_producto": 2, "cantidad": 3},
             ],
-            2000,
+            1900,
         ),
         ([{"id_producto": 1, "cantidad": 8}], 2400),
         ([{"id_producto": 1, "cantidad": 17}], 5000),
@@ -79,7 +79,7 @@ def _pan(id_producto: int, nombre: str) -> dict:
                 {"id_producto": 1, "cantidad": 4},
                 {"id_producto": 2, "cantidad": 4},
             ],
-            2400,
+            2000,
         ),
         (
             [
@@ -94,8 +94,8 @@ def test_ceil_scale_amount_cases(lines, expected) -> None:
     assert amount_for_cart_group(lines, CANONICAL) == expected
 
 
-def test_same_sku_two_lines_aggregate_to_exact() -> None:
-    """4+3 del mismo id_producto → qty 7 exacta → 2000."""
+def test_same_sku_two_lines_stay_separate() -> None:
+    """4 y 3 del mismo id_producto no se juntan: 1000 + 900."""
     assert (
         amount_for_cart_group(
             [
@@ -104,11 +104,11 @@ def test_same_sku_two_lines_aggregate_to_exact() -> None:
             ],
             CANONICAL,
         )
-        == 2000
+        == 1900
     )
 
 
-def test_draft_7_plus_5_is_3600() -> None:
+def test_draft_7_plus_5_keeps_each_line() -> None:
     draft = SaleDraft()
     draft.select_product(_pan(1, "Chino"))
     draft.set_quantity(7)
@@ -116,11 +116,31 @@ def test_draft_7_plus_5_is_3600() -> None:
     draft.select_product(_pan(2, "Calado"))
     draft.set_quantity(5)
     assert draft.add_to_purchase() is True
-    assert draft.total() == 3600
-    assert sum(item.subtotal for item in draft.purchase.items()) == 3600
+    items = draft.purchase.items()
+    assert items[0].subtotal == 2000
+    assert items[1].subtotal == 1500
+    assert draft.total() == 3500
 
 
-def test_draft_4_plus_3_still_2000() -> None:
+def test_draft_17_plus_5_keeps_promo_on_first_line() -> None:
+    """17 sigue en 5000 al agregar 5; no se arma un grupo de 22."""
+    draft = SaleDraft()
+    draft.select_product(_pan(1, "A"))
+    draft.set_quantity(17)
+    assert draft.add_to_purchase() is True
+    assert draft.purchase.items()[0].subtotal == 5000
+    draft.select_product(_pan(2, "B"))
+    draft.set_quantity(5)
+    assert draft.add_to_purchase() is True
+    items = draft.purchase.items()
+    assert items[0].cantidad == 17
+    assert items[0].subtotal == 5000
+    assert items[1].cantidad == 5
+    assert items[1].subtotal == 1500
+    assert draft.total() == 6500
+
+
+def test_draft_4_plus_3_stays_per_line() -> None:
     draft = SaleDraft()
     draft.select_product(_pan(1, "A"))
     draft.set_quantity(4)
@@ -128,7 +148,7 @@ def test_draft_4_plus_3_still_2000() -> None:
     draft.select_product(_pan(2, "B"))
     draft.set_quantity(3)
     draft.add_to_purchase()
-    assert draft.total() == 2000
+    assert draft.total() == 1900
 
 
 def test_draft_eight_alone_2400() -> None:
@@ -160,7 +180,7 @@ def test_preview_selection_unchanged_before_add() -> None:
     draft.set_quantity(3)
     assert draft.current_subtotal() == 900  # 3 × 300, selección sola
     assert draft.add_to_purchase() is True
-    assert draft.total() == 2000
+    assert draft.total() == 1900
 
 
 def test_compute_subtotals_sum_matches_hybrid() -> None:
@@ -179,4 +199,5 @@ def test_compute_subtotals_sum_matches_hybrid() -> None:
         },
     ]
     subs = compute_cart_line_subtotals(lines, promos_by_id={1: _promo()})
-    assert sum(subs) == 3600
+    assert subs == [2000, 1500]
+    assert sum(subs) == 3500

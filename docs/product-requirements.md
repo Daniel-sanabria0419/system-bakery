@@ -24,7 +24,7 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 
 ## Objetivo
 
-Cobrar `cantidad_por_monto` después de agrupar por `promocion_id`: solo las cantidades de la tabla ceil en miles (1000 a 10000) usan ese monto; cualquier otra cantidad del grupo es `cantidad × precio_base`.
+Cobrar `cantidad_por_monto` por línea de detalle: si la cantidad de esa línea es un nudo de la tabla ceil en miles, usa ese monto; si no, `cantidad × precio_base`. Otra línea no cambia el cobro de las demás.
 
 Detalle: `docs/beta-2.0.5/stages.md`. Diseño: Context `docs/beta-2.0.5-promo-por-producto-y-grupo.md`.
 
@@ -32,7 +32,7 @@ Detalle: `docs/beta-2.0.5/stages.md`. Diseño: Context `docs/beta-2.0.5-promo-po
 
 - Promo solo en los nudos exactos (4→1000, 7→2000, 10→3000, 14→4000, 17→5000, 20→6000, 24→7000, 27→8000, 30→9000, 34→10000).
 - Fuera de tabla: `cantidad × precio_base` (1→300, 8→2400, 12→3600). No se sube al siguiente mil.
-- Carrito: suma qty del mismo `promocion_id` y después esa regla (4+3→2000; 7+5→3600).
+- Cada línea se cobra sola (17 + 5 → 5000 + 1500 = 6500). No se suma la cantidad del carrito.
 - JSON slim `precio_base`+`modo`; ceil valor→qty sin cambio.
 
 ## Fuera del alcance de Beta 2.0.5

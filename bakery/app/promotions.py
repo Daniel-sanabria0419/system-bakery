@@ -1,18 +1,18 @@
-"""Motor de promociones tipadas (cantidad_por_monto + carrito por promocion_id).
+"""Motor de promociones tipadas (cantidad_por_monto por línea).
 
 Cutover 2.0.4: ``USE_PROMOCIONES_TABLE`` default True; cobro por FK.
 JSON de DB slim: ``{"precio_base": N, "modo": "ceil"}``.
-Cobro: promo solo si la cantidad es un nudo de la tabla ceil en miles
-(p. ej. 17 → 5000); si no, ``cantidad × precio_base`` (8 → 2400).
-``modo: ceil`` también define valor→qty.
-Desactivar con ``BAKERY_USE_PROMOCIONES_TABLE=0``.
+Cada línea usa su propia cantidad. Promo solo si esa cantidad es un nudo
+de la tabla ceil en miles (17 → 5000); si no, ``cantidad × precio_base``.
+Otra línea no cambia el cobro de las demás. ``modo: ceil`` también define
+valor→qty. Desactivar con ``BAKERY_USE_PROMOCIONES_TABLE=0``.
 """
 
 from __future__ import annotations
 
 import json
 import os
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Sequence, Tuple
 
 from bakery.persistence.schema import (
     ESTADO_ACTIVO,
@@ -153,15 +153,14 @@ def quantity_from_value(valor: int, config: Mapping) -> Tuple[int, int]:
 
 
 def amount_for_cart_group(lines: Sequence[Mapping], config: Mapping) -> int:
-    """Monto del grupo: suma la qty y luego ``amount_for_quantity``.
+    """Suma el cobro de cada línea por su propia cantidad.
 
-    El agrupamiento es anterior a la fórmula.
-    Ej.: 4+3 → 2000; 7+5 → 3600; 8 → 2400; 17 → 5000.
+    No junta las cantidades del carrito. 17 + 5 → 5000 + 1500.
     """
     if not lines:
         raise ValueError("El grupo de carrito no puede estar vacío.")
     cfg = parse_cantidad_por_monto_config(config)
-    qty_by_sku: Dict[int, int] = {}
+    total = 0
     for line in lines:
         id_producto = line.get("id_producto")
         if isinstance(id_producto, bool) or not isinstance(id_producto, int):
@@ -169,9 +168,8 @@ def amount_for_cart_group(lines: Sequence[Mapping], config: Mapping) -> int:
         cantidad = _require_positive_int(
             line.get("cantidad"), "La cantidad debe ser un entero mayor que 0."
         )
-        qty_by_sku[id_producto] = qty_by_sku.get(id_producto, 0) + cantidad
-    total_qty = sum(qty_by_sku.values())
-    return amount_for_quantity(total_qty, cfg)
+        total += amount_for_quantity(cantidad, cfg)
+    return total
 
 
 def allocate_group_subtotals(
@@ -215,24 +213,27 @@ def compute_cart_line_subtotals(
     *,
     promos_by_id: Mapping[int, Mapping],
 ) -> List[int]:
-    """Subtotales por línea: escala ceil por ``promocion_id`` + reparto B.
+    """Subtotal de cada línea con su propia cantidad. Sin pool de carrito.
 
     Cada línea: ``id_producto``, ``cantidad``, ``precio_aplicado``,
-    ``promocion_id`` (opcional). Líneas sin promo válida →
-    ``precio_aplicado × cantidad``.
+    ``promocion_id`` (opcional). Promo ``cantidad_por_monto`` activa →
+    ``amount_for_quantity`` de esa línea. Si no, ``precio_aplicado × cantidad``.
     """
     if not lines:
         return []
-    n = len(lines)
-    result: List[Optional[int]] = [None] * n
-    groups: Dict[int, List[int]] = {}
-    for index, line in enumerate(lines):
+    result: List[int] = []
+    for line in lines:
         promo_id = line.get("promocion_id")
+        promo = None
         if (
-            isinstance(promo_id, bool)
-            or not isinstance(promo_id, int)
-            or promo_id not in promos_by_id
+            not isinstance(promo_id, bool)
+            and isinstance(promo_id, int)
+            and promo_id in promos_by_id
         ):
+            candidate = promos_by_id[promo_id]
+            if is_active_cantidad_por_monto(candidate):
+                promo = candidate
+        if promo is None:
             precio = _require_positive_int(
                 line.get("precio_aplicado"),
                 "El precio aplicado debe ser un entero mayor que 0.",
@@ -241,37 +242,15 @@ def compute_cart_line_subtotals(
                 line.get("cantidad"),
                 "La cantidad debe ser un entero mayor que 0.",
             )
-            result[index] = precio * cantidad
+            result.append(precio * cantidad)
             continue
-        promo = promos_by_id[promo_id]
-        if not is_active_cantidad_por_monto(promo):
-            precio = _require_positive_int(
-                line.get("precio_aplicado"),
-                "El precio aplicado debe ser un entero mayor que 0.",
-            )
-            cantidad = _require_positive_int(
-                line.get("cantidad"),
-                "La cantidad debe ser un entero mayor que 0.",
-            )
-            result[index] = precio * cantidad
-            continue
-        groups.setdefault(promo_id, []).append(index)
-
-    for promo_id, indices in groups.items():
-        promo = promos_by_id[promo_id]
         config = parse_cantidad_por_monto_config(promo["configuracion"])
-        group_lines = [lines[i] for i in indices]
-        monto = amount_for_cart_group(group_lines, config)
-        parts = allocate_group_subtotals(group_lines, monto)
-        for index, subtotal in zip(indices, parts):
-            result[index] = subtotal
-
-    filled: List[int] = []
-    for value in result:
-        if value is None:
-            raise ValueError("No se pudo calcular el subtotal de una línea.")
-        filled.append(value)
-    return filled
+        cantidad = _require_positive_int(
+            line.get("cantidad"),
+            "La cantidad debe ser un entero mayor que 0.",
+        )
+        result.append(amount_for_quantity(cantidad, config))
+    return result
 
 
 def _require_positive_int(value: object, message: str) -> int:

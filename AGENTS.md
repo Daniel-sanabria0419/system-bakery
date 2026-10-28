@@ -172,7 +172,7 @@ Preservar Beta 2.0.4.
 Alcance:
 
 1. Nudos: 4→1000, 7→2000, 10→3000, 14→4000, **17→5000**, 20→6000, 24→7000, 27→8000, 30→9000, 34→10000.
-2. Resto: 1→300, 8→2400, 12→3600. Carrito: suma qty del mismo `promocion_id` y después esa regla (4+3→2000; 7+5→3600).
+2. Resto: 1→300, 8→2400, 12→3600. Cada línea se cobra sola (17 + 5 → 5000 + 1500). Sin pool de carrito.
 3. JSON DB slim: `{"precio_base":300,"modo":"ceil"}`; G/M/política greedy en defaults de código.
 4. `modo: ceil` = valor→qty sin cambio.
 

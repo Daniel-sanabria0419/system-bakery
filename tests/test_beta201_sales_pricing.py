@@ -93,9 +93,9 @@ def test_draft_pan_pequeno_promo_and_normal_qty() -> None:
     draft.set_quantity(8)
     assert draft.current_subtotal() == 2400  # preview de la selección sola
     assert draft.add_to_purchase() is True
-    # 7+8=15 fuera de tabla: 15 × 300 = 4500
-    assert draft.total() == 4500
-    assert sum(item.subtotal for item in draft.purchase.items()) == 4500
+    # 7 y 8 por línea: 2000 + 2400
+    assert draft.total() == 4400
+    assert [item.subtotal for item in draft.purchase.items()] == [2000, 2400]
 
 
 def test_draft_pan_pequeno_quantity_only_preview() -> None:
@@ -130,9 +130,10 @@ def test_draft_agregar_qty_uses_promo_formula() -> None:
     assert draft.add_to_purchase() is True
     items = draft.purchase.items()
     assert items[1].cantidad == 34
-    # Mismo promo: 17+34=51 fuera de tabla → 51 × 300 = 15300
-    assert draft.total() == 15300
-    assert sum(item.subtotal for item in items) == 15300
+    # Cada línea conserva su nudo: 17→5000 y 34→10000
+    assert items[0].subtotal == 5000
+    assert items[1].subtotal == 10000
+    assert draft.total() == 15000
 
 
 def test_draft_other_category_stays_precio_times_cantidad() -> None:

@@ -160,7 +160,7 @@ def test_footer_4_plus_3_and_delete_recalculates(qtbot, monkeypatch) -> None:
     _click(qtbot, _find(window, "agregar_button"))
 
     assert _purchase_row_count(window) == 2
-    _assert_footer(window, subtotal=2100, discount=100, total=2000)
+    _assert_footer(window, subtotal=2100, discount=200, total=1900)
 
     _click(qtbot, _find(window, "sale_product_20"))
     assert _find(window, "selected_product_label").text() == "Torta"

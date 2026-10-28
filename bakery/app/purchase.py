@@ -260,8 +260,8 @@ class SaleDraft:
     def add_to_purchase(self) -> bool:
         """Agrega línea del producto seleccionado. Rechaza sin producto.
 
-        Cantidad solo vía ``quantity()`` (−/+). Tras agregar, el carrito se
-        recalcula agrupando por ``promocion_id``.
+        Cantidad solo vía ``quantity()`` (−/+). Tras agregar, cada línea
+        conserva el cobro de su propia cantidad.
         """
         product = self._selected_product
         if product is None:

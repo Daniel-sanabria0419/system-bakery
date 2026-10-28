@@ -17,19 +17,22 @@ PAGE_SPACING = 5
 MENU_MARGIN = 20
 MENU_BUTTON_COLOR = "#2E7D32"
 
-# Columna izquierda (operativa) vs derecha (futuro)
+# Columna izquierda (compra + selección) vs derecha (catálogo + acciones)
 LEFT_COLUMN_STRETCH = 2
 RIGHT_COLUMN_STRETCH = 3
 
-# Registrar venta: detalle ~1/3, pad ~2/3 de la columna operativa (Beta 1.2 etapa 3)
+# Registrar venta 2.0.6: panel de compra (izq) y zona de acciones (der)
 PURCHASE_PANEL_STRETCH = 1
-PAD_PANEL_STRETCH = 2
+# Catálogo vs acciones en la columna derecha (acciones no se encogen).
+CATALOG_SECTION_STRETCH = 1
+ACTIONS_PANEL_STRETCH = 0
+ACTION_BUTTON_MIN_HEIGHT = 64
+ACTION_BUTTON_MIN_WIDTH = 120
 
-# Teclado numérico
-PAD_SPACING = 6
-PAD_BUTTON_MIN_WIDTH = 64
-PAD_BUTTON_MIN_HEIGHT = 90
-# Si PAD_BUTTON_MIN_* es 0, no se fuerza tamaño mínimo (comportamiento Qt por defecto).
+# Colores de acciones (mockup 2.0.6) — también en theme.qss
+PAGAR_BUTTON_COLOR = "#5ac4f6"
+BORRAR_TODO_BUTTON_COLOR = "#C62828"
+FOOTER_TOTALS_FONT_SIZE = 20  # px; tipografía Subtotal/Descuento/Total
 
 # Botones del popup de medio de pago (Beta 1.2)
 PAYMENT_METHOD_BUTTON_MIN_WIDTH = 120
@@ -84,12 +87,16 @@ _THEME_PATH = Path(__file__).with_name("theme.qss")
 
 
 def load_theme_qss() -> str:
-    """Carga theme.qss e inyecta tipografía de chips desde las constantes de arriba."""
+    """Carga theme.qss e inyecta tipografía desde las constantes de arriba."""
     text = _THEME_PATH.read_text(encoding="utf-8")
     return (
         text.replace(
             "__CATEGORY_CHIP_FONT_SIZE__", str(CATEGORY_CHIP_FONT_SIZE)
-        ).replace("__PRODUCT_CHIP_FONT_SIZE__", str(PRODUCT_CHIP_FONT_SIZE))
+        )
+        .replace("__PRODUCT_CHIP_FONT_SIZE__", str(PRODUCT_CHIP_FONT_SIZE))
+        .replace("__FOOTER_TOTALS_FONT_SIZE__", str(FOOTER_TOTALS_FONT_SIZE))
+        .replace("__PAGAR_BUTTON_COLOR__", PAGAR_BUTTON_COLOR)
+        .replace("__BORRAR_TODO_BUTTON_COLOR__", BORRAR_TODO_BUTTON_COLOR)
     )
 
 

@@ -39,9 +39,13 @@ def _apply_page_layout(layout: QVBoxLayout) -> None:
     layout.setSpacing(style.PAGE_SPACING)
 
 
-def _apply_pad_button_size(button: QPushButton) -> None:
-    if style.PAD_BUTTON_MIN_WIDTH > 0 or style.PAD_BUTTON_MIN_HEIGHT > 0:
-        button.setMinimumSize(style.PAD_BUTTON_MIN_WIDTH, style.PAD_BUTTON_MIN_HEIGHT)
+def _apply_action_button_size(button: QPushButton) -> None:
+    """Tamaño mínimo táctil para Medio / Borrar todo / Pagar (Beta 2.0.6)."""
+    if style.ACTION_BUTTON_MIN_WIDTH > 0 or style.ACTION_BUTTON_MIN_HEIGHT > 0:
+        button.setMinimumSize(
+            style.ACTION_BUTTON_MIN_WIDTH,
+            style.ACTION_BUTTON_MIN_HEIGHT,
+        )
 
 
 def _apply_dialog_action_button_size(button: QPushButton) -> None:

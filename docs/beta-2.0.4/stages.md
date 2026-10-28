@@ -22,7 +22,7 @@ Documento de etapas de **Beta 2.0.4** (migración Pan pequeño → tabla `promoc
 | 2 | Seed + backfill | Hecha | [#40](https://github.com/Daniel-sanabria0419/system-bakery/pull/40) |
 | 3 | Dual-path / feature flag | Hecha | [#41](https://github.com/Daniel-sanabria0419/system-bakery/pull/41) |
 | 4 | Recálculo carrito + UI subtotal/total | Hecha | [#42](https://github.com/Daniel-sanabria0419/system-bakery/pull/42) |
-| 5 | Cutover | En revisión | Flag default True; sin montos por nombre de categoría en cobro |
+| 5 | Cutover | En revisión | [#43](https://github.com/Daniel-sanabria0419/system-bakery/pull/43); flag default True; sin montos por nombre de categoría en cobro |
 | 6 | Tests + regresión | Pendiente | Incl. 4+3 / 4+4 |
 | 7 | Pantallas / docs / nota reportes | Pendiente | |
 

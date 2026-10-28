@@ -237,7 +237,7 @@ def _select_draft_product(
 def _enter_amount_and_agregar(
     qtbot, window, digits: str, *, nombre: str = "Producto", id_producto: int = None
 ) -> None:
-    """Selecciona producto (UI o draft) y agrega con el pad."""
+    """Selecciona producto (UI o draft) a precio=digits y agrega qty 1 (−/+ only)."""
     precio = int(digits)
     product_button = None
     if id_producto is not None:
@@ -253,8 +253,6 @@ def _enter_amount_and_agregar(
         _click(qtbot, product_button)
     else:
         _select_draft_product(window, precio=precio, nombre=nombre, id_producto=id_producto)
-    for digit in digits:
-        _click(qtbot, _find(window, f"digit_{digit}"))
     _click(qtbot, _find(window, "agregar_button"))
 
 
@@ -932,8 +930,6 @@ def test_happy_path_persists_sale_through_api(qtbot, tmp_path) -> None:
             nombre="Pan",
             id_producto=product["id_producto"],
         )
-        for digit in "5000":
-            _click(qtbot, _find(window, f"digit_{digit}"))
         _click(qtbot, _find(window, "agregar_button"))
         _select_payment(qtbot, window, 1)
 

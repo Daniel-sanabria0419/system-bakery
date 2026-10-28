@@ -220,17 +220,14 @@ def test_purchase_clear() -> None:
 
 def test_add_to_purchase_requires_selected_product() -> None:
     draft = SaleDraft()
-    _enter_digits(draft.entry, "5000")
     assert draft.add_to_purchase() is False
     assert draft.purchase.items() == []
-    assert draft.entry.digits() == "5000"
 
 
 def test_add_to_purchase_with_product_accumulates() -> None:
     draft = SaleDraft()
     assert draft.select_product(_product(1, "Pan", 5000)) is True
     assert draft.add_to_purchase() is True
-    assert draft.entry.current_amount() is None
     assert draft.selected_product() is None
     items = draft.purchase.items()
     assert len(items) == 1
@@ -252,22 +249,18 @@ def test_add_to_purchase_keeps_previous_items_without_product() -> None:
     draft = SaleDraft()
     draft.select_product(_product(1, "Pan", 5000))
     draft.add_to_purchase()
-    _enter_digits(draft.entry, "3000")
     assert draft.add_to_purchase() is False
     assert len(draft.purchase.items()) == 1
     assert draft.total() == 5000
-    assert draft.entry.digits() == "3000"
 
 
-def test_clear_purchase_resets_entry_selection_and_items() -> None:
+def test_clear_purchase_resets_selection_and_items() -> None:
     draft = SaleDraft()
     draft.select_product(_product(1, "Pan", 5000))
     draft.add_to_purchase()
     draft.select_product(_product(2, "Café", 3000))
     draft.set_quantity(3)
-    _enter_digits(draft.entry, "3000")
     draft.clear_purchase()
-    assert draft.entry.digits() == ""
     assert draft.selected_product() is None
     assert draft.quantity() == 1
     assert draft.purchase.items() == []

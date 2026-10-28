@@ -59,8 +59,8 @@ def test_smoke_menu_products_pan_pequeno_checkout(qtbot) -> None:
 
     _click(qtbot, _find(window, "sale_category_6"))
     _click(qtbot, _find(window, "sale_product_4"))
-    for digit in "2000":
-        _click(qtbot, _find(window, f"digit_{digit}"))
+    for _ in range(6):
+        _click(qtbot, _find(window, "quantity_plus_button"))
     preview = _find(window, "sale_value_preview").text()
     assert format_cop(2000) in preview
     assert "7" in _find(window, "quantity_label").text()

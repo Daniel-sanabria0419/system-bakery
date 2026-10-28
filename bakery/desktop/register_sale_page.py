@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from bakery.app.calculator import Calculator
 from bakery.app.money import format_cop
 from bakery.app.product_images import (
     category_image_path,
@@ -49,6 +50,8 @@ class RegisterSalePage(QWidget):
         super().__init__()
         self._api = api_client
         self._draft = SaleDraft()
+        # Pad local (prefijo de precio) hasta Etapa 2; cobro es solo −/+ en el draft.
+        self._entry = Calculator()
         self._payment_methods: List[Mapping] = []
         self._selected_payment_id: Optional[int] = None
         self._selected_payment_name: Optional[str] = None
@@ -345,6 +348,7 @@ class RegisterSalePage(QWidget):
 
     def reset_form(self) -> None:
         self._draft.clear_purchase()
+        self._entry.clear_entry()
         self._clear_payment_selection()
         self._selected_category_id = None
         self._catalog_view = "categories"
@@ -384,17 +388,14 @@ class RegisterSalePage(QWidget):
             self._payment_button.setText(_PAYMENT_BUTTON_PLACEHOLDER)
 
     def _digits_blocked_for_quantity_only(self) -> bool:
-        """Producto no–Pan pequeño: cantidad solo con −/+ (Beta 2.0.2)."""
-        return (
-            self._draft.selected_product() is not None
-            and not self._draft.selected_is_pan_pequeno()
-        )
+        """Con producto seleccionado: cantidad solo con −/+ (Beta 2.0.6 Etapa 1)."""
+        return self._draft.selected_product() is not None
 
     def _digit(self, digit: str) -> None:
         if self._digits_blocked_for_quantity_only():
             self._feedback.setText("Use −/+ para la cantidad")
             return
-        self._draft.entry.press_digit(digit)
+        self._entry.press_digit(digit)
         self._feedback.setText("")
         self._on_entry_changed()
         self._refresh_display()
@@ -410,12 +411,14 @@ class RegisterSalePage(QWidget):
                 self._feedback.setText("No se pudo agregar la línea.")
             else:
                 self._feedback.setText("")
+                self._entry.clear_entry()
                 self._refresh_selection_ui()
                 self._sync_quantity_section()
                 self._refresh_mode_ui()
                 self._rebuild_products()
         elif name == "clear":
             self._draft.clear_purchase()
+            self._entry.clear_entry()
             self._selected_category_id = None
             self._catalog_view = "categories"
             self._feedback.setText("")
@@ -429,30 +432,22 @@ class RegisterSalePage(QWidget):
             if self._digits_blocked_for_quantity_only():
                 self._feedback.setText("Use −/+ para la cantidad")
             else:
-                self._draft.entry.backspace()
+                self._entry.backspace()
                 self._feedback.setText("")
                 self._on_entry_changed()
         elif name == "zeros":
             if self._digits_blocked_for_quantity_only():
                 self._feedback.setText("Use −/+ para la cantidad")
             else:
-                self._draft.entry.press_zeros()
+                self._entry.press_zeros()
                 self._feedback.setText("")
                 self._on_entry_changed()
         self._refresh_display()
         self._refresh_submit()
 
     def _on_entry_changed(self) -> None:
-        """Tras dígitos: Pan pequeño = valor→cantidad; sin selección = prefijo; otro = qty."""
-        if self._draft.selected_is_pan_pequeno():
-            amount = self._draft.entry.current_amount()
-            if amount is not None and amount > 0:
-                self._draft.apply_value(amount)
-            self._sync_quantity_section()
-            self._refresh_mode_ui()
-            return
+        """Tras dígitos sin selección: filtro por prefijo de precio (pad temporal)."""
         if self._draft.selected_product() is not None:
-            # Otro producto: dígitos no filtran ni cambian cantidad.
             return
         self._rebuild_products()
 
@@ -461,7 +456,7 @@ class RegisterSalePage(QWidget):
         if current <= 1:
             return
         self._draft.set_quantity(current - 1)
-        self._draft.entry.clear_entry()
+        self._entry.clear_entry()
         self._feedback.setText("")
         self._sync_quantity_section()
         self._refresh_mode_ui()
@@ -469,7 +464,7 @@ class RegisterSalePage(QWidget):
 
     def _quantity_plus(self) -> None:
         self._draft.set_quantity(self._draft.quantity() + 1)
-        self._draft.entry.clear_entry()
+        self._entry.clear_entry()
         self._feedback.setText("")
         self._sync_quantity_section()
         self._refresh_mode_ui()
@@ -555,7 +550,7 @@ class RegisterSalePage(QWidget):
     def _select_product(self, product: Mapping) -> None:
         enriched = self._product_for_draft(product)
         self._draft.select_product(enriched)
-        self._draft.entry.clear_entry()
+        self._entry.clear_entry()
         self._draft.set_quantity(1)
         self._feedback.setText("")
         self._refresh_selection_ui()
@@ -592,7 +587,7 @@ class RegisterSalePage(QWidget):
         )
 
     def _refresh_mode_ui(self) -> None:
-        """Preview Pan pequeño (valor→cantidad); el monto tipado no se recalcula."""
+        """Preview informativo de promo por cantidad (sin tipado)."""
         if not self._draft.selected_is_pan_pequeno():
             self._value_preview_label.setText("")
             return
@@ -603,8 +598,6 @@ class RegisterSalePage(QWidget):
             self._value_preview_label.setText("")
             return
 
-        # Mientras hay valor tipado, current_subtotal ya es ese valor: no mostrar
-        # flecha hacia qty*300 / todo_o_nada (p. ej. 5000→5100).
         self._value_preview_label.setText(
             f"{format_cop(subtotal)} = {quantity} panes"
         )
@@ -677,7 +670,7 @@ class RegisterSalePage(QWidget):
             ]
         # Prefijo solo sin producto seleccionado (categoría ∩ prefijo).
         if self._draft.selected_product() is None:
-            prefix = self._draft.entry.digits()
+            prefix = self._entry.digits()
             if prefix:
                 products = candidates_by_price_prefix(products, prefix)
         selected = self._draft.selected_product()
@@ -703,12 +696,14 @@ class RegisterSalePage(QWidget):
             self._products_layout.addWidget(button)
 
     def _refresh_display(self) -> None:
-        """Pad + lista de compra + total.
-
-        Con flag de promociones on, ``line.subtotal`` y ``total`` ya vienen
-        recalculados por grupo tras cada Agregar (Etapa 4).
-        """
-        self._display.setText(format_cop(self._draft.pad_display_amount()))
+        """Pad (entrada/prefijo o preview qty) + lista de compra + total."""
+        selected = self._draft.selected_product()
+        if selected is None:
+            amount = self._entry.current_amount()
+            self._display.setText(format_cop(0 if amount is None else amount))
+        else:
+            subtotal = self._draft.current_subtotal()
+            self._display.setText(format_cop(0 if subtotal is None else subtotal))
         items = self._draft.purchase.items()
         self._purchase_list.setText(
             "\n".join(
@@ -738,14 +733,13 @@ class RegisterSalePage(QWidget):
             return
         lineas = []
         for line in self._draft.purchase.items():
-            payload = {
-                "id_producto": line.id_producto,
-                "cantidad": line.cantidad,
-                "precio_aplicado": line.precio_aplicado,
-            }
-            if line.cobro_fijo:
-                payload["subtotal"] = line.subtotal
-            lineas.append(payload)
+            lineas.append(
+                {
+                    "id_producto": line.id_producto,
+                    "cantidad": line.cantidad,
+                    "precio_aplicado": line.precio_aplicado,
+                }
+            )
         try:
             self._api.create_sale(payment_id, lineas)
         except httpx.HTTPError as error:

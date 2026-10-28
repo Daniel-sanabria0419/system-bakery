@@ -1,13 +1,11 @@
 from dataclasses import dataclass
 from typing import Dict, List, Mapping, Optional, Sequence
 
-from bakery.app.calculator import Calculator
 from bakery.app.promotions import (
     amount_for_quantity,
     compute_cart_line_subtotals,
     is_active_cantidad_por_monto,
     parse_cantidad_por_monto_config,
-    quantity_from_value as promo_quantity_from_value,
     use_promociones_table,
 )
 from bakery.persistence.schema import ESTADO_ACTIVO
@@ -23,8 +21,6 @@ class PurchaseLine:
     cantidad: int
     subtotal: int
     promocion_id: Optional[int] = None
-    # Cobro tipado desde el pad (valor→qty): no lo pisa todo_o_nada al regenerar.
-    cobro_fijo: bool = False
 
 
 class Purchase:
@@ -42,7 +38,6 @@ class Purchase:
         cantidad: int,
         subtotal: Optional[int] = None,
         promocion_id: Optional[int] = None,
-        cobro_fijo: bool = False,
     ) -> bool:
         if isinstance(id_producto, bool) or not isinstance(id_producto, int):
             return False
@@ -64,8 +59,6 @@ class Purchase:
             isinstance(promocion_id, bool) or not isinstance(promocion_id, int)
         ):
             return False
-        if not isinstance(cobro_fijo, bool):
-            return False
         if subtotal is None:
             computed = precio_aplicado * cantidad
         else:
@@ -82,13 +75,20 @@ class Purchase:
                 cantidad=cantidad,
                 subtotal=computed,
                 promocion_id=promocion_id,
-                cobro_fijo=cobro_fijo,
             )
         )
         return True
 
     def replace_items(self, items: Sequence[PurchaseLine]) -> None:
         self._items = list(items)
+
+    def remove_at(self, index: int) -> bool:
+        if isinstance(index, bool) or not isinstance(index, int):
+            return False
+        if index < 0 or index >= len(self._items):
+            return False
+        del self._items[index]
+        return True
 
     def clear(self) -> None:
         self._items.clear()
@@ -98,6 +98,15 @@ class Purchase:
 
     def total(self) -> int:
         return sum(item.subtotal for item in self._items)
+
+    def list_subtotal(self) -> int:
+        """Suma a precio de lista: Σ (precio_c/u × cantidad)."""
+        return sum(item.precio_aplicado * item.cantidad for item in self._items)
+
+    def discount(self) -> int:
+        """Descuento del carrito: list_subtotal − total, clampeado a ≥ 0."""
+        delta = self.list_subtotal() - self.total()
+        return delta if delta > 0 else 0
 
 
 def candidates_by_exact_price(
@@ -127,7 +136,7 @@ def candidates_by_price_prefix(
 ) -> List[Mapping]:
     """Filtra productos activos cuyo precio (string del entero) empieza con prefix.
 
-    Pensado para Calculator.digits() (p. ej. "4", "45"). Prefijo vacío o
+    Pensado para dígitos del pad (p. ej. "4", "45"). Prefijo vacío o
     no numérico → lista vacía (la UI no aplica filtro de precio en ese caso).
     No formatea COP; sin floats. El acote por categoría lo hace el llamador.
     """
@@ -152,10 +161,9 @@ def candidates_by_price_prefix(
 
 
 class SaleDraft:
-    """Orquesta entrada, producto seleccionado, cantidad y compra acumulada."""
+    """Orquesta producto seleccionado, cantidad y compra acumulada (solo qty)."""
 
     def __init__(self) -> None:
-        self.entry = Calculator()
         self.purchase = Purchase()
         self._selected_product: Optional[Mapping] = None
         self._quantity = 1
@@ -222,7 +230,7 @@ class SaleDraft:
         return dict(self._selected_product)
 
     def selected_is_pan_pequeno(self) -> bool:
-        """True si la selección usa pad valor→cantidad (promo activa por FK)."""
+        """True si la selección tiene promo activa cantidad_por_monto por FK."""
         if self._selected_product is None:
             return False
         if not use_promociones_table():
@@ -239,73 +247,32 @@ class SaleDraft:
         return self._quantity
 
     def current_subtotal(self) -> Optional[int]:
-        """Subtotal de la selección actual (preview pre-Agregar).
-
-        Con promo y valor tipado en el pad, conserva el dinero tipado (no
-        reemplaza por ``qty * precio_base`` ni por subtotal ``todo_o_nada``).
-        Sin dígitos (p. ej. tras −/+), usa la fórmula de cantidad.
-        """
+        """Preview pre-Agregar de la selección actual (solo fórmula por cantidad)."""
         product = self._selected_product
         if product is None:
             return None
         if use_promociones_table():
             config = self._selected_promo_config()
             if config is not None:
-                typed = self.entry.current_amount()
-                if typed is not None and typed > 0:
-                    return typed
                 return amount_for_quantity(self._quantity, config)
         return product["precio"] * self._quantity
-
-    def pad_display_amount(self) -> int:
-        """Monto del display del pad: entrada, valor tipado promo, o subtotal a agregar."""
-        if self._selected_product is None:
-            amount = self.entry.current_amount()
-            return 0 if amount is None else amount
-        if self.selected_is_pan_pequeno():
-            typed = self.entry.current_amount()
-            if typed is not None:
-                return typed
-        subtotal = self.current_subtotal()
-        return 0 if subtotal is None else subtotal
-
-    def apply_value(self, valor: int) -> bool:
-        """Promo cantidad_por_monto: valor → cantidad = ceil(valor / precio_base)."""
-        if not self.selected_is_pan_pequeno():
-            return False
-        config = self._selected_promo_config()
-        if config is None:
-            return False
-        try:
-            cantidad, _subtotal = promo_quantity_from_value(valor, config)
-        except ValueError:
-            return False
-        self._quantity = cantidad
-        return True
 
     def add_to_purchase(self) -> bool:
         """Agrega línea del producto seleccionado. Rechaza sin producto.
 
-        Si hay valor tipado en el pad con promo activa, el subtotal de la línea
-        es ese tipado (``cobro_fijo``): Agregar no lo reemplaza por todo_o_nada.
-        Con −/+ (sin dígitos) sigue la fórmula de cantidad + agrupación.
+        Cantidad solo vía ``quantity()`` (−/+). Tras agregar, el carrito se
+        recalcula con el motor híbrido 2.0.5.
         """
         product = self._selected_product
         if product is None:
             return False
         promocion_id = None
-        cobro_fijo = False
         if use_promociones_table():
             config = self._selected_promo_config()
             if config is not None:
                 promocion_id = int(product["promocion_id"])
                 precio_aplicado = int(config["precio_base"])
-                typed = self.entry.current_amount()
-                if typed is not None and typed > 0:
-                    subtotal = typed
-                    cobro_fijo = True
-                else:
-                    subtotal = amount_for_quantity(self._quantity, config)
+                subtotal = amount_for_quantity(self._quantity, config)
             else:
                 precio_aplicado = product["precio"]
                 subtotal = precio_aplicado * self._quantity
@@ -319,22 +286,38 @@ class SaleDraft:
             cantidad=self._quantity,
             subtotal=subtotal,
             promocion_id=promocion_id,
-            cobro_fijo=cobro_fijo,
         ):
             return False
         if use_promociones_table():
             self._recalculate_purchase_subtotals()
-        self.entry.clear_entry()
         self.clear_product_selection()
         self._quantity = 1
         return True
 
-    def clear_purchase(self) -> None:
+    def remove_line(self, index: int) -> bool:
+        """Quita una línea por índice y recalcula promos del carrito."""
+        if not self.purchase.remove_at(index):
+            return False
+        if use_promociones_table():
+            self._recalculate_purchase_subtotals()
+        return True
+
+    def clear_cart(self) -> None:
+        """Vacía solo las líneas del carrito; conserva selección y cantidad."""
         self.purchase.clear()
-        self.entry.clear_entry()
+
+    def clear_purchase(self) -> None:
+        """Reset completo: carrito + selección + cantidad (p. ej. tras venta OK)."""
+        self.purchase.clear()
         self.clear_product_selection()
         self._quantity = 1
         self._promo_by_id.clear()
+
+    def list_subtotal(self) -> int:
+        return self.purchase.list_subtotal()
+
+    def discount(self) -> int:
+        return self.purchase.discount()
 
     def total(self) -> int:
         return self.purchase.total()
@@ -366,25 +349,18 @@ class SaleDraft:
         items = self.purchase.items()
         if not items:
             return
-        result = [item.subtotal for item in items]
-        flexible_indices = [
-            index for index, item in enumerate(items) if not item.cobro_fijo
+        line_maps = [
+            {
+                "id_producto": item.id_producto,
+                "cantidad": item.cantidad,
+                "precio_aplicado": item.precio_aplicado,
+                "promocion_id": item.promocion_id,
+            }
+            for item in items
         ]
-        if flexible_indices:
-            line_maps = [
-                {
-                    "id_producto": items[index].id_producto,
-                    "cantidad": items[index].cantidad,
-                    "precio_aplicado": items[index].precio_aplicado,
-                    "promocion_id": items[index].promocion_id,
-                }
-                for index in flexible_indices
-            ]
-            computed = compute_cart_line_subtotals(
-                line_maps, promos_by_id=self._promo_by_id
-            )
-            for index, subtotal in zip(flexible_indices, computed):
-                result[index] = subtotal
+        computed = compute_cart_line_subtotals(
+            line_maps, promos_by_id=self._promo_by_id
+        )
         rebuilt = [
             PurchaseLine(
                 id_producto=item.id_producto,
@@ -393,9 +369,8 @@ class SaleDraft:
                 cantidad=item.cantidad,
                 subtotal=subtotal,
                 promocion_id=item.promocion_id,
-                cobro_fijo=item.cobro_fijo,
             )
-            for item, subtotal in zip(items, result)
+            for item, subtotal in zip(items, computed)
         ]
         self.purchase.replace_items(rebuilt)
 

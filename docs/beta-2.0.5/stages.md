@@ -19,7 +19,7 @@ Diseño CLOSED: Context `docs/beta-2.0.5-promo-por-producto-y-grupo.md`.
 | Etapa | Nombre | Estado | Notas |
 |---|---|---|---|
 | 0 | Diseño CLOSED | Hecha | Context diseño + OK Daniel |
-| 1 | Motor híbrido + tests + docs | En revisión | `promotions.amount_for_cart_group`; suite |
+| 1 | Motor híbrido + tests + docs | En revisión | [#46](https://github.com/Daniel-sanabria0419/system-bakery/pull/46) — `amount_for_cart_group` híbrido; 256 passed |
 
 ## Alcance Etapa 1
 

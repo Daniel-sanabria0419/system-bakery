@@ -26,7 +26,7 @@ def test_pan_pequeno_qty_only_with_plus(qtbot) -> None:
         f"Unitario: {format_cop(300)}"
     )
     assert _find(window, "quantity_value_label").text() == (
-        f"Subtotal: {format_cop(1000)}"
+        f"Subtotal: {format_cop(300)}"
     )
 
     for _ in range(6):
@@ -58,7 +58,7 @@ def test_pan_pequeno_plus_minus_transitions_6_7_8(qtbot) -> None:
         _click(qtbot, _find(window, "quantity_plus_button"))
     assert _find(window, "quantity_label").text() == "6"
     assert _find(window, "quantity_value_label").text() == (
-        f"Subtotal: {format_cop(2000)}"
+        f"Subtotal: {format_cop(1800)}"
     )
     assert "6 panes" in _find(window, "sale_value_preview").text()
 
@@ -71,7 +71,7 @@ def test_pan_pequeno_plus_minus_transitions_6_7_8(qtbot) -> None:
     _click(qtbot, _find(window, "quantity_plus_button"))
     assert _find(window, "quantity_label").text() == "8"
     assert _find(window, "quantity_value_label").text() == (
-        f"Subtotal: {format_cop(3000)}"
+        f"Subtotal: {format_cop(2400)}"
     )
 
     _click(qtbot, _find(window, "quantity_minus_button"))

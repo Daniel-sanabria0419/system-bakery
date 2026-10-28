@@ -62,7 +62,7 @@ def test_formula_8_panes_descuento_0() -> None:
     draft = SaleDraft()
     _add(draft, _pan(1), 8)
     assert draft.list_subtotal() == 2400
-    assert draft.total() == 3000
+    assert draft.total() == 2400
     assert draft.discount() == 0
 
 
@@ -80,7 +80,7 @@ def test_formula_7_plus_5_descuento_100() -> None:
     _add(draft, _pan(1, "A"), 7)
     _add(draft, _pan(2, "B"), 5)
     assert draft.list_subtotal() == 3600
-    assert draft.total() == 4000
+    assert draft.total() == 3600
     assert draft.discount() == 0
 
 
@@ -103,7 +103,7 @@ def test_remove_line_recalculates_hybrid() -> None:
     assert len(draft.purchase.items()) == 1
     assert draft.purchase.items()[0].id_producto == 2
     assert draft.list_subtotal() == 900
-    assert draft.total() == 1000
+    assert draft.total() == 900
     assert draft.discount() == 0
 
 

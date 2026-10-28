@@ -8,6 +8,7 @@ from tests.test_stage4_desktop import (
     _click,
     _find,
     _line_text,
+    _purchase_list_text,
     _select_payment,
 )
 
@@ -22,7 +23,7 @@ def test_reject_agregar_without_product_shows_feedback(qtbot) -> None:
     _click(qtbot, _find(window, "agregar_button"))
 
     assert "Seleccione un producto" in _find(window, "sale_feedback").text()
-    assert _find(window, "purchase_list").text() == ""
+    assert _purchase_list_text(window) == ""
     assert _find(window, "purchase_total").text() == "Total: $ 0"
 
 
@@ -52,7 +53,7 @@ def test_multi_product_flow_with_quantity(qtbot) -> None:
     _click(qtbot, _find(window, "quantity_plus_button"))
     assert _find(window, "quantity_label").text() == "2"
     _click(qtbot, _find(window, "agregar_button"))
-    assert _find(window, "purchase_list").text() == _line_text("Pan", 5000, 2)
+    assert _purchase_list_text(window) == _line_text("Pan", 5000, 2)
     assert _find(window, "sale_feedback").text() == ""
 
     _click(qtbot, _find(window, "catalog_back_to_categories"))
@@ -60,7 +61,7 @@ def test_multi_product_flow_with_quantity(qtbot) -> None:
     assert _find(window, "sale_product_2") is not None
     _click(qtbot, _find(window, "sale_product_2"))
     _click(qtbot, _find(window, "agregar_button"))
-    assert _find(window, "purchase_list").text() == (
+    assert _purchase_list_text(window) == (
         f"{_line_text('Pan', 5000, 2)}\n{_line_text('Café', 3000)}"
     )
     assert _find(window, "purchase_total").text() == "Total: $ 13.000"
@@ -76,12 +77,12 @@ def test_volver_keeps_draft_success_clears(qtbot) -> None:
     _click(qtbot, _find(window, "sale_category_todos"))
     _click(qtbot, _find(window, "sale_product_1"))
     _click(qtbot, _find(window, "agregar_button"))
-    assert _find(window, "purchase_list").text() == _line_text("Pan", 5000)
+    assert _purchase_list_text(window) == _line_text("Pan", 5000)
 
     _click(qtbot, _find(window, "back_button"))
     assert window._stack.currentWidget() is window._menu
     _click(qtbot, _find(window, "menu_register_button"))
-    assert _find(window, "purchase_list").text() == _line_text("Pan", 5000)
+    assert _purchase_list_text(window) == _line_text("Pan", 5000)
 
     _select_payment(qtbot, window, 1)
 
@@ -102,7 +103,7 @@ def test_volver_keeps_draft_success_clears(qtbot) -> None:
     QTimer.singleShot(0, accept_flow)
     _click(qtbot, _find(window, "submit_sale_button"))
     qtbot.waitUntil(
-        lambda: len(api.sales) == 1 and _find(window, "purchase_list").text() == "",
+        lambda: len(api.sales) == 1 and _purchase_list_text(window) == "",
         timeout=2000,
     )
     assert api.sales[0]["valor_total"] == 5000

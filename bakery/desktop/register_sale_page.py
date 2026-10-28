@@ -90,29 +90,60 @@ class RegisterSalePage(QWidget):
         panel_layout.setContentsMargins(12, 12, 12, 12)
         panel_layout.setSpacing(8)
 
-        self._purchase_list = QLabel("")
-        self._purchase_list.setObjectName("purchase_list")
-        self._purchase_list.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-        self._purchase_list.setWordWrap(False)
-        self._purchase_list.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
-        style.apply_class(self._purchase_list, "money-text")
+        header = QWidget()
+        header.setObjectName("purchase_table_header")
+        header_row = QHBoxLayout(header)
+        header_row.setContentsMargins(0, 0, 0, 0)
+        header_row.setSpacing(style.PAGE_SPACING)
+        for object_name, caption, stretch in (
+            ("purchase_header_producto", "Producto", 3),
+            ("purchase_header_cantidad", "Cantidad", 1),
+            ("purchase_header_precio", "Precio c/u", 2),
+            ("purchase_header_total", "Total", 2),
+        ):
+            label = QLabel(caption)
+            label.setObjectName(object_name)
+            style.apply_class(label, "money-text")
+            header_row.addWidget(label, stretch=stretch)
+        delete_spacer = QLabel("")
+        delete_spacer.setFixedWidth(48)
+        header_row.addWidget(delete_spacer)
+        panel_layout.addWidget(header)
+
+        self._purchase_rows_host = QWidget()
+        self._purchase_rows_host.setObjectName("purchase_list")
+        self._purchase_rows_layout = QVBoxLayout(self._purchase_rows_host)
+        self._purchase_rows_layout.setContentsMargins(0, 0, 0, 0)
+        self._purchase_rows_layout.setSpacing(4)
+        self._purchase_rows_layout.addStretch(1)
 
         self._purchase_list_scroll = QScrollArea()
         self._purchase_list_scroll.setObjectName("purchase_list_scroll")
-        self._purchase_list_scroll.setWidgetResizable(False)
+        self._purchase_list_scroll.setWidgetResizable(True)
         self._purchase_list_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self._purchase_list_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self._purchase_list_scroll.setFrameShape(QFrame.NoFrame)
-        self._purchase_list_scroll.setWidget(self._purchase_list)
+        self._purchase_list_scroll.setWidget(self._purchase_rows_host)
         panel_layout.addWidget(self._purchase_list_scroll, stretch=1)
 
         panel_layout.addWidget(_make_separator("total_separator"))
 
+        footer = QHBoxLayout()
+        footer.setSpacing(style.PAGE_SPACING)
+        self._purchase_subtotal = QLabel("")
+        self._purchase_subtotal.setObjectName("purchase_subtotal")
+        style.apply_class(self._purchase_subtotal, "money-text")
+        footer.addWidget(self._purchase_subtotal)
+        self._purchase_discount = QLabel("")
+        self._purchase_discount.setObjectName("purchase_discount")
+        style.apply_class(self._purchase_discount, "money-text")
+        footer.addWidget(self._purchase_discount)
         self._purchase_total = QLabel("")
         self._purchase_total.setObjectName("purchase_total")
         self._purchase_total.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         style.apply_class(self._purchase_total, "money-text")
-        panel_layout.addWidget(self._purchase_total)
+        footer.addWidget(self._purchase_total, stretch=1)
+        panel_layout.addLayout(footer)
 
         left_layout.addWidget(purchase_panel, stretch=1)
 
@@ -376,6 +407,14 @@ class RegisterSalePage(QWidget):
         self._refresh_display()
         self._refresh_submit()
 
+    def _on_remove_line(self, index: int) -> None:
+        """X de fila: quita la línea y recalcula; no toca selección ni medio."""
+        if not self._draft.remove_line(index):
+            return
+        self._feedback.setText("")
+        self._refresh_display()
+        self._refresh_submit()
+
     def _quantity_minus(self) -> None:
         current = self._draft.quantity()
         if current <= 1:
@@ -608,21 +647,62 @@ class RegisterSalePage(QWidget):
             self._products_layout.addWidget(button)
 
     def _refresh_display(self) -> None:
-        """Lista de compra + total (tabla/footer Subtotal·Descuento → Etapa 3)."""
+        """Tabla de compra + footer Subtotal / Descuento / Total (§3.4)."""
+        self._clear_layout(self._purchase_rows_layout)
         items = self._draft.purchase.items()
-        self._purchase_list.setText(
-            "\n".join(
-                f"{line.nombre} × {line.cantidad} — {format_cop(line.subtotal)}"
-                for line in items
+        for index, line in enumerate(items):
+            row = QWidget()
+            row.setObjectName(f"purchase_row_{index}")
+            row_layout = QHBoxLayout(row)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+            row_layout.setSpacing(style.PAGE_SPACING)
+
+            producto = QLabel(line.nombre)
+            producto.setObjectName(f"purchase_row_{index}_producto")
+            producto.setWordWrap(True)
+            style.apply_class(producto, "money-text")
+            row_layout.addWidget(producto, stretch=3)
+
+            cantidad = QLabel(str(line.cantidad))
+            cantidad.setObjectName(f"purchase_row_{index}_cantidad")
+            cantidad.setAlignment(Qt.AlignCenter)
+            style.apply_class(cantidad, "money-text")
+            row_layout.addWidget(cantidad, stretch=1)
+
+            precio = QLabel(format_cop(line.precio_aplicado))
+            precio.setObjectName(f"purchase_row_{index}_precio")
+            precio.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            style.apply_class(precio, "money-text")
+            row_layout.addWidget(precio, stretch=2)
+
+            # Columna Total = line.subtotal cobrado (post-promo), no importe lista.
+            total_cell = QLabel(format_cop(line.subtotal))
+            total_cell.setObjectName(f"purchase_row_{index}_total")
+            total_cell.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            style.apply_class(total_cell, "money-text")
+            row_layout.addWidget(total_cell, stretch=2)
+
+            delete = QPushButton("X")
+            delete.setObjectName(f"purchase_row_{index}_delete")
+            delete.setFixedSize(48, 48)
+            delete.setToolTip("Quitar línea")
+            style.apply_class(delete, "payment-method-button")
+            delete.clicked.connect(
+                lambda checked=False, i=index: self._on_remove_line(i)
             )
+            row_layout.addWidget(delete)
+
+            self._purchase_rows_layout.addWidget(row)
+
+        self._purchase_rows_layout.addStretch(1)
+
+        self._purchase_subtotal.setText(
+            f"Subtotal: {format_cop(self._draft.list_subtotal())}"
         )
-        viewport_width = self._purchase_list_scroll.viewport().width()
-        if viewport_width > 0:
-            self._purchase_list.setFixedWidth(viewport_width)
-        self._purchase_list.adjustSize()
-        self._purchase_list.setMinimumHeight(self._purchase_list.sizeHint().height())
-        total = self._draft.total()
-        self._purchase_total.setText(f"Total: {format_cop(total)}")
+        self._purchase_discount.setText(
+            f"Descuento: {format_cop(self._draft.discount())}"
+        )
+        self._purchase_total.setText(f"Total: {format_cop(self._draft.total())}")
 
     def _refresh_submit(self) -> None:
         ready = self._draft.total() > 0 and self._selected_payment_id is not None

@@ -13,6 +13,7 @@ from tests.test_stage4_desktop import (
     _PAN_PROMO_FIELDS,
     _click,
     _find,
+    _purchase_list_text,
     _select_payment,
 )
 
@@ -98,7 +99,7 @@ def test_smoke_menu_products_prefix_pan_pequeno_checkout(qtbot) -> None:
     assert format_cop(2000) in preview
     assert _find(window, "quantity_label").text() == "7"
     _click(qtbot, _find(window, "agregar_button"))
-    assert _find(window, "purchase_list").text() == (
+    assert _purchase_list_text(window) == (
         f"Pan rollo × 7 — {format_cop(2000)}"
     )
 
@@ -121,7 +122,7 @@ def test_smoke_menu_products_prefix_pan_pequeno_checkout(qtbot) -> None:
     QTimer.singleShot(0, accept_flow)
     _click(qtbot, _find(window, "submit_sale_button"))
     qtbot.waitUntil(
-        lambda: len(api.sales) == 1 and _find(window, "purchase_list").text() == "",
+        lambda: len(api.sales) == 1 and _purchase_list_text(window) == "",
         timeout=2000,
     )
 

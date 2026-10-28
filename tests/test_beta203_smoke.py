@@ -8,7 +8,7 @@ from bakery.desktop import style
 from bakery.desktop.main import create_window
 from bakery.desktop.ui import ConfirmSaleDialog, SaleSavedDialog
 from bakery.persistence.schema import ESTADO_ACTIVO
-from tests.test_stage4_desktop import FakeApiClient, _click, _find, _select_payment
+from tests.test_stage4_desktop import FakeApiClient, _click, _find, _select_payment, _purchase_list_text
 
 
 def test_smoke_vista_a_b_volver_todos_checkout(qtbot) -> None:
@@ -64,7 +64,7 @@ def test_smoke_vista_a_b_volver_todos_checkout(qtbot) -> None:
     _click(qtbot, _find(window, "sale_product_1"))
     assert _find(window, "selected_product_label").text() == "Pan"
     _click(qtbot, _find(window, "agregar_button"))
-    assert "Pan" in _find(window, "purchase_list").text()
+    assert "Pan" in _purchase_list_text(window)
 
     _click(qtbot, back)
     QApplication.processEvents()
@@ -99,7 +99,7 @@ def test_smoke_vista_a_b_volver_todos_checkout(qtbot) -> None:
     QTimer.singleShot(0, accept_flow)
     _click(qtbot, _find(window, "submit_sale_button"))
     qtbot.waitUntil(
-        lambda: len(api.sales) == 1 and _find(window, "purchase_list").text() == "",
+        lambda: len(api.sales) == 1 and _purchase_list_text(window) == "",
         timeout=2000,
     )
     assert api.sales[0]["valor_total"] == 8000

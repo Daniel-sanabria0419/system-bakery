@@ -223,6 +223,29 @@ def _line_text(nombre: str, precio: int, cantidad: int = 1) -> str:
     return f"{nombre} × {cantidad} — {format_cop(precio * cantidad)}"
 
 
+def _purchase_list_text(window) -> str:
+    """Resumen multilínea de la tabla (compat con el viejo QLabel)."""
+    lines: list = []
+    index = 0
+    while True:
+        nombre = window.findChild(QObject, f"purchase_row_{index}_producto")
+        if nombre is None:
+            break
+        cantidad = window.findChild(QObject, f"purchase_row_{index}_cantidad")
+        total = window.findChild(QObject, f"purchase_row_{index}_total")
+        assert cantidad is not None and total is not None
+        lines.append(f"{nombre.text()} × {cantidad.text()} — {total.text()}")
+        index += 1
+    return "\n".join(lines)
+
+
+def _purchase_row_count(window) -> int:
+    count = 0
+    while window.findChild(QObject, f"purchase_row_{count}") is not None:
+        count += 1
+    return count
+
+
 def _select_draft_product(
     window, *, precio: int, nombre: str = "Producto", id_producto: int = None
 ) -> None:
@@ -407,7 +430,7 @@ def test_register_layout_purchase_scroll_and_many_lines(qtbot) -> None:
 
     for amount in ("1000", "2000", "3000", "4000", "5000", "6000", "7000", "8000"):
         _enter_amount_and_agregar(qtbot, window, amount)
-    assert _find(window, "purchase_list").text().count("\n") == 7
+    assert _purchase_list_text(window).count("\n") == 7
     assert _find(window, "purchase_total").text() == "Total: $ 36.000"
 
 
@@ -421,7 +444,7 @@ def test_agregar_without_http_local_draft(qtbot) -> None:
 
     _select_draft_product(window, precio=500, nombre="Producto")
     _click(qtbot, _find(window, "agregar_button"))
-    assert _find(window, "purchase_list").text() == _line_text("Producto", 500)
+    assert _purchase_list_text(window) == _line_text("Producto", 500)
     assert _find(window, "purchase_total").text() == "Total: $ 500"
     assert api.request_count == after_load
 
@@ -444,7 +467,7 @@ def test_back_button_returns_to_menu_without_pending_purchase(qtbot) -> None:
 
     _click(qtbot, back)
     assert window.centralWidget().currentWidget() is window._menu
-    assert _find(window, "purchase_list").text() == ""
+    assert _purchase_list_text(window) == ""
 
 
 def test_back_preserves_pending_purchase_and_payment(qtbot) -> None:
@@ -465,7 +488,7 @@ def test_back_preserves_pending_purchase_and_payment(qtbot) -> None:
     assert window.centralWidget().currentWidget() is window._register
     assert api.request_count == requests_before_reenter + 3
 
-    assert _find(window, "purchase_list").text() == _line_text("Producto", 5000)
+    assert _purchase_list_text(window) == _line_text("Producto", 5000)
     assert _find(window, "purchase_total").text() == "Total: $ 5.000"
     assert _find(window, "payment_button").text() == "Medio de pago: Efectivo"
     assert _find(window, "submit_sale_button").isEnabled()
@@ -483,7 +506,7 @@ def test_agregar_does_not_call_api(qtbot) -> None:
     _enter_amount_and_agregar(qtbot, window, "2000")
 
     assert api.request_count == after_load
-    assert _find(window, "purchase_list").text() == (
+    assert _purchase_list_text(window) == (
         f"{_line_text('Producto', 5000)}\n{_line_text('Producto', 2000)}"
     )
     assert _find(window, "purchase_total").text() == "Total: $ 7.000"
@@ -505,7 +528,7 @@ def test_borrar_todo_clears_cart_keeps_selection(qtbot) -> None:
 
     _click(qtbot, _find(window, "borrar_todo_button"))
 
-    assert _find(window, "purchase_list").text() == ""
+    assert _purchase_list_text(window) == ""
     assert _find(window, "purchase_total").text() == "Total: $ 0"
     assert _find(window, "selected_product_label").text() == "Pan"
     assert _find(window, "quantity_label").text() == "1"
@@ -635,7 +658,7 @@ def test_cancel_confirmation_does_not_save(qtbot) -> None:
     _click(qtbot, _find(window, "submit_sale_button"))
     qtbot.waitUntil(
         lambda: api.sales == []
-        and _find(window, "purchase_list").text() == _line_text("Producto", 5000)
+        and _purchase_list_text(window) == _line_text("Producto", 5000)
         and _find(window, "purchase_total").text() == "Total: $ 5.000"
     )
     assert api.sales == []
@@ -707,12 +730,12 @@ def test_confirm_sale_posts_and_resets_form(qtbot) -> None:
     QTimer.singleShot(0, accept_confirm_then_saved)
     _click(qtbot, _find(window, "submit_sale_button"))
     qtbot.waitUntil(
-        lambda: len(api.sales) == 1 and _find(window, "purchase_list").text() == ""
+        lambda: len(api.sales) == 1 and _purchase_list_text(window) == ""
     )
 
     assert api.sales[0]["valor_total"] == 25000
     assert api.sales[0]["id_medio_pago"] == 1
-    assert _find(window, "purchase_list").text() == ""
+    assert _purchase_list_text(window) == ""
     assert _find(window, "purchase_total").text() == "Total: $ 0"
     assert _find(window, "payment_button").text() == "Seleccionar medio de pago"
     assert not _find(window, "submit_sale_button").isEnabled()
@@ -738,7 +761,7 @@ def test_confirm_sale_posts_accumulated_total(qtbot) -> None:
     QTimer.singleShot(0, lambda: _accept_confirm_then_saved(assert_confirm))
     _click(qtbot, _find(window, "submit_sale_button"))
     qtbot.waitUntil(
-        lambda: len(api.sales) == 1 and _find(window, "purchase_list").text() == ""
+        lambda: len(api.sales) == 1 and _purchase_list_text(window) == ""
     )
     assert api.sales[0]["valor_total"] == 8000
 
@@ -776,7 +799,7 @@ def test_api_error_does_not_show_success_popup(qtbot) -> None:
     _click(qtbot, _find(window, "submit_sale_button"))
     qtbot.waitUntil(
         lambda: api.request_count >= 2
-        and _find(window, "purchase_list").text() == _line_text("Producto", 5000)
+        and _purchase_list_text(window) == _line_text("Producto", 5000)
     )
 
     assert api.sales == []
@@ -892,7 +915,7 @@ def test_happy_path_persists_sale_through_api(qtbot, tmp_path) -> None:
         QTimer.singleShot(0, _accept_confirm_then_saved)
         _click(qtbot, _find(window, "submit_sale_button"))
         qtbot.waitUntil(
-            lambda: sale_count() == 1 and _find(window, "purchase_list").text() == "",
+            lambda: sale_count() == 1 and _purchase_list_text(window) == "",
             timeout=3000,
         )
 

@@ -14,7 +14,7 @@ from bakery.persistence.schema import (
     PROMOCION_PAN_PEQUENO_CONFIG,
     TIPO_PROMOCION_CANTIDAD_POR_MONTO,
 )
-from tests.test_stage4_desktop import FakeApiClient, _click, _find
+from tests.test_stage4_desktop import FakeApiClient, _click, _find, _purchase_list_text
 
 
 def _promo_fields() -> dict:
@@ -116,7 +116,7 @@ def test_desktop_flag_on_4_plus_3_list_and_total_2000(qtbot, monkeypatch) -> Non
     )
     _click(qtbot, _find(window, "agregar_button"))
 
-    list_text = _find(window, "purchase_list").text()
+    list_text = _purchase_list_text(window)
     assert "Pan A × 4" in list_text
     assert "Pan B × 3" in list_text
     subtotals = _parse_line_subtotals(list_text)
@@ -141,7 +141,7 @@ def test_desktop_flag_on_4_plus_4_total_2400(qtbot, monkeypatch) -> None:
     _set_quantity(qtbot, window, 4)
     _click(qtbot, _find(window, "agregar_button"))
 
-    subtotals = _parse_line_subtotals(_find(window, "purchase_list").text())
+    subtotals = _parse_line_subtotals(_purchase_list_text(window))
     assert sum(subtotals) == 2400
     assert _find(window, "purchase_total").text() == f"Total: {format_cop(2400)}"
 
@@ -165,7 +165,7 @@ def test_desktop_flag_off_4_plus_3_plain_2100(qtbot, monkeypatch) -> None:
 
     # Flag off: precio × cantidad (sin agrupación ni path por categoría)
     assert _find(window, "purchase_total").text() == f"Total: {format_cop(2100)}"
-    subtotals = _parse_line_subtotals(_find(window, "purchase_list").text())
+    subtotals = _parse_line_subtotals(_purchase_list_text(window))
     assert subtotals == [1200, 900]
 
 

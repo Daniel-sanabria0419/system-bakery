@@ -6,7 +6,7 @@ from PySide6.QtCore import QObject
 from bakery.app.money import format_cop
 from bakery.desktop.main import create_window
 from bakery.persistence.schema import NOMBRE_CATEGORIA_PAN_PEQUENO
-from tests.test_stage4_desktop import FakeApiClient, _click, _find, _line_text
+from tests.test_stage4_desktop import FakeApiClient, _click, _find, _line_text, _purchase_list_text
 
 
 def test_pan_pequeno_qty_only_with_plus(qtbot) -> None:
@@ -39,7 +39,7 @@ def test_pan_pequeno_qty_only_with_plus(qtbot) -> None:
     )
 
     _click(qtbot, _find(window, "agregar_button"))
-    assert _find(window, "purchase_list").text() == (
+    assert _purchase_list_text(window) == (
         f"Pan rollo × 7 — {format_cop(2000)}"
     )
     assert _find(window, "purchase_total").text() == f"Total: {format_cop(2000)}"
@@ -107,7 +107,7 @@ def test_other_category_qty_only_no_promo(qtbot) -> None:
     assert _find(window, "sale_value_preview").text() == ""
 
     _click(qtbot, _find(window, "agregar_button"))
-    assert _find(window, "purchase_list").text() == _line_text("Torta", 20000, 3)
+    assert _purchase_list_text(window) == _line_text("Torta", 20000, 3)
     assert _find(window, "purchase_total").text() == f"Total: {format_cop(60000)}"
 
 
@@ -141,7 +141,7 @@ def test_pan_pequeno_qty_uses_promo_formula(
     assert preview == f"{format_cop(expected_subtotal)} = {quantity} panes"
 
     _click(qtbot, _find(window, "agregar_button"))
-    assert _find(window, "purchase_list").text() == (
+    assert _purchase_list_text(window) == (
         f"Pan rollo × {quantity} — {format_cop(expected_subtotal)}"
     )
     assert _find(window, "purchase_total").text() == (
@@ -158,7 +158,7 @@ def test_reject_agregar_without_product_still_works(qtbot) -> None:
 
     _click(qtbot, _find(window, "agregar_button"))
     assert "Seleccione un producto" in _find(window, "sale_feedback").text()
-    assert _find(window, "purchase_list").text() == ""
+    assert _purchase_list_text(window) == ""
 
 
 def test_catalog_shows_full_grid_without_price_prefix(qtbot) -> None:

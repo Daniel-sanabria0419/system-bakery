@@ -261,7 +261,7 @@ class SaleDraft:
         """Agrega línea del producto seleccionado. Rechaza sin producto.
 
         Cantidad solo vía ``quantity()`` (−/+). Tras agregar, el carrito se
-        recalcula con el motor híbrido 2.0.5.
+        recalcula agrupando por ``promocion_id``.
         """
         product = self._selected_product
         if product is None:

@@ -16,7 +16,7 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Beta 2.0.2 | **Terminada** 2026-10-27 (OK final Daniel) | Layout cobro, prefijo de precio, listado Productos blanco |
 | Beta 2.0.3 | **Terminada** 2026-10-27 (OK final Daniel) | Navegación catálogo Vista A/B; chips más grandes / tipografía editable |
 | Beta 2.0.4 | **Terminada** 2026-10-27 (OK final Daniel) | Migrar Pan pequeño a `promociones` + FK; cobro por FK/grupo |
-| Beta 2.0.5 | **En curso** | Promo greedy: `(qty//G)*M + (qty%G)*P` |
+| Beta 2.0.5 | **En curso** | Cobro `cantidad_por_monto`: menor múltiplo de 1000 con `ceil(monto/precio_base) >= qty` |
 
 ---
 
@@ -24,14 +24,14 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 
 ## Objetivo
 
-Ajustar el cobro de `cantidad_por_monto` para que un SKU con múltiplo exacto de `grupo_cantidad` reciba promo aunque el total del carrito del mismo `promocion_id` no sea múltiplo; conservar el combo cruzado (4+3 → 2000) vía pool de no-exactos.
+Cobrar `cantidad_por_monto` con la inversa de la tabla valor→cantidad: tras agrupar por `promocion_id`, el monto es el menor múltiplo de 1000 tal que `ceil(monto / precio_base) >= cantidad` del grupo.
 
 Detalle: `docs/beta-2.0.5/stages.md`. Diseño: Context `docs/beta-2.0.5-promo-por-producto-y-grupo.md`.
 
 ## Comportamiento
 
-- Cobro greedy: `(qty // 7) * 2000 + (qty % 7) * 300` (17→4900, 24→6900, 27→7800, 34→9800).
-- Carrito: suma qty del mismo `promocion_id` (4+3→2000; 7+5→3500).
+- Cobro: menor múltiplo de 1000 con `ceil(monto / precio_base) >= cantidad` del grupo (4→1000, 7→2000, 10→3000, 14→4000, 17→5000, 20→6000, 24→7000, 27→8000, 30→9000, 34→10000).
+- Carrito: suma qty del mismo `promocion_id` y después esa fórmula (4+3→2000; 7+5→4000).
 - JSON slim `precio_base`+`modo`; ceil valor→qty sin cambio.
 
 ## Fuera del alcance de Beta 2.0.5

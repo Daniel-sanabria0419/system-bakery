@@ -16,7 +16,7 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Beta 2.0.2 | **Terminada** 2026-10-27 (OK final Daniel) | Layout cobro, prefijo de precio, listado Productos blanco |
 | Beta 2.0.3 | **Terminada** 2026-10-27 (OK final Daniel) | Navegación catálogo Vista A/B; chips más grandes / tipografía editable |
 | Beta 2.0.4 | **Terminada** 2026-10-27 (OK final Daniel) | Migrar Pan pequeño a `promociones` + FK; cobro por FK/grupo |
-| Beta 2.0.5 | **En curso** | Promo híbrida: exacto por SKU + pool grupo `todo_o_nada` |
+| Beta 2.0.5 | **En curso** | Promo greedy: `(qty//G)*M + (qty%G)*P` |
 
 ---
 
@@ -30,9 +30,9 @@ Detalle: `docs/beta-2.0.5/stages.md`. Diseño: Context `docs/beta-2.0.5-promo-po
 
 ## Comportamiento
 
-- Capa 1: por `id_producto`, solo múltiplos **exactos** (7, 14, …); no greedy (8 → 2400).
-- Capa 2: pool de qty no exactas del mismo promo + `todo_o_nada` (7+5 → 3500; 10+4 → 4000).
-- Pad/preview: igual que Beta 2.0.4.
+- Cobro greedy: `(qty // 7) * 2000 + (qty % 7) * 300` (17→4900, 24→6900, 27→7800, 34→9800).
+- Carrito: suma qty del mismo `promocion_id` (4+3→2000; 7+5→3500).
+- JSON slim `precio_base`+`modo`; ceil valor→qty sin cambio.
 
 ## Fuera del alcance de Beta 2.0.5
 

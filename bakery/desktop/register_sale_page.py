@@ -592,7 +592,7 @@ class RegisterSalePage(QWidget):
         )
 
     def _refresh_mode_ui(self) -> None:
-        """Preview Pan pequeño (valor→cantidad)."""
+        """Preview Pan pequeño (valor→cantidad); el monto tipado no se recalcula."""
         if not self._draft.selected_is_pan_pequeno():
             self._value_preview_label.setText("")
             return
@@ -603,16 +603,11 @@ class RegisterSalePage(QWidget):
             self._value_preview_label.setText("")
             return
 
-        amount = self._draft.entry.current_amount()
-        if amount is not None and amount > 0 and amount != subtotal:
-            self._value_preview_label.setText(
-                f"{format_cop(amount)} → {format_cop(subtotal)} = {quantity} panes "
-                f"(redondeo)"
-            )
-        else:
-            self._value_preview_label.setText(
-                f"{format_cop(subtotal)} = {quantity} panes"
-            )
+        # Mientras hay valor tipado, current_subtotal ya es ese valor: no mostrar
+        # flecha hacia qty*300 / todo_o_nada (p. ej. 5000→5100).
+        self._value_preview_label.setText(
+            f"{format_cop(subtotal)} = {quantity} panes"
+        )
 
     def _clear_layout(self, layout: QLayout) -> None:
         while layout.count():

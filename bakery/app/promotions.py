@@ -80,19 +80,21 @@ def amount_for_quantity(cantidad: int, config: Mapping) -> int:
 
 
 def quantity_from_value(valor: int, config: Mapping) -> Tuple[int, int]:
-    """Menor cantidad cuyo subtotal (misma fórmula) es ≥ valor (modo ceil).
+    """Pad valor→cantidad: ``ceil(valor / precio_base)``.
 
-    Minimiza la **cantidad** (no el subtotal). Ej.: 10000 → 34 panes a 10200,
-    no 35 panes a 10000 aunque el subtotal sea menor.
+    No busca la menor qty con ``amount_for_quantity(q) ≥ valor``: eso mezcla
+    la política ``todo_o_nada`` del cobro con el redondeo del pad (p. ej.
+    tipar 10000 podía ir a 35 panes por packs exactos, o a 34@10200).
+
+    El pad debe conservar el dinero tipado en pantalla. El segundo valor del
+    tuple es solo referencia ``todo_o_nada`` para esa qty (puede diferir del
+    tipado; p. ej. 34 → 10200). Al Agregar, el carrito puede seguir agrupando.
     """
     valor_ok = _require_positive_int(valor, "El valor debe ser un entero mayor que 0.")
     cfg = parse_cantidad_por_monto_config(config)
-    cantidad = 1
-    while True:
-        subtotal = amount_for_quantity(cantidad, cfg)
-        if subtotal >= valor_ok:
-            return cantidad, subtotal
-        cantidad += 1
+    precio_base = cfg["precio_base"]
+    cantidad = (valor_ok + precio_base - 1) // precio_base
+    return cantidad, amount_for_quantity(cantidad, cfg)
 
 
 def amount_for_cart_group(lines: Sequence[Mapping], config: Mapping) -> int:

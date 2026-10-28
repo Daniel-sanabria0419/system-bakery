@@ -1,5 +1,6 @@
 """UI cobro — modo valor Pan pequeño, prefijo sin selección, cantidad otras."""
 
+import pytest
 from PySide6.QtCore import QObject
 
 from bakery.app.money import format_cop
@@ -31,18 +32,20 @@ def test_pan_pequeno_value_1900_previews_ceil_before_add(qtbot) -> None:
     for digit in "1900":
         _click(qtbot, _find(window, f"digit_{digit}"))
 
+    # Pad conserva tipado; qty = ceil(1900/300)=7. Sin flecha 1900→2000.
+    assert _find(window, "sale_display").text() == format_cop(1900)
     preview = _find(window, "sale_value_preview").text()
-    assert format_cop(1900) in preview
-    assert format_cop(2000) in preview
-    assert "7 panes" in preview
-    assert "redondeo" in preview
+    assert preview == f"{format_cop(1900)} = 7 panes"
+    assert "redondeo" not in preview
+    assert format_cop(2000) not in preview
     assert _find(window, "quantity_label").text() == "7"
     assert _find(window, "quantity_value_label").text() == (
-        f"Subtotal: {format_cop(2000)}"
+        f"Subtotal: {format_cop(1900)}"
     )
     assert _find(window, "purchase_list").text() == ""
 
     _click(qtbot, _find(window, "agregar_button"))
+    # Agregar / carrito puede seguir con todo_o_nada (7 → 2000).
     assert _find(window, "purchase_list").text() == (
         f"Pan rollo × 7 — {format_cop(2000)}"
     )
@@ -154,6 +157,39 @@ def test_pad_shows_subtotal_and_pan_pequeno_typed_value(qtbot) -> None:
     _click(qtbot, _find(window, "quantity_plus_button"))
     assert _find(window, "quantity_label").text() == "8"
     assert _find(window, "sale_display").text() == format_cop(2400)
+
+
+@pytest.mark.parametrize(
+    ("digits", "quantity"),
+    [
+        ("5000", "17"),
+        ("8000", "27"),
+        ("10000", "34"),
+    ],
+)
+def test_pad_keeps_typed_money_no_bump(qtbot, digits: str, quantity: str) -> None:
+    """Tipar 5000/8000/10000 no debe pasar a 5100/8100/10200 en el pad."""
+    api = FakeApiClient()
+    window = create_window(api)
+    qtbot.addWidget(window)
+    window.show()
+    _click(qtbot, _find(window, "menu_register_button"))
+    _click(qtbot, _find(window, "sale_category_todos"))
+    _click(qtbot, _find(window, "sale_product_4"))
+
+    for digit in digits:
+        _click(qtbot, _find(window, f"digit_{digit}"))
+
+    typed = int(digits)
+    assert _find(window, "sale_display").text() == format_cop(typed)
+    assert _find(window, "quantity_label").text() == quantity
+    assert _find(window, "quantity_value_label").text() == (
+        f"Subtotal: {format_cop(typed)}"
+    )
+    preview = _find(window, "sale_value_preview").text()
+    assert preview == f"{format_cop(typed)} = {quantity} panes"
+    assert "→" not in preview
+    assert "redondeo" not in preview
 
 
 def test_reject_agregar_without_product_still_works(qtbot) -> None:

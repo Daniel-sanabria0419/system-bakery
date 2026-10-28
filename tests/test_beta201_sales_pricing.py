@@ -103,7 +103,30 @@ def test_draft_apply_value_sets_quantity_for_pan_pequeno() -> None:
     draft.select_product(_pan_pequeno_product())
     assert draft.apply_value(1900) is True
     assert draft.quantity() == 7
+    # Sin dígitos en el pad: preview usa fórmula todo_o_nada.
     assert draft.current_subtotal() == 2000
+
+
+def test_draft_promo_pad_keeps_typed_subtotal_and_ceil_qty() -> None:
+    draft = SaleDraft()
+    draft.select_product(_pan_pequeno_product())
+    for digit in "10000":
+        draft.entry.press_digit(digit)
+    assert draft.apply_value(10000) is True
+    assert draft.quantity() == 34  # ceil(10000/300), no 35
+    assert draft.pad_display_amount() == 10000
+    assert draft.current_subtotal() == 10000  # no 10200 mientras tipa
+    draft.entry.clear_entry()
+    assert draft.current_subtotal() == 10200  # sin tipado → ref. todo_o_nada
+
+    draft.entry.clear_entry()
+    draft.set_quantity(1)
+    for digit in "5000":
+        draft.entry.press_digit(digit)
+    assert draft.apply_value(5000) is True
+    assert draft.quantity() == 17
+    assert draft.pad_display_amount() == 5000
+    assert draft.current_subtotal() == 5000
 
 
 def test_draft_other_category_stays_precio_times_cantidad() -> None:

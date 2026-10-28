@@ -1,4 +1,4 @@
-"""Pruebas del módulo Pan pequeño (cobro greedy packs)."""
+"""Pruebas obligatorias del módulo Pan pequeño (scope Beta 2.0.1 §20)."""
 
 import pytest
 
@@ -31,7 +31,7 @@ def test_is_pan_pequeno_by_name_and_mapping() -> None:
     assert is_pan_pequeno("pan pequeño") is False  # exacto, no case-fold
 
 
-# --- cantidades / packs greedy: (qty//7)*2000 + (qty%7)*300 ---
+# --- §20 cantidades normales ---
 
 
 @pytest.mark.parametrize(
@@ -40,13 +40,16 @@ def test_is_pan_pequeno_by_name_and_mapping() -> None:
         (1, 300),
         (2, 600),
         (6, 1800),
-        (8, 2300),
-        (13, 3800),
-        (15, 4300),
+        (8, 2400),
+        (13, 3900),
+        (15, 4500),
     ],
 )
 def test_subtotal_cantidades_normales(cantidad: int, subtotal: int) -> None:
     assert subtotal_for_quantity(cantidad) == subtotal
+
+
+# --- §20 promociones (solo múltiplos de 7) ---
 
 
 @pytest.mark.parametrize(
@@ -63,15 +66,18 @@ def test_subtotal_promociones(cantidad: int, subtotal: int) -> None:
     assert subtotal_for_quantity(cantidad) == subtotal
 
 
+# --- §20 entrada mediante valor (exacta) ---
+
+
 @pytest.mark.parametrize(
     ("valor", "cantidad", "subtotal_ref"),
     [
         (1800, 6, 1800),
         (2000, 7, 2000),
-        (2400, 8, 2300),  # ceil → 8; cobro greedy 2300
-        (9000, 30, 8600),  # 4*2000 + 2*300
-        # ceil(10000/300)=34; ref greedy(34)=9800
-        (10000, 34, 9800),
+        (2400, 8, 2400),
+        (9000, 30, 9000),
+        # ceil(10000/300)=34; ref todo_o_nada(34)=10200 (pad conserva tipado).
+        (10000, 34, 10200),
     ],
 )
 def test_quantity_from_value_exacta(
@@ -80,15 +86,18 @@ def test_quantity_from_value_exacta(
     assert quantity_from_value(valor) == (cantidad, subtotal_ref)
 
 
+# --- §20 redondeo hacia arriba (ceil valor/precio_base) ---
+
+
 @pytest.mark.parametrize(
     ("valor", "cantidad", "subtotal_ref"),
     [
-        (1900, 7, 2000),
-        (2100, 7, 2000),
+        (1900, 7, 2000),  # ceil(1900/300)=7; ref todo_o_nada=2000
+        (2100, 7, 2000),  # ceil(2100/300)=7 (ya no busca amount≥valor → 8)
         (3950, 14, 4000),
-        (5000, 17, 4900),  # 2*2000 + 3*300
-        (8000, 27, 7800),  # 3*2000 + 6*300
-        (9950, 34, 9800),
+        (5000, 17, 5100),  # ceil(5000/300)=17
+        (8000, 27, 8100),  # ceil(8000/300)=27
+        (9950, 34, 10200),
     ],
 )
 def test_quantity_from_value_redondeo_ceil(
@@ -97,25 +106,27 @@ def test_quantity_from_value_redondeo_ceil(
     assert quantity_from_value(valor) == (cantidad, subtotal_ref)
 
 
+# --- §20 transiciones +/- (cantidad → subtotal) ---
+
+
 @pytest.mark.parametrize(
     ("cantidad", "subtotal"),
     [
         (6, 1800),
         (7, 2000),
-        (8, 2300),
-        (13, 3800),
+        (8, 2400),
+        (13, 3900),
         (14, 4000),
-        (15, 4300),
-        (17, 4900),
-        (20, 5800),
+        (15, 4500),
+        (20, 6000),
         (21, 6000),
-        (22, 6300),
-        (27, 7800),
+        (22, 6600),
+        (27, 8100),
         (28, 8000),
-        (29, 8300),
-        (34, 9800),
+        (29, 8700),
+        (34, 10200),
         (35, 10000),
-        (36, 10300),
+        (36, 10800),
     ],
 )
 def test_subtotal_transiciones_plus_minus(cantidad: int, subtotal: int) -> None:
@@ -145,17 +156,18 @@ def test_quantity_from_value_rejects_invalid() -> None:
 
 
 def test_quantity_from_value_is_ceil_precio_base() -> None:
-    """Qty = ceil(valor/300); el 2.º valor es cobro greedy de esa qty."""
+    """Qty = ceil(valor/300); el 2.º valor es ref. todo_o_nada (puede ser < tipado)."""
     assert quantity_from_value(1900) == (7, 2000)
     assert quantity_from_value(2100) == (7, 2000)
-    assert quantity_from_value(5000) == (17, 4900)
-    assert quantity_from_value(8000) == (27, 7800)
-    assert quantity_from_value(10000) == (34, 9800)
-    assert quantity_from_value(9950) == (34, 9800)
+    assert quantity_from_value(5000) == (17, 5100)
+    assert quantity_from_value(8000) == (27, 8100)
+    # 34 panes, no 35 packs exactos; ref cobro 10200 ≠ tipado 10000.
+    assert quantity_from_value(10000) == (34, 10200)
+    assert quantity_from_value(9950) == (34, 10200)
     for valor, cantidad, _ref in (
         (1900, 7, 2000),
         (2100, 7, 2000),
-        (10000, 34, 9800),
+        (10000, 34, 10200),
     ):
         assert cantidad == (valor + 299) // 300
         assert quantity_from_value(valor)[1] == subtotal_for_quantity(cantidad)

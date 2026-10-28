@@ -28,14 +28,14 @@ NOMBRE_CATEGORIA_PAN_PEQUENO = "Pan pequeño"
 # Semilla Beta 2.0.4 Etapa 2 (cobro sigue por nombre de categoría hasta dual-path).
 NOMBRE_PROMOCION_PAN_PEQUENO = "Pan pequeño 7 por 2000"
 TIPO_PROMOCION_CANTIDAD_POR_MONTO = "cantidad_por_monto"
-# Cobro greedy: (qty // grupo_cantidad) * grupo_monto + (qty % grupo_cantidad) * precio_base.
-# modo=ceil aplica a valor→qty del pad. Sin politica_resto ni ajuste_manual.
+# JSON exacto en DB. Packs 7/2000 y politica viven como defaults del motor.
 PROMOCION_PAN_PEQUENO_CONFIG = {
     "precio_base": 300,
-    "grupo_cantidad": 7,
-    "grupo_monto": 2000,
     "modo": "ceil",
 }
+PROMO_GRUPO_CANTIDAD_DEFAULT = 7
+PROMO_GRUPO_MONTO_DEFAULT = 2000
+PROMO_POLITICA_RESTO_DEFAULT = "todo_o_nada"
 
 _CREATE_MEDIOS_PAGO = """
 CREATE TABLE IF NOT EXISTS medios_pago (
@@ -297,6 +297,32 @@ def migrate_venta_lineas_promocion_snapshot(
         connection.execute(
             "ALTER TABLE venta_lineas ADD COLUMN nombre_promocion TEXT"
         )
+
+
+def migrate_promociones_config_slim(connection: sqlite3.Connection) -> None:
+    """Backfill: ``configuracion`` canónica solo ``precio_base`` + ``modo``."""
+    tables = {
+        row[0]
+        for row in connection.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table'"
+        ).fetchall()
+    }
+    if "promociones" not in tables:
+        return
+    config_json = promocion_pan_pequeno_config_json()
+    connection.execute(
+        """
+        UPDATE promociones
+        SET configuracion = ?, tipo = ?, activo = ?
+        WHERE nombre = ?
+        """,
+        (
+            config_json,
+            TIPO_PROMOCION_CANTIDAD_POR_MONTO,
+            ESTADO_ACTIVO,
+            NOMBRE_PROMOCION_PAN_PEQUENO,
+        ),
+    )
 
 
 def ensure_imagenes_dirs(project_root: Optional[Path] = None) -> None:

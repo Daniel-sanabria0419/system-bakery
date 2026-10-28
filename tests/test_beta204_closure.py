@@ -28,8 +28,8 @@ def test_schema_version_is_3_with_venta_lineas_snapshot(tmp_path: Path) -> None:
     initialize(path)
     connection = connect(path)
     try:
-        assert CURRENT_SCHEMA_VERSION == 3
-        assert get_schema_version(connection) == 3
+        assert CURRENT_SCHEMA_VERSION == 4
+        assert get_schema_version(connection) == 4
         columns = {
             row[1]
             for row in connection.execute(
@@ -211,7 +211,7 @@ def test_migrate_v2_to_v3_adds_snapshot_columns(tmp_path: Path) -> None:
     initialize(path)
     connection = connect(path)
     try:
-        assert get_schema_version(connection) == 3
+        assert get_schema_version(connection) == 4
         columns = {
             row[1]
             for row in connection.execute(
@@ -220,5 +220,11 @@ def test_migrate_v2_to_v3_adds_snapshot_columns(tmp_path: Path) -> None:
         }
         assert "id_promocion" in columns
         assert "nombre_promocion" in columns
+        row = connection.execute(
+            "SELECT configuracion FROM promociones WHERE nombre = ?",
+            ("Pan pequeño 7 por 2000",),
+        ).fetchone()
+        assert row is not None
+        assert row[0] == '{"modo":"ceil","precio_base":300}'
     finally:
         connection.close()

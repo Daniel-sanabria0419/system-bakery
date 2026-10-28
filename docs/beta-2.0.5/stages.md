@@ -1,26 +1,36 @@
 # Etapas de implementación — Beta 2.0.5
 
-**Estado:** cobro greedy packs (reemplaza `todo_o_nada`). Base: `main` post Beta 2.0.4 / 2.0.6 UI.
+**Estado:** en curso (motor híbrido). Base: `main` post Beta 2.0.4 (#39–#45).
 
-## Decisiones vigentes
+Diseño CLOSED: Context `docs/beta-2.0.5-promo-por-producto-y-grupo.md`.
+
+## Decisiones (CLOSED)
 
 | # | Tema | Decisión |
 |---|---|---|
-| A | Cobro | Packs greedy: `(qty // G) * M + (qty % G) * P` (8 → 2300; 17 → 4900) |
-| B | Carrito | Suma qty del mismo `promocion_id` + misma fórmula (4+3 → 2000; 7+5 → 3500) |
-| C | Config | `precio_base`, `grupo_cantidad`, `grupo_monto`, `modo: ceil` — sin `politica_resto` / `ajuste_manual` |
-| D | Pad | `modo: ceil` = valor→qty; cobro greedy de esa qty |
+| A | Capa 1 | Múltiplos **exactos** por `id_producto` (no greedy; 8 → 2400) |
+| B | Unidad | Agregar qty por **`id_producto`** |
+| C | Capa 2 | Pool no-exactos + `todo_o_nada` (4+3 → 2000; 10+4 → 4000) |
+| D | Versión | **Beta 2.0.5** |
+| E | Pad | Preview selección como 2.0.4; total tras Agregar |
 
-## Ejemplos (G=7, M=2000, P=300)
+## Estado de etapas
 
-| Qty / carrito | Monto |
-|---|---|
-| 7 | 2000 |
-| 8 | 2300 |
-| 14 | 4000 |
-| 17 | 4900 |
-| 4+3 | 2000 |
-| 7+5 | 3500 |
+| Etapa | Nombre | Estado | Notas |
+|---|---|---|---|
+| 0 | Diseño CLOSED | Hecha | Context diseño + OK Daniel |
+| 1 | Motor híbrido + tests + docs | En revisión | [#46](https://github.com/Daniel-sanabria0419/system-bakery/pull/46) — `amount_for_cart_group` híbrido; 256 passed |
+
+## Alcance Etapa 1
+
+1. `amount_for_cart_group` / `compute_cart_line_subtotals` híbridos; callers pasan `id_producto`.
+2. Tests: 7+5→3500, 4+3→2000, 8→2400, 10+4→4000, agregación mismo SKU.
+3. Docs: AGENTS / PRD / este `stages.md`.
+4. Sin schema nuevo; pad/preview sin cambio.
+
+## Fuera de alcance
+
+CRUD promos, otros `tipo`, inventario, sync, login, reportes, Beta 2.1+.
 
 ## Pruebas
 

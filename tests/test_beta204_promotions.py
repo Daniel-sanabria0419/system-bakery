@@ -51,9 +51,8 @@ CANONICAL = PROMOCION_PAN_PEQUENO_CONFIG
     [
         (6, 1800),
         (7, 2000),
-        (8, 2300),
+        (8, 2400),
         (14, 4000),
-        (17, 4900),
     ],
 )
 def test_amount_for_quantity_parity_with_pan_pequeno(
@@ -76,9 +75,18 @@ def test_parse_config_rejects_invalid() -> None:
     with pytest.raises(ValueError):
         parse_cantidad_por_monto_config({**CANONICAL, "modo": "floor"})
     with pytest.raises(ValueError):
-        parse_cantidad_por_monto_config({**CANONICAL, "politica_resto": "todo_o_nada"})
+        parse_cantidad_por_monto_config({**CANONICAL, "politica_resto": "ceil"})
     with pytest.raises(ValueError):
         parse_cantidad_por_monto_config({**CANONICAL, "ajuste_manual": {"8000": 28}})
+
+
+def test_parse_slim_json_fills_code_defaults() -> None:
+    cfg = parse_cantidad_por_monto_config({"precio_base": 300, "modo": "ceil"})
+    assert cfg["precio_base"] == 300
+    assert cfg["modo"] == "ceil"
+    assert cfg["grupo_cantidad"] == 7
+    assert cfg["grupo_monto"] == 2000
+    assert cfg["politica_resto"] == "todo_o_nada"
 
 
 def test_amount_for_cart_group_4_plus_3_and_4_plus_4() -> None:
@@ -100,12 +108,12 @@ def test_amount_for_cart_group_4_plus_3_and_4_plus_4() -> None:
             ],
             CANONICAL,
         )
-        == 2300
+        == 2400
     )
 
 
 def test_amount_for_cart_group_7_plus_5_hybrid() -> None:
-    """12 panes greedy: 1 pack + 5×300 → 3500."""
+    """SKU exacto 7 toma promo; el 5 queda a precio base → 3500."""
     assert (
         amount_for_cart_group(
             [
@@ -118,10 +126,10 @@ def test_amount_for_cart_group_7_plus_5_hybrid() -> None:
     )
 
 
-def test_amount_for_cart_group_eight_alone_is_2300() -> None:
+def test_amount_for_cart_group_eight_alone_is_2400() -> None:
     assert amount_for_cart_group(
         [{"id_producto": 1, "cantidad": 8}], CANONICAL
-    ) == 2300
+    ) == 2400
 
 
 def test_allocate_group_subtotals_sum_equals_monto() -> None:
@@ -235,7 +243,7 @@ def test_flag_on_draft_groups_cart_4_plus_3(monkeypatch) -> None:
     assert sum(item.subtotal for item in draft.purchase.items()) == 2000
 
 
-def test_flag_on_draft_4_plus_4_is_2300(monkeypatch) -> None:
+def test_flag_on_draft_4_plus_4_is_2400(monkeypatch) -> None:
     monkeypatch.setattr(promotions_mod, "USE_PROMOCIONES_TABLE", True)
     draft = SaleDraft()
     config_json = json.dumps(CANONICAL)
@@ -254,7 +262,7 @@ def test_flag_on_draft_4_plus_4_is_2300(monkeypatch) -> None:
     draft.select_product({**product, "id_producto": 2, "nombre": "Pan B"})
     draft.set_quantity(4)
     draft.add_to_purchase()
-    assert draft.total() == 2300
+    assert draft.total() == 2400
 
 
 def test_flag_on_quantity_preview_promo(monkeypatch) -> None:
@@ -395,4 +403,5 @@ def test_api_enrich_promo_fields_only_when_flag_on(
         assert pan_products[0]["promocion_tipo"] == TIPO_PROMOCION_CANTIDAD_POR_MONTO
         assert pan_products[0]["promocion_activo"] == ESTADO_ACTIVO
         config = json.loads(pan_products[0]["promocion_configuracion"])
-        assert config["grupo_cantidad"] == 7
+        assert config == {"modo": "ceil", "precio_base": 300}
+        assert "grupo_cantidad" not in config

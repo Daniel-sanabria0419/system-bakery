@@ -16,7 +16,7 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Beta 2.0.2 | **Terminada** 2026-10-27 (OK final Daniel) | Layout cobro, prefijo de precio, listado Productos blanco |
 | Beta 2.0.3 | **Terminada** 2026-10-27 (OK final Daniel) | Navegación catálogo Vista A/B; chips más grandes / tipografía editable |
 | Beta 2.0.4 | **Terminada** 2026-10-27 (OK final Daniel) | Migrar Pan pequeño a `promociones` + FK; cobro por FK/grupo |
-| Beta 2.0.5 | **En curso** | Promo greedy packs: `(qty//G)*M + (qty%G)*P` |
+| Beta 2.0.5 | **En curso** | Promo híbrida: exacto por SKU + pool grupo `todo_o_nada` |
 
 ---
 
@@ -24,15 +24,15 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 
 ## Objetivo
 
-Cobro con packs greedy: cada `grupo_cantidad` aplica `grupo_monto` aunque quede resto a `precio_base` (17 → 4900). Agrupación de carrito por `promocion_id` con la misma fórmula.
+Ajustar el cobro de `cantidad_por_monto` para que un SKU con múltiplo exacto de `grupo_cantidad` reciba promo aunque el total del carrito del mismo `promocion_id` no sea múltiplo; conservar el combo cruzado (4+3 → 2000) vía pool de no-exactos.
 
-Detalle: `docs/beta-2.0.5/stages.md`.
+Detalle: `docs/beta-2.0.5/stages.md`. Diseño: Context `docs/beta-2.0.5-promo-por-producto-y-grupo.md`.
 
 ## Comportamiento
 
-- Fórmula: `(qty // G) * M + (qty % G) * P` (7→2000, 8→2300, 14→4000, 17→4900).
-- Carrito: suma qty del mismo promo (4+3 → 2000; 7+5 → 3500).
-- Config: `precio_base`, `grupo_cantidad`, `grupo_monto`, `modo: ceil`. Sin `politica_resto` / `ajuste_manual`.
+- Capa 1: por `id_producto`, solo múltiplos **exactos** (7, 14, …); no greedy (8 → 2400).
+- Capa 2: pool de qty no exactas del mismo promo + `todo_o_nada` (7+5 → 3500; 10+4 → 4000).
+- Pad/preview: igual que Beta 2.0.4.
 
 ## Fuera del alcance de Beta 2.0.5
 

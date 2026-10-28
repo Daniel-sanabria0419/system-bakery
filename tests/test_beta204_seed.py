@@ -41,13 +41,14 @@ def test_seed_promocion_pan_pequeno_config(tmp_path: Path) -> None:
         assert promo["activo"] == ESTADO_ACTIVO
         config = json.loads(promo["configuracion"])
         assert config == PROMOCION_PAN_PEQUENO_CONFIG
-        assert config["precio_base"] == 300
-        assert config["grupo_cantidad"] == 7
-        assert config["grupo_monto"] == 2000
-        assert config["modo"] == "ceil"
+        assert config == {"modo": "ceil", "precio_base": 300}
+        assert set(config.keys()) == {"precio_base", "modo"}
+        assert "grupo_cantidad" not in config
+        assert "grupo_monto" not in config
         assert "politica_resto" not in config
         assert "ajuste_manual" not in config
         assert promo["configuracion"] == promocion_pan_pequeno_config_json()
+        assert promo["configuracion"] == '{"modo":"ceil","precio_base":300}'
     finally:
         connection.close()
 

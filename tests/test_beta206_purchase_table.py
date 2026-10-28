@@ -140,7 +140,7 @@ def test_footer_8_panes_descuento_0(qtbot, monkeypatch) -> None:
     _click(qtbot, _find(window, "sale_product_10"))
     _set_quantity(qtbot, window, 8)
     _click(qtbot, _find(window, "agregar_button"))
-    _assert_footer(window, subtotal=2400, discount=0, total=2400)
+    _assert_footer(window, subtotal=2400, discount=100, total=2300)
 
 
 def test_footer_4_plus_3_and_delete_recalculates(qtbot, monkeypatch) -> None:

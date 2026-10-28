@@ -62,7 +62,11 @@ def _pan(id_producto: int, nombre: str) -> dict:
             ],
             2000,
         ),
-        ([{"id_producto": 1, "cantidad": 8}], 2400),
+        ([{"id_producto": 1, "cantidad": 8}], 2300),
+        ([{"id_producto": 1, "cantidad": 17}], 4900),
+        ([{"id_producto": 1, "cantidad": 24}], 6900),
+        ([{"id_producto": 1, "cantidad": 27}], 7800),
+        ([{"id_producto": 1, "cantidad": 34}], 9800),
         (
             [
                 {"id_producto": 1, "cantidad": 7},
@@ -75,7 +79,7 @@ def _pan(id_producto: int, nombre: str) -> dict:
                 {"id_producto": 1, "cantidad": 4},
                 {"id_producto": 2, "cantidad": 4},
             ],
-            2400,
+            2300,
         ),
         (
             [
@@ -86,7 +90,7 @@ def _pan(id_producto: int, nombre: str) -> dict:
         ),
     ],
 )
-def test_hybrid_amount_cases(lines, expected) -> None:
+def test_greedy_amount_cases(lines, expected) -> None:
     assert amount_for_cart_group(lines, CANONICAL) == expected
 
 
@@ -127,12 +131,23 @@ def test_draft_4_plus_3_still_2000() -> None:
     assert draft.total() == 2000
 
 
-def test_draft_eight_alone_2400() -> None:
+def test_draft_eight_alone_2300() -> None:
     draft = SaleDraft()
     draft.select_product(_pan(1, "A"))
     draft.set_quantity(8)
     draft.add_to_purchase()
-    assert draft.total() == 2400
+    assert draft.total() == 2300
+    assert draft.discount() == 100
+
+
+def test_draft_17_24_27_34_greedy() -> None:
+    for qty, expected in ((17, 4900), (24, 6900), (27, 7800), (34, 9800)):
+        draft = SaleDraft()
+        draft.select_product(_pan(1, "A"))
+        draft.set_quantity(qty)
+        assert draft.add_to_purchase() is True
+        assert draft.total() == expected
+        assert draft.discount() == qty * 300 - expected
 
 
 def test_preview_selection_unchanged_before_add() -> None:

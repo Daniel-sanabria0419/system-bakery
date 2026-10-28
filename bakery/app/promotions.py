@@ -1,9 +1,9 @@
-"""Motor de promociones tipadas (Beta 2.0.5 híbrido).
+"""Motor de promociones tipadas (packs greedy + carrito por promocion_id).
 
 Cutover 2.0.4: ``USE_PROMOCIONES_TABLE`` default True; cobro por FK.
-Beta 2.0.5: múltiplos exactos por ``id_producto`` + pool ``todo_o_nada``
-del mismo ``promocion_id``. Sin montos por nombre de categoría.
-Desactivar solo con ``BAKERY_USE_PROMOCIONES_TABLE=0`` (precio × cantidad plano).
+JSON de DB slim: ``{"precio_base": N, "modo": "ceil"}``.
+Cobro: ``(qty // G) * M + (qty % G) * P`` (p. ej. 17 → 4900).
+``modo: ceil`` solo valor→qty. Desactivar con ``BAKERY_USE_PROMOCIONES_TABLE=0``.
 """
 
 from __future__ import annotations
@@ -47,8 +47,7 @@ def parse_cantidad_por_monto_config(configuracion: object) -> Dict[str, Any]:
     """Valida config; DB canónica es ``precio_base`` + ``modo``.
 
     Si faltan ``grupo_cantidad`` / ``grupo_monto`` / ``politica_resto``, usa
-    defaults de código (7 / 2000 / todo_o_nada). Rechaza ``ajuste_manual`` y
-    otras claves.
+    defaults de código (7 / 2000 / greedy). Rechaza ``ajuste_manual``.
     """
     if isinstance(configuracion, Mapping):
         raw = dict(configuracion)
@@ -112,27 +111,25 @@ def parse_cantidad_por_monto_config(configuracion: object) -> Dict[str, Any]:
 
 
 def amount_for_quantity(cantidad: int, config: Mapping) -> int:
-    """Monto para una qty con política todo_o_nada (§4.1)."""
+    """Monto greedy: ``(qty // G) * M + (qty % G) * P``.
+
+    Ej.: G=7, M=2000, P=300 → 7=2000, 8=2300, 14=4000, 17=4900,
+    24=6900, 27=7800, 34=9800.
+    """
     cantidad_ok = _require_positive_int(
         cantidad, "La cantidad debe ser un entero mayor que 0."
     )
     cfg = parse_cantidad_por_monto_config(config)
     grupo_cantidad = cfg["grupo_cantidad"]
-    if cantidad_ok % grupo_cantidad == 0:
-        return (cantidad_ok // grupo_cantidad) * cfg["grupo_monto"]
-    return cantidad_ok * cfg["precio_base"]
+    packs = cantidad_ok // grupo_cantidad
+    resto = cantidad_ok % grupo_cantidad
+    return packs * cfg["grupo_monto"] + resto * cfg["precio_base"]
 
 
 def quantity_from_value(valor: int, config: Mapping) -> Tuple[int, int]:
-    """Pad valor→cantidad: ``ceil(valor / precio_base)``.
+    """Pad valor→cantidad: ``ceil(valor / precio_base)`` (sin cambio).
 
-    No busca la menor qty con ``amount_for_quantity(q) ≥ valor``: eso mezcla
-    la política ``todo_o_nada`` del cobro con el redondeo del pad (p. ej.
-    tipar 10000 podía ir a 35 panes por packs exactos, o a 34@10200).
-
-    El pad debe conservar el dinero tipado en pantalla. El segundo valor del
-    tuple es solo referencia ``todo_o_nada`` para esa qty (puede diferir del
-    tipado; p. ej. 34 → 10200). Al Agregar, el carrito puede seguir agrupando.
+    El segundo valor es el cobro greedy de esa qty (puede diferir del tipado).
     """
     valor_ok = _require_positive_int(valor, "El valor debe ser un entero mayor que 0.")
     cfg = parse_cantidad_por_monto_config(config)
@@ -142,18 +139,13 @@ def quantity_from_value(valor: int, config: Mapping) -> Tuple[int, int]:
 
 
 def amount_for_cart_group(lines: Sequence[Mapping], config: Mapping) -> int:
-    """Monto híbrido 2.0.5: exactos por ``id_producto`` + pool ``todo_o_nada``.
+    """Monto del grupo: suma qty (por ``id_producto``) y fórmula greedy.
 
-    Cada línea debe traer ``id_producto`` y ``cantidad``. Se suman cantidades
-    del mismo SKU; si ``qty_sku % G == 0`` → combos; si no, entra al pool del
-    grupo y se aplica la misma política ``todo_o_nada`` al pool.
+    Ej.: 4+3 → 2000; 7+5 → 3500; 8 → 2300; 17 → 4900.
     """
     if not lines:
         raise ValueError("El grupo de carrito no puede estar vacío.")
     cfg = parse_cantidad_por_monto_config(config)
-    grupo_cantidad = cfg["grupo_cantidad"]
-    grupo_monto = cfg["grupo_monto"]
-    precio_base = cfg["precio_base"]
     qty_by_sku: Dict[int, int] = {}
     for line in lines:
         id_producto = line.get("id_producto")
@@ -163,19 +155,8 @@ def amount_for_cart_group(lines: Sequence[Mapping], config: Mapping) -> int:
             line.get("cantidad"), "La cantidad debe ser un entero mayor que 0."
         )
         qty_by_sku[id_producto] = qty_by_sku.get(id_producto, 0) + cantidad
-    monto = 0
-    pool = 0
-    for qty_sku in qty_by_sku.values():
-        if qty_sku % grupo_cantidad == 0:
-            monto += (qty_sku // grupo_cantidad) * grupo_monto
-        else:
-            pool += qty_sku
-    if pool > 0:
-        if pool % grupo_cantidad == 0:
-            monto += (pool // grupo_cantidad) * grupo_monto
-        else:
-            monto += pool * precio_base
-    return monto
+    total_qty = sum(qty_by_sku.values())
+    return amount_for_quantity(total_qty, cfg)
 
 
 def allocate_group_subtotals(
@@ -219,7 +200,7 @@ def compute_cart_line_subtotals(
     *,
     promos_by_id: Mapping[int, Mapping],
 ) -> List[int]:
-    """Subtotales por línea con motor híbrido 2.0.5 por promocion_id activo.
+    """Subtotales por línea: greedy por ``promocion_id`` + reparto B.
 
     Cada línea: ``id_producto``, ``cantidad``, ``precio_aplicado``,
     ``promocion_id`` (opcional). Líneas sin promo válida →

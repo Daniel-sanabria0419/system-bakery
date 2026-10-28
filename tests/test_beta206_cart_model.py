@@ -62,8 +62,8 @@ def test_formula_8_panes_descuento_0() -> None:
     draft = SaleDraft()
     _add(draft, _pan(1), 8)
     assert draft.list_subtotal() == 2400
-    assert draft.total() == 2400
-    assert draft.discount() == 0
+    assert draft.total() == 2300
+    assert draft.discount() == 100
 
 
 def test_formula_4_plus_3_descuento_100() -> None:

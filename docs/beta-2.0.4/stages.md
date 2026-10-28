@@ -20,7 +20,7 @@ Documento de etapas de **Beta 2.0.4** (migración Pan pequeño → tabla `promoc
 | 0 | Alcance documentado (decisiones CLOSED) | Hecha (plan Context) | PRD/`stages` en repo |
 | 1 | Schema (`promociones` + `promocion_id`) | Hecha | [#39](https://github.com/Daniel-sanabria0419/system-bakery/pull/39) |
 | 2 | Seed + backfill | Hecha | [#40](https://github.com/Daniel-sanabria0419/system-bakery/pull/40) |
-| 3 | Dual-path / feature flag | En revisión | Motor `promotions` + flag `USE_PROMOCIONES_TABLE` default False |
+| 3 | Dual-path / feature flag | En revisión | [#41](https://github.com/Daniel-sanabria0419/system-bakery/pull/41); motor `promotions` + flag `USE_PROMOCIONES_TABLE` default False |
 | 4 | Recálculo carrito + UI subtotal/total | Pendiente | **Obligatoria** (pulido UI; motor ya agrupa con flag on) |
 | 5 | Cutover | Pendiente | Retirar path por nombre de categoría |
 | 6 | Tests + regresión | Pendiente | Incl. 4+3 / 4+4 |

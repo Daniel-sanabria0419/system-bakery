@@ -39,6 +39,7 @@ from bakery.persistence.schema import (
 
 @pytest.fixture(autouse=True)
 def _flag_off_by_default(monkeypatch):
+    monkeypatch.delenv("BAKERY_USE_PROMOCIONES_TABLE", raising=False)
     monkeypatch.setattr(promotions_mod, "USE_PROMOCIONES_TABLE", False)
 
 

@@ -7,6 +7,7 @@ sigue en ``pan_pequeno_pricing``. Con True usa FK + fórmula de grupo.
 from __future__ import annotations
 
 import json
+import os
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from bakery.persistence.schema import (
@@ -15,10 +16,14 @@ from bakery.persistence.schema import (
 )
 
 # Flag de cobro. Default False = path legado (Pan pequeño por nombre).
+# Activar en runtime: BAKERY_USE_PROMOCIONES_TABLE=1 (Etapa 4 UI / pruebas).
 USE_PROMOCIONES_TABLE = False
 
 
 def use_promociones_table() -> bool:
+    env = os.environ.get("BAKERY_USE_PROMOCIONES_TABLE")
+    if env is not None and env.strip() != "":
+        return env.strip().lower() in ("1", "true", "yes", "on")
     return bool(USE_PROMOCIONES_TABLE)
 
 

@@ -152,7 +152,7 @@ Preservar Beta 2.0.2. **No** features de Beta 2.1+.
 Alcance implementado:
 
 1. Schema/seed/dual-path/UI/cutover (#39–#43).
-2. `USE_PROMOCIONES_TABLE` default **True**; cobro por FK/grupo (`cantidad_por_monto`, packs greedy).
+2. `USE_PROMOCIONES_TABLE` default **True**; cobro por FK/grupo (`cantidad_por_monto`).
 3. Snapshot `venta_lineas.id_promocion` / `nombre_promocion` (schema v3) (#44).
 4. `pan_pequeno_pricing` = shim; docs: `docs/beta-2.0.4/stages.md`, `regression-notes.md`.
 
@@ -167,12 +167,12 @@ Preservar Beta 2.0.4.
 
 ## Beta 2.0.5
 
-**Cobro greedy de packs** (post diagnóstico 17+): `(qty // G) * M + (qty % G) * P`.
+**Cobro por escala ceil** (inversa de valor→cantidad): menor múltiplo de 1000 con `ceil(monto / precio_base) >= qty`.
 
 Alcance:
 
-1. Fórmula: 7→2000, 8→2300, 14→4000, **17→4900**, 24→6900, 27→7800, 34→9800.
-2. Carrito: suma qty del mismo `promocion_id` + misma fórmula (4+3→2000; 7+5→3500).
+1. Fórmula: 4→1000, 7→2000, 10→3000, 14→4000, **17→5000**, 20→6000, 24→7000, 27→8000, 30→9000, 34→10000.
+2. Carrito: suma qty del mismo `promocion_id` y después esa fórmula (4+3→2000; 7+5→4000).
 3. JSON DB slim: `{"precio_base":300,"modo":"ceil"}`; G/M/política greedy en defaults de código.
 4. `modo: ceil` = valor→qty sin cambio.
 

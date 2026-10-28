@@ -91,11 +91,11 @@ def test_draft_pan_pequeno_promo_and_normal_qty() -> None:
 
     draft.select_product(_pan_pequeno_product(id_producto=2))
     draft.set_quantity(8)
-    assert draft.current_subtotal() == 2300  # preview de la selección sola
+    assert draft.current_subtotal() == 3000  # preview de la selección sola
     assert draft.add_to_purchase() is True
-    # 7+8=15 greedy: 2*2000 + 1*300 = 4300
-    assert draft.total() == 4300
-    assert sum(item.subtotal for item in draft.purchase.items()) == 4300
+    # 7+8=15 → escala ceil 5000
+    assert draft.total() == 5000
+    assert sum(item.subtotal for item in draft.purchase.items()) == 5000
 
 
 def test_draft_pan_pequeno_quantity_only_preview() -> None:
@@ -105,34 +105,34 @@ def test_draft_pan_pequeno_quantity_only_preview() -> None:
     draft.set_quantity(7)
     assert draft.current_subtotal() == 2000
     draft.set_quantity(17)
-    assert draft.current_subtotal() == 4900
+    assert draft.current_subtotal() == 5000
     draft.set_quantity(24)
-    assert draft.current_subtotal() == 6900
+    assert draft.current_subtotal() == 7000
     draft.set_quantity(27)
-    assert draft.current_subtotal() == 7800
+    assert draft.current_subtotal() == 8000
     draft.set_quantity(34)
-    assert draft.current_subtotal() == 9800
+    assert draft.current_subtotal() == 10000
 
 
 def test_draft_agregar_qty_uses_promo_formula() -> None:
-    """Agregar con qty: packs greedy (17→4900)."""
+    """Agregar con qty: escala ceil (17→5000)."""
     draft = SaleDraft()
     draft.select_product(_pan_pequeno_product())
     draft.set_quantity(17)
     assert draft.add_to_purchase() is True
     line = draft.purchase.items()[0]
     assert line.cantidad == 17
-    assert line.subtotal == 4900
-    assert draft.total() == 4900
+    assert line.subtotal == 5000
+    assert draft.total() == 5000
 
     draft.select_product(_pan_pequeno_product(id_producto=2))
     draft.set_quantity(34)
     assert draft.add_to_purchase() is True
     items = draft.purchase.items()
     assert items[1].cantidad == 34
-    # Mismo promo: 17+34=51 → 7*2000 + 2*300 = 14600
-    assert draft.total() == 14600
-    assert sum(item.subtotal for item in items) == 14600
+    # Mismo promo: 17+34=51 → menor múltiplo de 1000 que cubre 51 = 16000
+    assert draft.total() == 16000
+    assert sum(item.subtotal for item in items) == 16000
 
 
 def test_draft_other_category_stays_precio_times_cantidad() -> None:
@@ -174,7 +174,7 @@ def test_draft_current_subtotal_modes() -> None:
     draft.clear_product_selection()
     draft.set_quantity(1)
     draft.select_product(_pan_pequeno_product())
-    assert draft.current_subtotal() == 300
+    assert draft.current_subtotal() == 1000
     draft.set_quantity(7)
     assert draft.current_subtotal() == 2000
 
@@ -250,9 +250,9 @@ def test_register_sale_pan_pequeno_promo_and_normal(tmp_path: Path) -> None:
                 }
             ],
         )
-        assert sale8["valor_total"] == 2300
+        assert sale8["valor_total"] == 3000
         lines8 = list_venta_lineas(connection, sale8["id_venta"])
-        assert lines8[0]["subtotal"] == 2300
+        assert lines8[0]["subtotal"] == 3000
     finally:
         connection.close()
 
@@ -356,7 +356,7 @@ def test_api_pan_pequeno_sale_and_reject_bad_price(tmp_path: Path) -> None:
         assert sale.status_code == 200
         assert sale.json()["valor_total"] == 2000
 
-        # Cobro qty-only: 17 panes → greedy 4900.
+        # Cobro qty-only: 17 panes → escala ceil 5000.
         by_qty = client.post(
             "/ventas",
             json={
@@ -371,4 +371,4 @@ def test_api_pan_pequeno_sale_and_reject_bad_price(tmp_path: Path) -> None:
             },
         )
         assert by_qty.status_code == 200
-        assert by_qty.json()["valor_total"] == 4900
+        assert by_qty.json()["valor_total"] == 5000

@@ -1,9 +1,10 @@
-"""Motor de promociones tipadas (packs greedy + carrito por promocion_id).
+"""Motor de promociones tipadas (cantidad_por_monto + carrito por promocion_id).
 
 Cutover 2.0.4: ``USE_PROMOCIONES_TABLE`` default True; cobro por FK.
 JSON de DB slim: ``{"precio_base": N, "modo": "ceil"}``.
-Cobro: ``(qty // G) * M + (qty % G) * P`` (p. ej. 17 → 4900).
-``modo: ceil`` solo valor→qty. Desactivar con ``BAKERY_USE_PROMOCIONES_TABLE=0``.
+Cobro: menor múltiplo de 1000 con ``ceil(monto / precio_base) >= cantidad``
+(p. ej. 17 → 5000). ``modo: ceil`` también define valor→qty.
+Desactivar con ``BAKERY_USE_PROMOCIONES_TABLE=0``.
 """
 
 from __future__ import annotations
@@ -22,6 +23,10 @@ from bakery.persistence.schema import (
 
 # Flag de cobro. Default True tras cutover (Etapa 5).
 USE_PROMOCIONES_TABLE = True
+
+# Pasos de la tabla valor→cantidad (1000→4, 2000→7, …). El cobro es el menor
+# múltiplo de esta escala con ceil(monto / precio_base) >= cantidad del grupo.
+PROMO_MONTO_ESCALA = 1000
 
 # DB seed: solo precio_base + modo. El motor acepta grupo_*/politica opcionales
 # (p. ej. re-parse del dict normalizado) y rellena defaults si faltan.
@@ -111,25 +116,30 @@ def parse_cantidad_por_monto_config(configuracion: object) -> Dict[str, Any]:
 
 
 def amount_for_quantity(cantidad: int, config: Mapping) -> int:
-    """Monto greedy: ``(qty // G) * M + (qty % G) * P``.
+    """Menor múltiplo de ``PROMO_MONTO_ESCALA`` con ``ceil(monto / precio_base) >= cantidad``.
 
-    Ej.: G=7, M=2000, P=300 → 7=2000, 8=2300, 14=4000, 17=4900,
-    24=6900, 27=7800, 34=9800.
+    Inversa de la tabla valor→cantidad. Con precio_base 300 y escala 1000:
+    4→1000, 7→2000, 10→3000, 14→4000, 17→5000, 20→6000, 24→7000,
+    27→8000, 30→9000, 34→10000. Entre nudos sube al siguiente múltiplo
+    (8→3000, 12→4000).
     """
     cantidad_ok = _require_positive_int(
         cantidad, "La cantidad debe ser un entero mayor que 0."
     )
     cfg = parse_cantidad_por_monto_config(config)
-    grupo_cantidad = cfg["grupo_cantidad"]
-    packs = cantidad_ok // grupo_cantidad
-    resto = cantidad_ok % grupo_cantidad
-    return packs * cfg["grupo_monto"] + resto * cfg["precio_base"]
+    precio_base = cfg["precio_base"]
+    # Menor entero con ceil(m / precio_base) >= cantidad, luego al múltiplo
+    # de la escala (la tabla valor→cantidad va de mil en mil).
+    minimo = precio_base * (cantidad_ok - 1) + 1
+    pasos = (minimo + PROMO_MONTO_ESCALA - 1) // PROMO_MONTO_ESCALA
+    return pasos * PROMO_MONTO_ESCALA
 
 
 def quantity_from_value(valor: int, config: Mapping) -> Tuple[int, int]:
     """Pad valor→cantidad: ``ceil(valor / precio_base)`` (sin cambio).
 
-    El segundo valor es el cobro greedy de esa qty (puede diferir del tipado).
+    El segundo valor es el cobro de esa qty en la escala de miles
+    (puede diferir del valor tipado).
     """
     valor_ok = _require_positive_int(valor, "El valor debe ser un entero mayor que 0.")
     cfg = parse_cantidad_por_monto_config(config)
@@ -139,9 +149,10 @@ def quantity_from_value(valor: int, config: Mapping) -> Tuple[int, int]:
 
 
 def amount_for_cart_group(lines: Sequence[Mapping], config: Mapping) -> int:
-    """Monto del grupo: suma qty (por ``id_producto``) y fórmula greedy.
+    """Monto del grupo: suma la qty y luego ``amount_for_quantity``.
 
-    Ej.: 4+3 → 2000; 7+5 → 3500; 8 → 2300; 17 → 4900.
+    El agrupamiento es anterior a la fórmula.
+    Ej.: 4+3 → 2000; 7+5 → 4000; 8 → 3000; 17 → 5000.
     """
     if not lines:
         raise ValueError("El grupo de carrito no puede estar vacío.")
@@ -200,7 +211,7 @@ def compute_cart_line_subtotals(
     *,
     promos_by_id: Mapping[int, Mapping],
 ) -> List[int]:
-    """Subtotales por línea: greedy por ``promocion_id`` + reparto B.
+    """Subtotales por línea: escala ceil por ``promocion_id`` + reparto B.
 
     Cada línea: ``id_producto``, ``cantidad``, ``precio_aplicado``,
     ``promocion_id`` (opcional). Líneas sin promo válida →

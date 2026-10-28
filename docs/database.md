@@ -75,7 +75,7 @@ Campos:
 | configuracion | JSON en `TEXT` (no JSONB en SQLite); validado en aplicación |
 | activo | 0/1 (soft off) |
 
-Etapa 2 siembra una fila canónica (`Pan pequeño 7 por 2000`, tipo `cantidad_por_monto`, config JSON con `precio_base` 300 / `grupo_cantidad` 7 / `grupo_monto` 2000 / `modo` ceil / `politica_resto` todo_o_nada, `activo=1`). **Etapa 5 cutover:** el cobro lee esta tabla vía `productos.promocion_id` (agrupación de carrito); ya no usa el nombre de categoría para montos.
+Etapa 2 siembra una fila canónica (`Pan pequeño 7 por 2000`, tipo `cantidad_por_monto`, config JSON con `precio_base` 300 / `grupo_cantidad` 7 / `grupo_monto` 2000 / `modo` ceil, `activo=1`; sin `politica_resto` ni `ajuste_manual`). Cobro greedy: `(qty//G)*M + (qty%G)*P`. **Etapa 5 cutover:** el cobro lee esta tabla vía `productos.promocion_id` (agrupación de carrito); ya no usa el nombre de categoría para montos.
 
 **Invariante de ingresos / reportes:** `ventas.valor_total` = `SUM(venta_lineas.subtotal)`. No usar `SUM(precio_aplicado × cantidad)` (inflaría combos).
 
@@ -110,7 +110,7 @@ Campos:
 | nombre_producto | Snapshot del nombre al momento de la venta |
 | precio_aplicado | Snapshot del precio aplicado (entero > 0) |
 | cantidad | Cantidad vendida (entero > 0) |
-| subtotal | Subtotal de la línea (entero > 0). Puede ser ≠ `precio_aplicado × cantidad` con promo de grupo (`todo_o_nada` / combo). |
+| subtotal | Subtotal de la línea (entero > 0). Puede ser ≠ `precio_aplicado × cantidad` con promo de grupo (packs greedy / combo). |
 | id_promocion | Snapshot nullable de la promo aplicada (Beta 2.0.4) |
 | nombre_promocion | Snapshot texto del nombre de promo (Beta 2.0.4); estable si la promo se renombra o desactiva después |
 

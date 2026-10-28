@@ -225,7 +225,6 @@ def test_promocion_repo_and_nullable_fk(tmp_path: Path) -> None:
                 "grupo_cantidad": 7,
                 "grupo_monto": 2000,
                 "modo": "ceil",
-                "politica_resto": "todo_o_nada",
             },
             separators=(",", ":"),
         )

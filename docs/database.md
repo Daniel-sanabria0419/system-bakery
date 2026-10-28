@@ -77,7 +77,7 @@ Campos:
 
 Etapa 2 siembra una fila canónica (`Pan pequeño 7 por 2000`, tipo `cantidad_por_monto`, config JSON exacto `{"precio_base":300,"modo":"ceil"}`, `activo=1`). Packs 7/2000 y `todo_o_nada` son defaults del motor en código. **Etapa 5 cutover:** el cobro lee esta tabla vía `productos.promocion_id` (agrupación de carrito); ya no usa el nombre de categoría para montos. Schema v4 backfill reescribe configs antiguas al JSON slim.
 
-**Invariante de ingresos / reportes:** `ventas.valor_total` = `SUM(venta_lineas.subtotal)`. No usar `SUM(precio_aplicado × cantidad)` (inflaría combos).
+**Invariante de ingresos / reportes:** en ventas nuevas, `ventas.valor_total` = `SUM(venta_lineas.total)`. `subtotal` es `cantidad × precio_aplicado` (antes de promo) y `total` es el monto cobrado. Filas anteriores a la columna: `total` se copió del `subtotal` ya guardado, sin recalcularlo.
 
 ## Tabla: productos (Beta 2.0 / 2.0.1 / 2.0.4)
 
@@ -110,13 +110,14 @@ Campos:
 | nombre_producto | Snapshot del nombre al momento de la venta |
 | precio_aplicado | Snapshot del precio aplicado (entero > 0) |
 | cantidad | Cantidad vendida (entero > 0) |
-| subtotal | Subtotal de la línea (entero > 0). Puede ser ≠ `precio_aplicado × cantidad` con promo de grupo (`todo_o_nada` / combo). |
+| subtotal | En ventas nuevas: `cantidad × precio_aplicado` (entero > 0), antes de promo. En filas viejas: el valor ya guardado, sin recalcular. |
+| total | Monto cobrado de la línea (entero > 0). En filas viejas es una copia del `subtotal` de entonces. En ventas nuevas lo calcula el backend (promo por línea o `cantidad × precio_aplicado`). |
 | id_promocion | Snapshot nullable de la promo aplicada (Beta 2.0.4) |
 | nombre_promocion | Snapshot texto del nombre de promo (Beta 2.0.4); estable si la promo se renombra o desactiva después |
 
 Las ventas antiguas (solo `valor_total`, sin detalle de productos) **permanecen sin filas** en `venta_lineas`. No se inventan líneas sintéticas.
 
-**Invariante de totales:** el ingreso de una venta es `ventas.valor_total` (= `SUM(venta_lineas.subtotal)` en ventas nuevas). No usar `SUM(precio_aplicado × cantidad)` como métrica de ingresos (inflaría Pan pequeño en promo).
+**Invariante de totales:** el ingreso de una venta es `ventas.valor_total` (= `SUM(venta_lineas.total)` en ventas nuevas). `subtotal` de una venta nueva es el importe de lista (`cantidad × precio_aplicado`); no usarlo como ingreso cuando hay promo.
 
 ## Valores de caja y tendero
 
@@ -136,7 +137,7 @@ tendero = 1
 
 ## Valor monetario
 
-`valor_total`, `precio`, `precio_aplicado` y `subtotal` se almacenan como número entero.
+`valor_total`, `precio`, `precio_aplicado`, `subtotal` y `total` se almacenan como número entero.
 
 No almacenar:
 
@@ -159,7 +160,7 @@ Una venta debe:
 - tener caja = 1;
 - tener tendero = 1.
 
-Una venta **nueva** (Beta 2) debe además tener ≥ 1 fila en `venta_lineas` cuya suma de subtotales coincida con `valor_total`.
+Una venta **nueva** (Beta 2) debe además tener ≥ 1 fila en `venta_lineas` cuya suma de `total` coincida con `valor_total`. En esas filas, `subtotal` = `cantidad × precio_aplicado`. El cliente no envía `subtotal` ni `total`.
 
 Un producto debe:
 
@@ -173,7 +174,7 @@ Una línea de venta (cuando exista) debe:
 
 - referenciar una venta y un producto válidos;
 - guardar snapshot de nombre y precio aplicado;
-- tener cantidad > 0 y subtotal > 0.
+- tener cantidad > 0, subtotal > 0 y total > 0.
 
 ## Integridad
 
@@ -184,7 +185,7 @@ La base de datos debe impedir, cuando sea apropiado:
 - referencias inexistentes a medios de pago;
 - productos con precio ≤ 0;
 - referencias inexistentes a categorías;
-- líneas con cantidad ≤ 0, subtotal ≤ 0 o precio_aplicado ≤ 0;
+- líneas con cantidad ≤ 0, subtotal ≤ 0, total ≤ 0 o precio_aplicado ≤ 0;
 - referencias inexistentes a ventas o productos en `venta_lineas`.
 
 ## Versión de esquema (`schema_version`)
@@ -205,13 +206,15 @@ Versión vigente:
 | 1 | Baseline Beta 2.0.1: tablas de catálogo/líneas, `productos.ruta_imagen` si faltaba |
 | 2 | Beta 2.0.4 Etapa 1: tabla `promociones`; `productos.promocion_id` nullable FK |
 | 3 | Beta 2.0.4 cierre: `venta_lineas.id_promocion` + `nombre_promocion` |
+| 4 | Config de promo canónica: JSON solo `precio_base` + `modo` |
+| 5 | `venta_lineas.total` NOT NULL CHECK (> 0). Filas existentes: `total = subtotal`, sin recalcular `subtotal` |
 
 ## Migración
 
 Al llamar `initialize`, se ejecuta:
 
 1. `CREATE TABLE IF NOT EXISTS` para todas las tablas de negocio (incl. `promociones` y `schema_version`);
-2. migraciones ordenadas hasta `CURRENT_SCHEMA_VERSION` (hoy: v3 = snapshot promo en `venta_lineas`);
+2. migraciones ordenadas hasta `CURRENT_SCHEMA_VERSION` (hoy: v5 = `venta_lineas.total`);
 3. semilla de medios (si la tabla está vacía);
 4. semilla de categorías Beta 2.0 (si la tabla está vacía);
 5. ensure de «Pan pequeño» por nombre;

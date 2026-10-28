@@ -200,6 +200,23 @@ def test_subtotal_and_total_are_computed_not_client_editable(tmp_path: Path) -> 
         assert bad.status_code == 400
         assert "subtotal" in bad.json()["detail"]
 
+        bad_total = client.post(
+            "/ventas",
+            json={
+                "id_medio_pago": 1,
+                "lineas": [
+                    {
+                        "id_producto": product["id_producto"],
+                        "cantidad": 2,
+                        "precio_aplicado": 5000,
+                        "total": 1,
+                    }
+                ],
+            },
+        )
+        assert bad_total.status_code == 400
+        assert "total" in bad_total.json()["detail"]
+
         ok = client.post(
             "/ventas",
             json={

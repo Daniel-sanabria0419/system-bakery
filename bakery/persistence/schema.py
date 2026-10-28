@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS venta_lineas (
     precio_aplicado INTEGER NOT NULL CHECK (precio_aplicado > 0),
     cantidad INTEGER NOT NULL CHECK (cantidad > 0),
     subtotal INTEGER NOT NULL CHECK (subtotal > 0),
+    total INTEGER NOT NULL CHECK (total > 0),
     id_promocion INTEGER REFERENCES promociones(id),
     nombre_promocion TEXT
 )
@@ -271,6 +272,55 @@ def _venta_lineas_has_column(connection: sqlite3.Connection, column: str) -> boo
     rows = connection.execute("PRAGMA table_info(venta_lineas)").fetchall()
     names = {row[1] for row in rows}
     return column in names
+
+
+def migrate_venta_lineas_total(connection: sqlite3.Connection) -> None:
+    """Añade venta_lineas.total y copia el subtotal ya guardado.
+
+    No recalcula el subtotal viejo: ese número sigue siendo el monto que
+    se cobró entonces. Las ventas nuevas calculan subtotal y total aparte.
+    """
+    tables = {
+        row[0]
+        for row in connection.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table'"
+        ).fetchall()
+    }
+    if "venta_lineas" not in tables:
+        return
+    if _venta_lineas_has_column(connection, "total"):
+        return
+    if not _venta_lineas_has_column(connection, "id_promocion"):
+        raise RuntimeError(
+            "venta_lineas.total requiere el snapshot de promo (schema v3)."
+        )
+    ddl = _CREATE_VENTA_LINEAS.replace(
+        "CREATE TABLE IF NOT EXISTS venta_lineas",
+        "CREATE TABLE venta_lineas_new",
+    )
+    connection.commit()
+    connection.execute("PRAGMA foreign_keys = OFF")
+    try:
+        connection.executescript(
+            f"""
+            DROP TABLE IF EXISTS venta_lineas_new;
+            {ddl};
+            INSERT INTO venta_lineas_new (
+                id_linea, id_venta, id_producto, nombre_producto,
+                precio_aplicado, cantidad, subtotal, total,
+                id_promocion, nombre_promocion
+            )
+            SELECT
+                id_linea, id_venta, id_producto, nombre_producto,
+                precio_aplicado, cantidad, subtotal, subtotal,
+                id_promocion, nombre_promocion
+            FROM venta_lineas;
+            DROP TABLE venta_lineas;
+            ALTER TABLE venta_lineas_new RENAME TO venta_lineas;
+            """
+        )
+    finally:
+        connection.execute("PRAGMA foreign_keys = ON")
 
 
 def migrate_venta_lineas_promocion_snapshot(

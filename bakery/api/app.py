@@ -26,7 +26,7 @@ API_PORT = 8765
 
 
 class SaleLineCreate(BaseModel):
-    """Línea de venta. El subtotal lo recalcula el backend; no se acepta del cliente."""
+    """Línea de venta. subtotal y total los calcula el backend; no se aceptan del cliente."""
 
     model_config = ConfigDict(extra="forbid")
 

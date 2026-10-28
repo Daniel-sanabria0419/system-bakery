@@ -8,7 +8,7 @@ SQLite
 
 La base de datos es local y debe funcionar sin Internet.
 
-## Esquema vigente (Beta 2.0 + Beta 2.0.1 Etapa 1)
+## Esquema vigente (Beta 2.0 … Beta 2.0.4 Etapa 1)
 
 Las tablas de catálogo y líneas (`categorias`, `productos`, `venta_lineas`) se introdujeron en **Beta 2.0 Etapa 1**.
 
@@ -16,6 +16,7 @@ Las tablas de catálogo y líneas (`categorias`, `productos`, `venta_lineas`) se
 - **Legado Beta 1.x:** filas de `ventas` solo con `valor_total` **permanecen** sin `venta_lineas`. No se inventan líneas sintéticas.
 - Durante el cobro, la lista de compra sigue viviendo solo en memoria hasta confirmar.
 - **Beta 2.0.1 Etapa 1:** categoría «Pan pequeño» garantizada por nombre; columna nullable `productos.ruta_imagen`; carpetas `imagenes/categorias` y `imagenes/productos`.
+- **Beta 2.0.4 Etapa 1:** tabla `promociones`; columna nullable `productos.promocion_id` (FK). Sin seed aún; el cobro sigue por nombre de categoría hasta etapas posteriores. Sin columnas promo en `venta_lineas` en esta etapa.
 - **Meta:** tabla `schema_version` para migraciones ordenadas (ver sección Versión de esquema).
 
 ## Tabla: medios_pago
@@ -60,7 +61,21 @@ La lógica especial de Pan pequeño (versiones posteriores de 2.0.1) debe resolv
 
 No hay CRUD de categorías en Beta 2.0 / 2.0.1; solo listado y asociación desde productos / ventas. La lógica de precios de Pan pequeño (Beta 2.0.1) resuelve la categoría por **nombre**.
 
-## Tabla: productos (Beta 2.0 / 2.0.1)
+## Tabla: promociones (Beta 2.0.4 Etapa 1)
+
+Campos:
+
+| Campo | Descripción |
+|---|---|
+| id | Identificador único de la promoción |
+| nombre | Nombre legible (p. ej. `Pan pequeño 7 por 2000`) |
+| tipo | Tipo lógico en texto; primer valor previsto: `cantidad_por_monto` |
+| configuracion | JSON en `TEXT` (no JSONB en SQLite); validado en aplicación |
+| activo | 0/1 (soft off) |
+
+En Etapa 1 la tabla puede quedar vacía (seed = Etapa 2). El cobro **no** lee esta tabla todavía.
+
+## Tabla: productos (Beta 2.0 / 2.0.1 / 2.0.4)
 
 Campos:
 
@@ -73,6 +88,7 @@ Campos:
 | descripcion | Descripción opcional (puede ser NULL) |
 | id_estado | Estado activo / inactivo (mismo criterio que medios: activo = 1) |
 | ruta_imagen | Ruta relativa opcional al archivo de imagen (nullable; p. ej. `imagenes/productos/...`) |
+| promocion_id | FK nullable a `promociones(id)`. `NULL` = sin promo de tabla. Etapa 1: expuesto en API; cobro aún no lo usa |
 
 Un producto desactivado se conserva (soft-delete). No se elimina físicamente un producto referenciado en `venta_lineas`.
 
@@ -108,6 +124,7 @@ tendero = 1
 
 - `ventas.id_medio_pago` → `medios_pago.id_medio_pago`
 - `productos.id_categoria` → `categorias.id_categoria`
+- `productos.promocion_id` → `promociones.id` (nullable)
 - `venta_lineas.id_venta` → `ventas.id_venta`
 - `venta_lineas.id_producto` → `productos.id_producto`
 
@@ -143,7 +160,8 @@ Un producto debe:
 - tener precio entero mayor que 0;
 - tener una categoría válida;
 - tener estado activo o inactivo;
-- poder tener `ruta_imagen` NULL.
+- poder tener `ruta_imagen` NULL;
+- poder tener `promocion_id` NULL (o FK válida a `promociones`).
 
 Una línea de venta (cuando exista) debe:
 
@@ -179,13 +197,14 @@ Versión vigente:
 |---|---|
 | 0 | Sin meta (bases antiguas o vacías antes de este mecanismo) |
 | 1 | Baseline Beta 2.0.1: tablas de catálogo/líneas, `productos.ruta_imagen` si faltaba |
+| 2 | Beta 2.0.4 Etapa 1: tabla `promociones`; `productos.promocion_id` nullable FK |
 
 ## Migración
 
 Al llamar `initialize`, se ejecuta:
 
-1. `CREATE TABLE IF NOT EXISTS` para todas las tablas de negocio (incl. `schema_version`);
-2. migraciones ordenadas hasta `CURRENT_SCHEMA_VERSION` (hoy: v1 = asegurar `ruta_imagen`);
+1. `CREATE TABLE IF NOT EXISTS` para todas las tablas de negocio (incl. `promociones` y `schema_version`);
+2. migraciones ordenadas hasta `CURRENT_SCHEMA_VERSION` (hoy: v2 = `promociones` + `promocion_id`);
 3. semilla de medios (si la tabla está vacía);
 4. semilla de categorías Beta 2.0 (si la tabla está vacía);
 5. ensure de «Pan pequeño» por nombre;
@@ -193,7 +212,8 @@ Al llamar `initialize`, se ejecuta:
 
 Es idempotente:
 
-- en una base nueva: esquema completo, `schema_version = CURRENT`, semillas y Pan pequeño;
-- en una base con las cinco categorías de Beta 2.0: se añade Pan pequeño y `ruta_imagen`, y se marca `schema_version`;
+- en una base nueva: esquema completo, `schema_version = CURRENT`, semillas y Pan pequeño (`promociones` vacía en Etapa 1);
+- en una base con las cinco categorías de Beta 2.0: se añade Pan pequeño, `ruta_imagen` y `promocion_id`, y se marca `schema_version`;
+- en una base en v1: se crea `promociones` y se añade `promocion_id` sin tocar datos de venta;
 - en una base solo-`medios_pago` / `ventas`: agrega tablas faltantes sin alterar ventas existentes;
 - re-ejecutar `initialize` no duplica datos ni re-aplica migraciones ya aplicadas.

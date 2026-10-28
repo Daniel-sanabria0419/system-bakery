@@ -145,6 +145,25 @@ Ops / backlog táctil (no implementar sin requisito): `docs/caja-tactil-setup.md
 
 Preservar Beta 2.0.2. **No** features de Beta 2.1+.
 
+## Beta 2.0.4
+
+**Beta 2.0.4 está en curso** (Etapa 1 = schema). Migra la promo hardcodeada de Pan pequeño hacia tabla `promociones` + FK `productos.promocion_id`, con agrupación de carrito en etapas posteriores.
+
+Alcance Etapa 1 (solo schema; cobro sin cambios):
+
+1. `schema_version` v2: tabla `promociones`; `productos.promocion_id` nullable.
+2. Repos mínimos; API de productos expone `promocion_id` (sin usarlo en cobro).
+3. Sin seed/backfill (Etapa 2); sin dual-path ni recálculo de carrito aún.
+
+Requisitos y etapas:
+
+- `docs/product-requirements.md` (sección Beta 2.0.4)
+- `docs/database.md`
+- `docs/beta-2.0.4/stages.md`
+- Plan Context: `docs/beta-2.0.4-promociones-plan.md`
+
+Preservar Beta 2.0.3. Trabajar etapa a etapa; no anticipar Etapa 2+ sin orden.
+
 ## Fuera del alcance
 
 NO implementar, ni anticipar en una versión que todavía no está especificada:

@@ -15,6 +15,27 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Beta 2.0.1 | **Terminada** 2026-10-26 (OK final Daniel) | Pan pequeño (promo), cobro por valor, chips, imágenes, formularios |
 | Beta 2.0.2 | **Terminada** 2026-10-27 (OK final Daniel) | Layout cobro, prefijo de precio, listado Productos blanco |
 | Beta 2.0.3 | **Terminada** 2026-10-27 (OK final Daniel) | Navegación catálogo Vista A/B; chips más grandes / tipografía editable |
+| Beta 2.0.4 | **En curso** (Etapa 1 schema) | Migrar Pan pequeño a `promociones` + FK; agrupación carrito en etapas siguientes |
+
+---
+
+# Beta 2.0.4 (en curso)
+
+## Objetivo
+
+Reemplazar la promo hardcodeada de Pan pequeño (`pan_pequeno_pricing` por nombre de categoría) por filas en `promociones` + `productos.promocion_id`, con cálculo tipado `cantidad_por_monto` y **agrupación en todo el carrito** (`todo_o_nada`). Etapa a etapa; cobro intacto hasta dual-path/cutover.
+
+Detalle: `docs/beta-2.0.4/stages.md`. Plan: Context `docs/beta-2.0.4-promociones-plan.md`.
+
+## Etapa 1 (schema) — en este alcance
+
+- Tabla `promociones` y FK nullable `productos.promocion_id`.
+- `schema_version` = 2; repos mínimos; API productos expone `promocion_id`.
+- **Sin** seed, **sin** cambio de precios/cobro, **sin** columnas promo en `venta_lineas`.
+
+## Fuera del alcance de Beta 2.0.4
+
+CRUD rico de promos en UI, otros tipos de promo, inventario, sync, login, reportes, PostgreSQL, reabrir UX 2.0.3.
 
 ---
 

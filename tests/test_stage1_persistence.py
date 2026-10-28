@@ -122,6 +122,7 @@ def test_new_db_creates_catalog_and_line_tables(tmp_path: Path) -> None:
         assert {
             "categorias",
             "productos",
+            "promociones",
             "venta_lineas",
             "medios_pago",
             "ventas",
@@ -139,7 +140,12 @@ def test_new_db_creates_catalog_and_line_tables(tmp_path: Path) -> None:
             for row in connection.execute("PRAGMA table_info(productos)").fetchall()
         }
         assert "ruta_imagen" in columns
+        assert "promocion_id" in columns
         assert get_schema_version(connection) == CURRENT_SCHEMA_VERSION
+        promo_count = connection.execute(
+            "SELECT COUNT(*) FROM promociones"
+        ).fetchone()[0]
+        assert promo_count == 0
     finally:
         connection.close()
 
@@ -168,6 +174,14 @@ def test_schema_version_migration_from_beta2_without_meta(tmp_path: Path) -> Non
             for row in connection.execute("PRAGMA table_info(productos)").fetchall()
         }
         assert "ruta_imagen" in columns
+        assert "promocion_id" in columns
+        tables = {
+            row[0]
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            ).fetchall()
+        }
+        assert "promociones" in tables
     finally:
         connection.close()
 
@@ -354,9 +368,11 @@ def test_ensure_pan_pequeno_on_existing_five_categories(tmp_path: Path) -> None:
             for row in connection.execute("PRAGMA table_info(productos)").fetchall()
         }
         assert "ruta_imagen" in columns
+        assert "promocion_id" in columns
         product = get_producto(connection, 1)
         assert product is not None
         assert product["ruta_imagen"] is None
+        assert product["promocion_id"] is None
     finally:
         connection.close()
 

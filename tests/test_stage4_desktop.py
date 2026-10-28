@@ -1,3 +1,4 @@
+import json
 from typing import Any, List, Mapping
 
 import httpx
@@ -7,7 +8,6 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 
 from bakery.api.app import create_app
 from bakery.app.money import format_cop
-from bakery.app.pan_pequeno_pricing import is_pan_pequeno, subtotal_for_quantity
 from bakery.app.promotions import (
     compute_cart_line_subtotals,
     is_active_cantidad_por_monto,
@@ -24,8 +24,18 @@ from bakery.persistence.connection import connect
 from bakery.persistence.schema import (
     ESTADO_ACTIVO,
     NOMBRE_CATEGORIA_PAN_PEQUENO,
+    PROMOCION_PAN_PEQUENO_CONFIG,
     TIPO_PROMOCION_CANTIDAD_POR_MONTO,
 )
+
+_PAN_PROMO_FIELDS = {
+    "promocion_id": 1,
+    "promocion_tipo": TIPO_PROMOCION_CANTIDAD_POR_MONTO,
+    "promocion_configuracion": json.dumps(
+        PROMOCION_PAN_PEQUENO_CONFIG, separators=(",", ":"), sort_keys=True
+    ),
+    "promocion_activo": ESTADO_ACTIVO,
+}
 
 _PRODUCT_ID_SEQ = {"n": 1}
 
@@ -81,6 +91,7 @@ class FakeApiClient:
                 "id_categoria": 6,
                 "descripcion": None,
                 "id_estado": 1,
+                **_PAN_PROMO_FIELDS,
             },
             {
                 "id_producto": 5,
@@ -130,24 +141,13 @@ class FakeApiClient:
         self, id_medio_pago: int, lineas: List[Mapping[str, Any]]
     ) -> Mapping[str, Any]:
         self.request_count += 1
-        cat_by_id = {c["id_categoria"]: c for c in self.categories}
         prod_by_id = {p["id_producto"]: p for p in self.products}
         if use_promociones_table():
             valor_total = self._valor_total_promociones(lineas, prod_by_id)
         else:
-            valor_total = 0
-            for line in lineas:
-                product = prod_by_id.get(int(line["id_producto"]))
-                categoria = (
-                    cat_by_id.get(product["id_categoria"])
-                    if product is not None
-                    else None
-                )
-                cantidad = int(line["cantidad"])
-                if categoria is not None and is_pan_pequeno(categoria):
-                    valor_total += subtotal_for_quantity(cantidad)
-                else:
-                    valor_total += int(line["precio_aplicado"]) * cantidad
+            valor_total = sum(
+                int(line["precio_aplicado"]) * int(line["cantidad"]) for line in lineas
+            )
         sale = {
             "id_venta": "11111111-1111-4111-8111-111111111111",
             "valor_total": valor_total,
@@ -169,22 +169,23 @@ class FakeApiClient:
         promos_by_id: dict = {}
         for line in lineas:
             product = prod_by_id.get(int(line["id_producto"]))
-            assert product is not None
-            promo_id = product.get("promocion_id")
+            promo_id = None
             promo = None
-            if isinstance(promo_id, int) and not isinstance(promo_id, bool):
-                promo = {
-                    "id": promo_id,
-                    "tipo": product.get(
-                        "promocion_tipo", TIPO_PROMOCION_CANTIDAD_POR_MONTO
-                    ),
-                    "configuracion": product.get("promocion_configuracion"),
-                    "activo": product.get("promocion_activo", ESTADO_ACTIVO),
-                }
-                if is_active_cantidad_por_monto(promo):
-                    promos_by_id[promo_id] = promo
-                else:
-                    promo = None
+            if product is not None:
+                promo_id = product.get("promocion_id")
+                if isinstance(promo_id, int) and not isinstance(promo_id, bool):
+                    promo = {
+                        "id": promo_id,
+                        "tipo": product.get(
+                            "promocion_tipo", TIPO_PROMOCION_CANTIDAD_POR_MONTO
+                        ),
+                        "configuracion": product.get("promocion_configuracion"),
+                        "activo": product.get("promocion_activo", ESTADO_ACTIVO),
+                    }
+                    if is_active_cantidad_por_monto(promo):
+                        promos_by_id[promo_id] = promo
+                    else:
+                        promo = None
             pending.append(
                 {
                     "cantidad": int(line["cantidad"]),

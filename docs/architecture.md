@@ -42,7 +42,7 @@ SQLite
 | Desktop | `bakery/desktop` | Pantallas (menú, productos, registrar venta), navegación, diálogos; sin reglas de negocio. Módulos: `main_window`, `menu_page`, `register_sale_page`, `products_page`, `dialogs`, `ui_helpers`; `ui.py` reexporta la API pública |
 | Cliente HTTP | `bakery/desktop/client.py` | Medios, productos/categorías, `POST /ventas` con líneas; `GET /health` al arranque |
 | API | `bakery/api` | Rutas delgadas; validación HTTP |
-| Aplicación | `bakery/app` | Calculadora, compra con líneas (`PurchaseLine` / `SaleDraft`), productos, `pan_pequeno_pricing`, imágenes de producto, `register_sale`, formato COP |
+| Aplicación | `bakery/app` | Calculadora, compra con líneas (`PurchaseLine` / `SaleDraft`), productos, `promotions` (cobro), shim `pan_pequeno_pricing`, imágenes, `register_sale`, formato COP |
 | Persistencia | `bakery/persistence` | Schema SQLite, repositorios (medios, productos, ventas + líneas) |
 
 ## Flujo desktop (Beta 2.0)
@@ -200,7 +200,7 @@ Detalle: `docs/beta-2/stages.md` y resumen de cierre en el Context del proyecto.
 ## Beta 2.0.1 (resumen)
 
 - Detección Pan pequeño por **nombre** de categoría.
-- Precios solo en `bakery/app/pan_pequeno_pricing.py` (sin floats); promo 7/$2000 solo si cantidad % 7 == 0 (sin “grupos + resto”).
+- Precios de promo en `bakery/app/promotions.py` (sin floats); agrupación de carrito por `promocion_id` con `todo_o_nada`. `pan_pequeno_pricing` es shim post-cutover.
 - Calculadora: valor + ceil para Pan pequeño; resto como Beta 2.0.
 - Persistencia: `schema_version` + migraciones ordenadas en `bakery/persistence/migrations.py` (sin ORM).
 - `ruta_imagen` nullable; archivos bajo `imagenes/productos/`; categorías por convención de archivo.

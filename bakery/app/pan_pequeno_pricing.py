@@ -1,14 +1,21 @@
-"""Precio y promoción fijos de la categoría Pan pequeño.
+"""Shim de compatibilidad (Beta 2.0.4 cutover).
 
-Fuente única de verdad para subtotales y conversión valor→cantidad.
-Sin floats. Sin motor genérico de promociones.
+La lógica de montos vive en ``bakery.app.promotions`` con la config canónica.
+``is_pan_pequeno`` permanece solo para catálogo / validación de lista, no para cobro.
 """
 
 from __future__ import annotations
 
 from typing import Mapping, Optional, Tuple, Union
 
-from bakery.persistence.schema import NOMBRE_CATEGORIA_PAN_PEQUENO
+from bakery.app.promotions import (
+    amount_for_quantity,
+    quantity_from_value as promo_quantity_from_value,
+)
+from bakery.persistence.schema import (
+    NOMBRE_CATEGORIA_PAN_PEQUENO,
+    PROMOCION_PAN_PEQUENO_CONFIG,
+)
 
 PRECIO_UNITARIO_PAN_PEQUENO = 300
 PROMO_CANTIDAD = 7
@@ -30,56 +37,10 @@ def is_pan_pequeno_nombre(nombre: Optional[str]) -> bool:
 
 
 def subtotal_for_quantity(cantidad: int) -> int:
-    """Subtotal entero para una cantidad de Pan pequeño.
-
-    Promo solo si cantidad es múltiplo exacto de 7:
-    (cantidad // 7) * 2000. Ejemplos: 7→2000, 14→4000.
-    Si no (p. ej. 6 u 8): cantidad * 300. No hay “grupos + resto”.
-    """
-    cantidad_ok = _require_positive_int(cantidad, "La cantidad debe ser un entero mayor que 0.")
-    if cantidad_ok % PROMO_CANTIDAD == 0:
-        return (cantidad_ok // PROMO_CANTIDAD) * PROMO_VALOR
-    return cantidad_ok * PRECIO_UNITARIO_PAN_PEQUENO
+    """Delegado al motor ``promotions`` (config canónica)."""
+    return amount_for_quantity(cantidad, PROMOCION_PAN_PEQUENO_CONFIG)
 
 
 def quantity_from_value(valor: int) -> Tuple[int, int]:
-    """Convierte un valor deseado en (cantidad, subtotal) válidos.
-
-    Si el valor coincide exactamente con algún subtotal, usa esa cantidad
-    (la menor si hay empate).
-    Si no, redondea hacia arriba al menor subtotal alcanzable ≥ valor
-    (nunca hacia abajo).
-    """
-    valor_ok = _require_positive_int(valor, "El valor debe ser un entero mayor que 0.")
-    q_max = max(
-        valor_ok // PRECIO_UNITARIO_PAN_PEQUENO + PROMO_CANTIDAD + 1,
-        PROMO_CANTIDAD + 1,
-    )
-    best_q: Optional[int] = None
-    best_sub: Optional[int] = None
-    for cantidad in range(1, q_max + 1):
-        subtotal = subtotal_for_quantity(cantidad)
-        if subtotal < valor_ok:
-            continue
-        if (
-            best_sub is None
-            or subtotal < best_sub
-            or (subtotal == best_sub and cantidad < best_q)  # type: ignore[operator]
-        ):
-            best_q = cantidad
-            best_sub = subtotal
-    if best_q is None or best_sub is None:
-        # Ampliación defensiva (no debería ocurrir con el bound anterior).
-        cantidad = q_max + 1
-        while True:
-            subtotal = subtotal_for_quantity(cantidad)
-            if subtotal >= valor_ok:
-                return cantidad, subtotal
-            cantidad += 1
-    return best_q, best_sub
-
-
-def _require_positive_int(value: object, message: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
-        raise ValueError(message)
-    return value
+    """Delegado al motor ``promotions`` (config canónica)."""
+    return promo_quantity_from_value(valor, PROMOCION_PAN_PEQUENO_CONFIG)

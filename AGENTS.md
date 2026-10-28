@@ -147,14 +147,14 @@ Preservar Beta 2.0.2. **No** features de Beta 2.1+.
 
 ## Beta 2.0.4
 
-**Beta 2.0.4 está en curso** (Etapa 4 = UI carrito / subtotal+total). Migra la promo hardcodeada de Pan pequeño hacia tabla `promociones` + FK, con agrupación de carrito detrás de flag.
+**Beta 2.0.4 está en curso** (Etapa 5 = cutover). Migra la promo hardcodeada de Pan pequeño hacia tabla `promociones` + FK, con agrupación de carrito.
 
-Alcance hasta Etapa 4:
+Alcance hasta Etapa 5:
 
-1. Schema + seed (#39, #40).
-2. Motor + dual-path (#41); flag default **False**; activable con `BAKERY_USE_PROMOCIONES_TABLE=1`.
-3. UI lista/total refleja subtotales post-grupo cuando el path está on.
-4. Cutover (flag on por defecto / retirar path por categoría) = Etapa 5.
+1. Schema + seed + dual-path + UI (#39–#42).
+2. Cutover: `USE_PROMOCIONES_TABLE` default **True**; cobro por FK/grupo (no por nombre de categoría).
+3. `pan_pequeno_pricing` = shim; apagar path solo con `BAKERY_USE_PROMOCIONES_TABLE=0` (precio × cantidad plano).
+4. Regresión/docs finales = Etapas 6–7.
 
 Requisitos y etapas:
 

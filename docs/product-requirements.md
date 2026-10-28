@@ -15,7 +15,7 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Beta 2.0.1 | **Terminada** 2026-10-26 (OK final Daniel) | Pan pequeño (promo), cobro por valor, chips, imágenes, formularios |
 | Beta 2.0.2 | **Terminada** 2026-10-27 (OK final Daniel) | Layout cobro, prefijo de precio, listado Productos blanco |
 | Beta 2.0.3 | **Terminada** 2026-10-27 (OK final Daniel) | Navegación catálogo Vista A/B; chips más grandes / tipografía editable |
-| Beta 2.0.4 | **En curso** (Etapa 4 UI carrito) | Migrar Pan pequeño a `promociones` + FK; UI subtotal/total con agrupación |
+| Beta 2.0.4 | **En curso** (Etapa 5 cutover) | Migrar Pan pequeño a `promociones` + FK; cobro por FK/grupo |
 
 ---
 
@@ -27,12 +27,13 @@ Reemplazar la promo hardcodeada de Pan pequeño (`pan_pequeno_pricing` por nombr
 
 Detalle: `docs/beta-2.0.4/stages.md`. Plan: Context `docs/beta-2.0.4-promociones-plan.md`.
 
-## Etapas 1–4
+## Etapas 1–5
 
 - **Etapa 1 (hecha #39):** tabla `promociones` y FK nullable `productos.promocion_id`.
 - **Etapa 2 (hecha #40):** seed promo + backfill FK.
-- **Etapa 3 (hecha #41):** motor `promotions` + flag default False; enrich API con flag on.
-- **Etapa 4 (este alcance):** UI lista/total con subtotales post-grupo; path activable (`BAKERY_USE_PROMOCIONES_TABLE`); sin cutover aún.
+- **Etapa 3 (hecha #41):** motor `promotions` + dual-path.
+- **Etapa 4 (hecha #42):** UI lista/total post-grupo.
+- **Etapa 5 (este alcance):** cutover — flag default True; cobro sin montos por nombre de categoría; shim `pan_pequeno_pricing`.
 
 ## Fuera del alcance de Beta 2.0.4
 

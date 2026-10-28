@@ -71,7 +71,7 @@ def test_pan_pequeno_plus_minus_transitions_6_7_8(qtbot) -> None:
     _click(qtbot, _find(window, "quantity_plus_button"))
     assert _find(window, "quantity_label").text() == "8"
     assert _find(window, "quantity_value_label").text() == (
-        f"Subtotal: {format_cop(2400)}"
+        f"Subtotal: {format_cop(2300)}"
     )
 
     _click(qtbot, _find(window, "quantity_minus_button"))
@@ -114,9 +114,9 @@ def test_other_category_qty_only_no_promo(qtbot) -> None:
 @pytest.mark.parametrize(
     ("quantity", "expected_subtotal"),
     [
-        (17, 5100),
-        (27, 8100),
-        (34, 10200),
+        (17, 4900),
+        (27, 7800),
+        (34, 9800),
     ],
 )
 def test_pan_pequeno_qty_uses_promo_formula(

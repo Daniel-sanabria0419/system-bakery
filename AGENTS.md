@@ -152,7 +152,7 @@ Preservar Beta 2.0.2. **No** features de Beta 2.1+.
 Alcance implementado:
 
 1. Schema/seed/dual-path/UI/cutover (#39–#43).
-2. `USE_PROMOCIONES_TABLE` default **True**; cobro por FK/grupo (`cantidad_por_monto`, `todo_o_nada`).
+2. `USE_PROMOCIONES_TABLE` default **True**; cobro por FK/grupo (`cantidad_por_monto`, packs greedy).
 3. Snapshot `venta_lineas.id_promocion` / `nombre_promocion` (schema v3) (#44).
 4. `pan_pequeno_pricing` = shim; docs: `docs/beta-2.0.4/stages.md`, `regression-notes.md`.
 
@@ -167,13 +167,13 @@ Preservar Beta 2.0.4.
 
 ## Beta 2.0.5
 
-**Beta 2.0.5 en curso** (motor híbrido de promo). Sobre 2.0.4: múltiplos exactos por `id_producto` + pool `todo_o_nada` del mismo `promocion_id`.
+**Beta 2.0.5+ cobro greedy** (packs por cada `grupo_cantidad` aunque haya resto).
 
 Alcance:
 
-1. Capa 1: si qty agregada del SKU es múltiplo exacto de `grupo_cantidad` → promo esa qty (no greedy; 8 → 2400).
-2. Capa 2: qty no exactas del mismo promo → pool + `todo_o_nada` (4+3 → 2000; 7+5 → 3500; 10+4 → 4000).
-3. Pad/preview de selección igual que 2.0.4; total definitivo tras Agregar.
+1. Fórmula: `(qty // G) * M + (qty % G) * P` (p. ej. 7→2000, 8→2300, 14→4000, 17→4900).
+2. Carrito: suma qty del mismo `promocion_id` y aplica la misma fórmula (4+3 → 2000; 7+5 → 3500).
+3. Config semilla: `precio_base`, `grupo_cantidad`, `grupo_monto`, `modo` (`ceil`); sin `politica_resto` ni `ajuste_manual`.
 4. Sin schema nuevo.
 
 Requisitos y etapas:

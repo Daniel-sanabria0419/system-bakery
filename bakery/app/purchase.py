@@ -23,6 +23,8 @@ class PurchaseLine:
     cantidad: int
     subtotal: int
     promocion_id: Optional[int] = None
+    # Cobro tipado desde el pad (valor→qty): no lo pisa todo_o_nada al regenerar.
+    cobro_fijo: bool = False
 
 
 class Purchase:
@@ -40,6 +42,7 @@ class Purchase:
         cantidad: int,
         subtotal: Optional[int] = None,
         promocion_id: Optional[int] = None,
+        cobro_fijo: bool = False,
     ) -> bool:
         if isinstance(id_producto, bool) or not isinstance(id_producto, int):
             return False
@@ -61,6 +64,8 @@ class Purchase:
             isinstance(promocion_id, bool) or not isinstance(promocion_id, int)
         ):
             return False
+        if not isinstance(cobro_fijo, bool):
+            return False
         if subtotal is None:
             computed = precio_aplicado * cantidad
         else:
@@ -77,6 +82,7 @@ class Purchase:
                 cantidad=cantidad,
                 subtotal=computed,
                 promocion_id=promocion_id,
+                cobro_fijo=cobro_fijo,
             )
         )
         return True
@@ -278,17 +284,28 @@ class SaleDraft:
         return True
 
     def add_to_purchase(self) -> bool:
-        """Agrega línea del producto seleccionado. Rechaza sin producto."""
+        """Agrega línea del producto seleccionado. Rechaza sin producto.
+
+        Si hay valor tipado en el pad con promo activa, el subtotal de la línea
+        es ese tipado (``cobro_fijo``): Agregar no lo reemplaza por todo_o_nada.
+        Con −/+ (sin dígitos) sigue la fórmula de cantidad + agrupación.
+        """
         product = self._selected_product
         if product is None:
             return False
         promocion_id = None
+        cobro_fijo = False
         if use_promociones_table():
             config = self._selected_promo_config()
             if config is not None:
                 promocion_id = int(product["promocion_id"])
                 precio_aplicado = int(config["precio_base"])
-                subtotal = amount_for_quantity(self._quantity, config)
+                typed = self.entry.current_amount()
+                if typed is not None and typed > 0:
+                    subtotal = typed
+                    cobro_fijo = True
+                else:
+                    subtotal = amount_for_quantity(self._quantity, config)
             else:
                 precio_aplicado = product["precio"]
                 subtotal = precio_aplicado * self._quantity
@@ -302,6 +319,7 @@ class SaleDraft:
             cantidad=self._quantity,
             subtotal=subtotal,
             promocion_id=promocion_id,
+            cobro_fijo=cobro_fijo,
         ):
             return False
         if use_promociones_table():
@@ -348,18 +366,25 @@ class SaleDraft:
         items = self.purchase.items()
         if not items:
             return
-        line_maps = [
-            {
-                "id_producto": item.id_producto,
-                "cantidad": item.cantidad,
-                "precio_aplicado": item.precio_aplicado,
-                "promocion_id": item.promocion_id,
-            }
-            for item in items
+        result = [item.subtotal for item in items]
+        flexible_indices = [
+            index for index, item in enumerate(items) if not item.cobro_fijo
         ]
-        subtotals = compute_cart_line_subtotals(
-            line_maps, promos_by_id=self._promo_by_id
-        )
+        if flexible_indices:
+            line_maps = [
+                {
+                    "id_producto": items[index].id_producto,
+                    "cantidad": items[index].cantidad,
+                    "precio_aplicado": items[index].precio_aplicado,
+                    "promocion_id": items[index].promocion_id,
+                }
+                for index in flexible_indices
+            ]
+            computed = compute_cart_line_subtotals(
+                line_maps, promos_by_id=self._promo_by_id
+            )
+            for index, subtotal in zip(flexible_indices, computed):
+                result[index] = subtotal
         rebuilt = [
             PurchaseLine(
                 id_producto=item.id_producto,
@@ -368,8 +393,9 @@ class SaleDraft:
                 cantidad=item.cantidad,
                 subtotal=subtotal,
                 promocion_id=item.promocion_id,
+                cobro_fijo=item.cobro_fijo,
             )
-            for item, subtotal in zip(items, subtotals)
+            for item, subtotal in zip(items, result)
         ]
         self.purchase.replace_items(rebuilt)
 

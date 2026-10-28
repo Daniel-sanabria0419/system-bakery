@@ -146,7 +146,10 @@ class FakeApiClient:
             valor_total = self._valor_total_promociones(lineas, prod_by_id)
         else:
             valor_total = sum(
-                int(line["precio_aplicado"]) * int(line["cantidad"]) for line in lineas
+                int(line["subtotal"])
+                if line.get("subtotal") is not None
+                else int(line["precio_aplicado"]) * int(line["cantidad"])
+                for line in lineas
             )
         sale = {
             "id_venta": "11111111-1111-4111-8111-111111111111",
@@ -167,7 +170,11 @@ class FakeApiClient:
     ) -> int:
         pending: List[Mapping[str, Any]] = []
         promos_by_id: dict = {}
+        fixed_total = 0
         for line in lineas:
+            if line.get("subtotal") is not None:
+                fixed_total += int(line["subtotal"])
+                continue
             product = prod_by_id.get(int(line["id_producto"]))
             promo_id = None
             promo = None
@@ -194,9 +201,12 @@ class FakeApiClient:
                     "promocion_id": promo_id if promo is not None else None,
                 }
             )
-        return sum(
-            compute_cart_line_subtotals(pending, promos_by_id=promos_by_id)
+        flexible = (
+            sum(compute_cart_line_subtotals(pending, promos_by_id=promos_by_id))
+            if pending
+            else 0
         )
+        return fixed_total + flexible
 
 
 def _click(qtbot, widget) -> None:

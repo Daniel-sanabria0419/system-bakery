@@ -129,6 +129,33 @@ def test_draft_promo_pad_keeps_typed_subtotal_and_ceil_qty() -> None:
     assert draft.current_subtotal() == 5000
 
 
+def test_draft_agregar_keeps_typed_charge_not_todo_o_nada() -> None:
+    """Agregar con tipado: línea/total = tipado (no 17→5100 ni 34→10200)."""
+    draft = SaleDraft()
+    draft.select_product(_pan_pequeno_product())
+    for digit in "5000":
+        draft.entry.press_digit(digit)
+    assert draft.apply_value(5000) is True
+    assert draft.add_to_purchase() is True
+    line = draft.purchase.items()[0]
+    assert line.cantidad == 17
+    assert line.subtotal == 5000
+    assert line.cobro_fijo is True
+    assert draft.total() == 5000
+
+    draft.select_product(_pan_pequeno_product(id_producto=2))
+    for digit in "10000":
+        draft.entry.press_digit(digit)
+    assert draft.apply_value(10000) is True
+    assert draft.add_to_purchase() is True
+    items = draft.purchase.items()
+    assert items[0].subtotal == 5000 and items[0].cobro_fijo is True
+    assert items[1].cantidad == 34
+    assert items[1].subtotal == 10000
+    assert items[1].cobro_fijo is True
+    assert draft.total() == 15000
+
+
 def test_draft_other_category_stays_precio_times_cantidad() -> None:
     draft = SaleDraft()
     assert (
@@ -360,3 +387,20 @@ def test_api_pan_pequeno_sale_and_reject_bad_price(tmp_path: Path) -> None:
         )
         assert sale.status_code == 200
         assert sale.json()["valor_total"] == 2000
+
+        typed = client.post(
+            "/ventas",
+            json={
+                "id_medio_pago": 1,
+                "lineas": [
+                    {
+                        "id_producto": product["id_producto"],
+                        "cantidad": 17,
+                        "precio_aplicado": 300,
+                        "subtotal": 5000,
+                    }
+                ],
+            },
+        )
+        assert typed.status_code == 200
+        assert typed.json()["valor_total"] == 5000

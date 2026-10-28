@@ -110,7 +110,7 @@ def test_amount_for_cart_group_4_plus_3_and_4_plus_4() -> None:
             ],
             CANONICAL,
         )
-        == 2000
+        == 1900
     )
     assert (
         amount_for_cart_group(
@@ -120,12 +120,12 @@ def test_amount_for_cart_group_4_plus_3_and_4_plus_4() -> None:
             ],
             CANONICAL,
         )
-        == 2400
+        == 2000
     )
 
 
 def test_amount_for_cart_group_7_plus_5() -> None:
-    """12 panes fuera de tabla: 12 × 300 → 3600."""
+    """7 y 5 por línea: 2000 + 1500."""
     assert (
         amount_for_cart_group(
             [
@@ -134,7 +134,7 @@ def test_amount_for_cart_group_7_plus_5() -> None:
             ],
             CANONICAL,
         )
-        == 3600
+        == 3500
     )
 
 
@@ -180,9 +180,10 @@ def test_compute_cart_line_subtotals_mixed() -> None:
         },
     ]
     subs = compute_cart_line_subtotals(lines, promos_by_id={1: promo})
-    assert sum(subs[:2]) == 2000
+    assert subs[0] == 1000
+    assert subs[1] == 900
     assert subs[2] == 3000
-    assert sum(subs) == 5000
+    assert sum(subs) == 4900
 
 
 def test_compute_cart_line_subtotals_7_plus_5() -> None:
@@ -207,7 +208,7 @@ def test_compute_cart_line_subtotals_7_plus_5() -> None:
         },
     ]
     subs = compute_cart_line_subtotals(lines, promos_by_id={1: promo})
-    assert sum(subs) == 3600
+    assert subs == [2000, 1500]
 
 
 def test_flag_off_draft_uses_plain_precio_times_qty() -> None:
@@ -251,11 +252,11 @@ def test_flag_on_draft_groups_cart_4_plus_3(monkeypatch) -> None:
     draft.select_product({**product, "id_producto": 2, "nombre": "Pan B"})
     draft.set_quantity(3)
     assert draft.add_to_purchase() is True
-    assert draft.total() == 2000
-    assert sum(item.subtotal for item in draft.purchase.items()) == 2000
+    assert draft.total() == 1900
+    assert [item.subtotal for item in draft.purchase.items()] == [1000, 900]
 
 
-def test_flag_on_draft_4_plus_4_is_2400(monkeypatch) -> None:
+def test_flag_on_draft_4_plus_4_is_2000(monkeypatch) -> None:
     monkeypatch.setattr(promotions_mod, "USE_PROMOCIONES_TABLE", True)
     draft = SaleDraft()
     config_json = json.dumps(CANONICAL)
@@ -274,7 +275,7 @@ def test_flag_on_draft_4_plus_4_is_2400(monkeypatch) -> None:
     draft.select_product({**product, "id_producto": 2, "nombre": "Pan B"})
     draft.set_quantity(4)
     draft.add_to_purchase()
-    assert draft.total() == 2400
+    assert draft.total() == 2000
 
 
 def test_flag_on_quantity_preview_promo(monkeypatch) -> None:
@@ -370,7 +371,7 @@ def test_register_sale_flag_on_groups_cart(tmp_path: Path, monkeypatch) -> None:
                 {"id_producto": id_b, "cantidad": 3, "precio_aplicado": 300},
             ],
         )
-        assert sale["valor_total"] == 2000
+        assert sale["valor_total"] == 1900
     finally:
         connection.close()
 

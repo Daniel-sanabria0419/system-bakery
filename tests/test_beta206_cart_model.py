@@ -71,8 +71,8 @@ def test_formula_4_plus_3_descuento_100() -> None:
     _add(draft, _pan(1, "A"), 4)
     _add(draft, _pan(2, "B"), 3)
     assert draft.list_subtotal() == 2100
-    assert draft.total() == 2000
-    assert draft.discount() == 100
+    assert draft.total() == 1900
+    assert draft.discount() == 200
 
 
 def test_formula_7_plus_5_descuento_100() -> None:
@@ -80,8 +80,8 @@ def test_formula_7_plus_5_descuento_100() -> None:
     _add(draft, _pan(1, "A"), 7)
     _add(draft, _pan(2, "B"), 5)
     assert draft.list_subtotal() == 3600
-    assert draft.total() == 3600
-    assert draft.discount() == 0
+    assert draft.total() == 3500
+    assert draft.discount() == 100
 
 
 def test_formula_sin_promo_descuento_0() -> None:
@@ -96,8 +96,8 @@ def test_remove_line_recalculates_hybrid() -> None:
     draft = SaleDraft()
     _add(draft, _pan(1, "A"), 4)
     _add(draft, _pan(2, "B"), 3)
-    assert draft.total() == 2000
-    assert draft.discount() == 100
+    assert draft.total() == 1900
+    assert draft.discount() == 200
 
     assert draft.remove_line(0) is True
     assert len(draft.purchase.items()) == 1

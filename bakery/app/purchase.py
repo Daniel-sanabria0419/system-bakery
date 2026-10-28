@@ -6,7 +6,6 @@ from bakery.app.promotions import (
     compute_cart_line_subtotals,
     is_active_cantidad_por_monto,
     parse_cantidad_por_monto_config,
-    use_promociones_table,
 )
 from bakery.persistence.schema import ESTADO_ACTIVO
 
@@ -114,8 +113,8 @@ def candidates_by_exact_price(
 ) -> List[Mapping]:
     """Legado / API-only: match por precio exacto.
 
-    El cobro desktop (2.0.2+) usa ``candidates_by_price_prefix``. Se mantiene
-    para tests y el espíritu del filtro exacto vía API; no eliminar sin decisión.
+    El desktop de cobro no filtra la grilla por dígitos. Se mantiene para
+    tests y ``GET /productos/activos?precio=``.
     """
     if isinstance(precio, bool) or not isinstance(precio, int) or precio <= 0:
         return []
@@ -123,35 +122,6 @@ def candidates_by_exact_price(
     for product in products:
         product_price = product.get("precio")
         if product_price != precio:
-            continue
-        estado = product.get("id_estado")
-        if estado is not None and estado != 1:
-            continue
-        matches.append(product)
-    return matches
-
-
-def candidates_by_price_prefix(
-    products: Sequence[Mapping], prefix: str
-) -> List[Mapping]:
-    """Filtra productos activos cuyo precio (string del entero) empieza con prefix.
-
-    Pensado para dígitos del pad (p. ej. "4", "45"). Prefijo vacío o
-    no numérico → lista vacía (la UI no aplica filtro de precio en ese caso).
-    No formatea COP; sin floats. El acote por categoría lo hace el llamador.
-    """
-    if not isinstance(prefix, str) or not prefix or not prefix.isdigit():
-        return []
-    matches: List[Mapping] = []
-    for product in products:
-        product_price = product.get("precio")
-        if (
-            isinstance(product_price, bool)
-            or not isinstance(product_price, int)
-            or product_price <= 0
-        ):
-            continue
-        if not str(product_price).startswith(prefix):
             continue
         estado = product.get("id_estado")
         if estado is not None and estado != 1:
@@ -210,14 +180,13 @@ class SaleDraft:
             selected["ruta_imagen"] = ruta_imagen.strip()
         if promocion_id is not None:
             selected["promocion_id"] = promocion_id
-        if use_promociones_table():
-            promo = _promo_payload_from_product(product)
-            if promo is not None:
-                selected["promocion_id"] = promo["id"]
-                selected["promocion_tipo"] = promo["tipo"]
-                selected["promocion_configuracion"] = promo["configuracion"]
-                selected["promocion_activo"] = promo["activo"]
-                self._promo_by_id[int(promo["id"])] = promo
+        promo = _promo_payload_from_product(product)
+        if promo is not None:
+            selected["promocion_id"] = promo["id"]
+            selected["promocion_tipo"] = promo["tipo"]
+            selected["promocion_configuracion"] = promo["configuracion"]
+            selected["promocion_activo"] = promo["activo"]
+            self._promo_by_id[int(promo["id"])] = promo
         self._selected_product = selected
         return True
 
@@ -232,8 +201,6 @@ class SaleDraft:
     def selected_is_pan_pequeno(self) -> bool:
         """True si la selección tiene promo activa cantidad_por_monto por FK."""
         if self._selected_product is None:
-            return False
-        if not use_promociones_table():
             return False
         return self._selected_promo_config() is not None
 
@@ -251,10 +218,9 @@ class SaleDraft:
         product = self._selected_product
         if product is None:
             return None
-        if use_promociones_table():
-            config = self._selected_promo_config()
-            if config is not None:
-                return amount_for_quantity(self._quantity, config)
+        config = self._selected_promo_config()
+        if config is not None:
+            return amount_for_quantity(self._quantity, config)
         return product["precio"] * self._quantity
 
     def add_to_purchase(self) -> bool:
@@ -266,17 +232,13 @@ class SaleDraft:
         product = self._selected_product
         if product is None:
             return False
-        promocion_id = None
-        if use_promociones_table():
-            config = self._selected_promo_config()
-            if config is not None:
-                promocion_id = int(product["promocion_id"])
-                precio_aplicado = int(config["precio_base"])
-                subtotal = amount_for_quantity(self._quantity, config)
-            else:
-                precio_aplicado = product["precio"]
-                subtotal = precio_aplicado * self._quantity
+        config = self._selected_promo_config()
+        if config is not None:
+            promocion_id = int(product["promocion_id"])
+            precio_aplicado = int(config["precio_base"])
+            subtotal = amount_for_quantity(self._quantity, config)
         else:
+            promocion_id = None
             precio_aplicado = product["precio"]
             subtotal = precio_aplicado * self._quantity
         if not self.purchase.add(
@@ -288,8 +250,7 @@ class SaleDraft:
             promocion_id=promocion_id,
         ):
             return False
-        if use_promociones_table():
-            self._recalculate_purchase_subtotals()
+        self._recalculate_purchase_subtotals()
         self.clear_product_selection()
         self._quantity = 1
         return True
@@ -298,8 +259,7 @@ class SaleDraft:
         """Quita una línea por índice y recalcula promos del carrito."""
         if not self.purchase.remove_at(index):
             return False
-        if use_promociones_table():
-            self._recalculate_purchase_subtotals()
+        self._recalculate_purchase_subtotals()
         return True
 
     def clear_cart(self) -> None:

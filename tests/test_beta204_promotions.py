@@ -1,4 +1,4 @@
-"""Beta 2.0.4 Etapa 3: motor promotions + dual-path (flag off = legado)."""
+"""Motor cantidad_por_monto por línea (sin dual-path ni pool)."""
 
 from __future__ import annotations
 
@@ -7,18 +7,10 @@ from pathlib import Path
 
 import pytest
 
-from bakery.app import promotions as promotions_mod
-from bakery.app.pan_pequeno_pricing import (
-    quantity_from_value as pan_quantity_from_value,
-    subtotal_for_quantity as pan_subtotal_for_quantity,
-)
 from bakery.app.promotions import (
-    allocate_group_subtotals,
-    amount_for_cart_group,
     amount_for_quantity,
     compute_cart_line_subtotals,
     parse_cantidad_por_monto_config,
-    quantity_from_value,
 )
 from bakery.app.purchase import SaleDraft
 from bakery.app.sales import register_sale
@@ -37,13 +29,11 @@ from bakery.persistence.schema import (
 )
 
 
-@pytest.fixture(autouse=True)
-def _flag_off_by_default(monkeypatch):
-    monkeypatch.delenv("BAKERY_USE_PROMOCIONES_TABLE", raising=False)
-    monkeypatch.setattr(promotions_mod, "USE_PROMOCIONES_TABLE", False)
-
-
 CANONICAL = PROMOCION_PAN_PEQUENO_CONFIG
+
+
+def _line_amounts(lines, config) -> int:
+    return sum(amount_for_quantity(line["cantidad"], config) for line in lines)
 
 
 @pytest.mark.parametrize(
@@ -67,18 +57,10 @@ CANONICAL = PROMOCION_PAN_PEQUENO_CONFIG
         (34, 10000),
     ],
 )
-def test_amount_for_quantity_parity_with_pan_pequeno(
+def test_amount_for_quantity_knots_and_plain(
     cantidad: int, subtotal: int
 ) -> None:
     assert amount_for_quantity(cantidad, CANONICAL) == subtotal
-    assert amount_for_quantity(cantidad, CANONICAL) == pan_subtotal_for_quantity(
-        cantidad
-    )
-
-
-def test_quantity_from_value_1900_ceil_parity() -> None:
-    assert quantity_from_value(1900, CANONICAL) == (7, 2000)
-    assert quantity_from_value(1900, CANONICAL) == pan_quantity_from_value(1900)
 
 
 def test_parse_config_rejects_invalid() -> None:
@@ -87,23 +69,23 @@ def test_parse_config_rejects_invalid() -> None:
     with pytest.raises(ValueError):
         parse_cantidad_por_monto_config({**CANONICAL, "modo": "floor"})
     with pytest.raises(ValueError):
-        parse_cantidad_por_monto_config({**CANONICAL, "politica_resto": "ceil"})
+        parse_cantidad_por_monto_config({**CANONICAL, "grupo_cantidad": 7})
+    with pytest.raises(ValueError):
+        parse_cantidad_por_monto_config({**CANONICAL, "grupo_monto": 2000})
+    with pytest.raises(ValueError):
+        parse_cantidad_por_monto_config({**CANONICAL, "politica_resto": "greedy"})
     with pytest.raises(ValueError):
         parse_cantidad_por_monto_config({**CANONICAL, "ajuste_manual": {"8000": 28}})
 
 
-def test_parse_slim_json_fills_code_defaults() -> None:
+def test_parse_slim_json_keeps_only_precio_base_and_modo() -> None:
     cfg = parse_cantidad_por_monto_config({"precio_base": 300, "modo": "ceil"})
-    assert cfg["precio_base"] == 300
-    assert cfg["modo"] == "ceil"
-    assert cfg["grupo_cantidad"] == 7
-    assert cfg["grupo_monto"] == 2000
-    assert cfg["politica_resto"] == "greedy"
+    assert cfg == {"precio_base": 300, "modo": "ceil"}
 
 
-def test_amount_for_cart_group_4_plus_3_and_4_plus_4() -> None:
+def test_per_line_4_plus_3_and_4_plus_4() -> None:
     assert (
-        amount_for_cart_group(
+        _line_amounts(
             [
                 {"id_producto": 1, "cantidad": 4},
                 {"id_producto": 2, "cantidad": 3},
@@ -113,7 +95,7 @@ def test_amount_for_cart_group_4_plus_3_and_4_plus_4() -> None:
         == 1900
     )
     assert (
-        amount_for_cart_group(
+        _line_amounts(
             [
                 {"id_producto": 1, "cantidad": 4},
                 {"id_producto": 2, "cantidad": 4},
@@ -124,10 +106,10 @@ def test_amount_for_cart_group_4_plus_3_and_4_plus_4() -> None:
     )
 
 
-def test_amount_for_cart_group_7_plus_5() -> None:
+def test_per_line_7_plus_5() -> None:
     """7 y 5 por línea: 2000 + 1500."""
     assert (
-        amount_for_cart_group(
+        _line_amounts(
             [
                 {"id_producto": 1, "cantidad": 7},
                 {"id_producto": 2, "cantidad": 5},
@@ -138,18 +120,8 @@ def test_amount_for_cart_group_7_plus_5() -> None:
     )
 
 
-def test_amount_for_cart_group_eight_alone_is_2400() -> None:
-    assert amount_for_cart_group(
-        [{"id_producto": 1, "cantidad": 8}], CANONICAL
-    ) == 2400
-
-
-def test_allocate_group_subtotals_sum_equals_monto() -> None:
-    parts = allocate_group_subtotals(
-        [{"cantidad": 4}, {"cantidad": 3}], 2000
-    )
-    assert sum(parts) == 2000
-    assert parts == [1142, 858]  # 4/7 y residuo en última
+def test_per_line_eight_alone_is_2400() -> None:
+    assert _line_amounts([{"id_producto": 1, "cantidad": 8}], CANONICAL) == 2400
 
 
 def test_compute_cart_line_subtotals_mixed() -> None:
@@ -211,30 +183,7 @@ def test_compute_cart_line_subtotals_7_plus_5() -> None:
     assert subs == [2000, 1500]
 
 
-def test_flag_off_draft_uses_plain_precio_times_qty() -> None:
-    draft = SaleDraft()
-    product = {
-        "id_producto": 1,
-        "nombre": "Pan A",
-        "precio": 300,
-        "nombre_categoria": NOMBRE_CATEGORIA_PAN_PEQUENO,
-        "promocion_id": 1,
-        "promocion_tipo": TIPO_PROMOCION_CANTIDAD_POR_MONTO,
-        "promocion_configuracion": json.dumps(CANONICAL),
-        "promocion_activo": ESTADO_ACTIVO,
-    }
-    draft.select_product(product)
-    draft.set_quantity(4)
-    assert draft.add_to_purchase() is True
-    draft.select_product({**product, "id_producto": 2, "nombre": "Pan B"})
-    draft.set_quantity(3)
-    assert draft.add_to_purchase() is True
-    # Flag off tras cutover: sin montos por categoría → precio × cantidad
-    assert draft.total() == 2100
-
-
-def test_flag_on_draft_groups_cart_4_plus_3(monkeypatch) -> None:
-    monkeypatch.setattr(promotions_mod, "USE_PROMOCIONES_TABLE", True)
+def test_draft_4_plus_3_is_per_line() -> None:
     draft = SaleDraft()
     config_json = json.dumps(CANONICAL)
     product = {
@@ -256,8 +205,7 @@ def test_flag_on_draft_groups_cart_4_plus_3(monkeypatch) -> None:
     assert [item.subtotal for item in draft.purchase.items()] == [1000, 900]
 
 
-def test_flag_on_draft_4_plus_4_is_2000(monkeypatch) -> None:
-    monkeypatch.setattr(promotions_mod, "USE_PROMOCIONES_TABLE", True)
+def test_draft_4_plus_4_is_2000() -> None:
     draft = SaleDraft()
     config_json = json.dumps(CANONICAL)
     product = {
@@ -278,8 +226,7 @@ def test_flag_on_draft_4_plus_4_is_2000(monkeypatch) -> None:
     assert draft.total() == 2000
 
 
-def test_flag_on_quantity_preview_promo(monkeypatch) -> None:
-    monkeypatch.setattr(promotions_mod, "USE_PROMOCIONES_TABLE", True)
+def test_quantity_preview_promo() -> None:
     draft = SaleDraft()
     draft.select_product(
         {
@@ -296,43 +243,7 @@ def test_flag_on_quantity_preview_promo(monkeypatch) -> None:
     assert draft.current_subtotal() == 2000
 
 
-def test_register_sale_flag_off_unchanged(tmp_path: Path) -> None:
-    path = tmp_path / "bakery.sqlite3"
-    initialize(path)
-    connection = connect(path)
-    try:
-        pan = get_categoria_by_nombre(connection, NOMBRE_CATEGORIA_PAN_PEQUENO)
-        assert pan is not None
-        id_producto = insert_producto(
-            connection,
-            nombre="Pan reg",
-            precio=300,
-            id_categoria=int(pan["id_categoria"]),
-            descripcion=None,
-            id_estado=ESTADO_ACTIVO,
-        )
-        connection.commit()
-    finally:
-        connection.close()
-    initialize(path)
-    connection = connect(path)
-    try:
-        sale = register_sale(
-            connection,
-            1,
-            [
-                {"id_producto": id_producto, "cantidad": 4, "precio_aplicado": 300},
-                {"id_producto": id_producto, "cantidad": 3, "precio_aplicado": 300},
-            ],
-        )
-        # Legado: 1200 + 900
-        assert sale["valor_total"] == 2100
-    finally:
-        connection.close()
-
-
-def test_register_sale_flag_on_groups_cart(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr(promotions_mod, "USE_PROMOCIONES_TABLE", True)
+def test_register_sale_4_plus_3_is_per_line(tmp_path: Path) -> None:
     path = tmp_path / "bakery.sqlite3"
     initialize(path)
     connection = connect(path)
@@ -376,9 +287,7 @@ def test_register_sale_flag_on_groups_cart(tmp_path: Path, monkeypatch) -> None:
         connection.close()
 
 
-def test_api_enrich_promo_fields_only_when_flag_on(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_api_enrich_promo_fields(tmp_path: Path) -> None:
     from fastapi.testclient import TestClient
 
     from bakery.api.app import create_app
@@ -402,14 +311,6 @@ def test_api_enrich_promo_fields_only_when_flag_on(
         connection.close()
     initialize(db_path)
 
-    with TestClient(create_app(db_path)) as client:
-        products = client.get("/productos").json()
-        pan_products = [p for p in products if p["nombre"] == "Pan API"]
-        assert len(pan_products) == 1
-        assert pan_products[0]["promocion_id"] is not None
-        assert pan_products[0].get("promocion_tipo") is None
-
-    monkeypatch.setattr(promotions_mod, "USE_PROMOCIONES_TABLE", True)
     with TestClient(create_app(db_path)) as client:
         products = client.get("/productos").json()
         pan_products = [p for p in products if p["nombre"] == "Pan API"]

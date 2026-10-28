@@ -1,23 +1,21 @@
-"""Pruebas Pan pequeño: cobro por escala ceil + valor→qty."""
+"""Pruebas Pan pequeño: categoría, precio $300 y cobro por nudos."""
 
 import pytest
 
 from bakery.app.pan_pequeno_pricing import (
     PRECIO_UNITARIO_PAN_PEQUENO,
-    PROMO_CANTIDAD,
-    PROMO_VALOR,
     is_pan_pequeno,
     is_pan_pequeno_nombre,
-    quantity_from_value,
-    subtotal_for_quantity,
 )
-from bakery.persistence.schema import NOMBRE_CATEGORIA_PAN_PEQUENO
+from bakery.app.promotions import amount_for_quantity
+from bakery.persistence.schema import (
+    NOMBRE_CATEGORIA_PAN_PEQUENO,
+    PROMOCION_PAN_PEQUENO_CONFIG,
+)
 
 
 def test_constants() -> None:
     assert PRECIO_UNITARIO_PAN_PEQUENO == 300
-    assert PROMO_CANTIDAD == 7
-    assert PROMO_VALOR == 2000
 
 
 def test_is_pan_pequeno_by_name_and_mapping() -> None:
@@ -45,7 +43,7 @@ def test_is_pan_pequeno_by_name_and_mapping() -> None:
     ],
 )
 def test_subtotal_cantidades_normales(cantidad: int, subtotal: int) -> None:
-    assert subtotal_for_quantity(cantidad) == subtotal
+    assert amount_for_quantity(cantidad, PROMOCION_PAN_PEQUENO_CONFIG) == subtotal
 
 
 @pytest.mark.parametrize(
@@ -64,41 +62,7 @@ def test_subtotal_cantidades_normales(cantidad: int, subtotal: int) -> None:
     ],
 )
 def test_subtotal_tabla_ceil(cantidad: int, subtotal: int) -> None:
-    assert subtotal_for_quantity(cantidad) == subtotal
-
-
-@pytest.mark.parametrize(
-    ("valor", "cantidad", "subtotal_ref"),
-    [
-        (1800, 6, 1800),
-        (2000, 7, 2000),
-        (2400, 8, 2400),
-        (9000, 30, 9000),
-        (10000, 34, 10000),
-    ],
-)
-def test_quantity_from_value_exacta(
-    valor: int, cantidad: int, subtotal_ref: int
-) -> None:
-    assert quantity_from_value(valor) == (cantidad, subtotal_ref)
-
-
-@pytest.mark.parametrize(
-    ("valor", "cantidad", "subtotal_ref"),
-    [
-        (1900, 7, 2000),
-        (2100, 7, 2000),
-        (3950, 14, 4000),
-        (5000, 17, 5000),
-        (7000, 24, 7000),
-        (8000, 27, 8000),
-        (9950, 34, 10000),
-    ],
-)
-def test_quantity_from_value_redondeo_ceil(
-    valor: int, cantidad: int, subtotal_ref: int
-) -> None:
-    assert quantity_from_value(valor) == (cantidad, subtotal_ref)
+    assert amount_for_quantity(cantidad, PROMOCION_PAN_PEQUENO_CONFIG) == subtotal
 
 
 @pytest.mark.parametrize(
@@ -124,64 +88,15 @@ def test_quantity_from_value_redondeo_ceil(
     ],
 )
 def test_subtotal_transiciones_plus_minus(cantidad: int, subtotal: int) -> None:
-    assert subtotal_for_quantity(cantidad) == subtotal
+    assert amount_for_quantity(cantidad, PROMOCION_PAN_PEQUENO_CONFIG) == subtotal
 
 
 def test_subtotal_rejects_non_positive_and_non_int() -> None:
     with pytest.raises(ValueError):
-        subtotal_for_quantity(0)
+        amount_for_quantity(0, PROMOCION_PAN_PEQUENO_CONFIG)
     with pytest.raises(ValueError):
-        subtotal_for_quantity(-1)
+        amount_for_quantity(-1, PROMOCION_PAN_PEQUENO_CONFIG)
     with pytest.raises(ValueError):
-        subtotal_for_quantity(True)  # type: ignore[arg-type]
+        amount_for_quantity(True, PROMOCION_PAN_PEQUENO_CONFIG)  # type: ignore[arg-type]
     with pytest.raises(ValueError):
-        subtotal_for_quantity(2.5)  # type: ignore[arg-type]
-
-
-def test_quantity_from_value_rejects_invalid() -> None:
-    with pytest.raises(ValueError):
-        quantity_from_value(0)
-    with pytest.raises(ValueError):
-        quantity_from_value(-100)
-    with pytest.raises(ValueError):
-        quantity_from_value(True)  # type: ignore[arg-type]
-    with pytest.raises(ValueError):
-        quantity_from_value(1000.0)  # type: ignore[arg-type]
-
-
-def test_quantity_from_value_is_ceil_precio_base() -> None:
-    """Qty = ceil(valor/300); el cobro es la escala de esa qty."""
-    assert quantity_from_value(1900) == (7, 2000)
-    assert quantity_from_value(2100) == (7, 2000)
-    assert quantity_from_value(5000) == (17, 5000)
-    assert quantity_from_value(7000) == (24, 7000)
-    assert quantity_from_value(8000) == (27, 8000)
-    assert quantity_from_value(10000) == (34, 10000)
-    assert quantity_from_value(9950) == (34, 10000)
-    for valor, cantidad, _ref in (
-        (1900, 7, 2000),
-        (5000, 17, 5000),
-        (10000, 34, 10000),
-    ):
-        assert cantidad == (valor + 299) // 300
-        assert quantity_from_value(valor)[1] == subtotal_for_quantity(cantidad)
-
-
-def test_daniel_ceil_table_value_to_qty() -> None:
-    """Tabla ceil(monto/300) de Daniel: valor→qty sin cambio."""
-    table = {
-        1000: 4,
-        2000: 7,
-        3000: 10,
-        4000: 14,
-        5000: 17,
-        6000: 20,
-        7000: 24,
-        8000: 27,
-        9000: 30,
-        10000: 34,
-    }
-    for valor, qty in table.items():
-        got, _ref = quantity_from_value(valor)
-        assert got == qty
-        assert got == (valor + 299) // 300
+        amount_for_quantity(2.5, PROMOCION_PAN_PEQUENO_CONFIG)  # type: ignore[arg-type]

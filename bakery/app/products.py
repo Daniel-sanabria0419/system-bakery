@@ -6,7 +6,6 @@ from bakery.app.pan_pequeno_pricing import (
     is_pan_pequeno,
 )
 from bakery.app.product_images import normalize_ruta_imagen
-from bakery.app.promotions import use_promociones_table
 from bakery.persistence.repositories import (
     get_categoria,
     get_producto,
@@ -111,23 +110,6 @@ def update_product(
     return _enrich_product_promocion(connection, updated)
 
 
-def set_product_image(
-    connection: sqlite3.Connection,
-    id_producto: int,
-    ruta_imagen: Optional[str],
-) -> Mapping:
-    product = _require_product(connection, id_producto)
-    try:
-        ruta_ok = normalize_ruta_imagen(ruta_imagen)
-    except ValueError as error:
-        raise ProductValidationError(str(error)) from error
-    set_producto_ruta_imagen(connection, product["id_producto"], ruta_ok)
-    connection.commit()
-    updated = get_producto(connection, product["id_producto"])
-    assert updated is not None
-    return _enrich_product_promocion(connection, updated)
-
-
 def list_all_products(connection: sqlite3.Connection) -> List[Mapping]:
     return _enrich_products(connection, list_productos(connection))
 
@@ -156,7 +138,7 @@ def list_active_products(
 def find_active_products_by_price(
     connection: sqlite3.Connection, precio: int
 ) -> List[Mapping]:
-    """Legado / API-only: activos con precio exacto. Desktop de cobro usa prefijo."""
+    """Legado / API-only: activos con precio exacto. El desktop de cobro no lo usa."""
     return list_active_products(connection, precio=precio)
 
 
@@ -195,8 +177,6 @@ def _require_product(connection: sqlite3.Connection, id_producto: int) -> Mappin
 def _enrich_products(
     connection: sqlite3.Connection, products: List[Mapping]
 ) -> List[Mapping]:
-    if not use_promociones_table():
-        return list(products)
     cache: Dict[int, Optional[Mapping]] = {}
     return [
         _enrich_product_promocion(connection, product, cache=cache)
@@ -210,10 +190,8 @@ def _enrich_product_promocion(
     *,
     cache: Optional[Dict[int, Optional[Mapping]]] = None,
 ) -> Mapping:
-    """Adjunta tipo/config/activo de promo cuando el flag dual-path está on."""
+    """Adjunta tipo/config/activo de la promoción del producto."""
     enriched = dict(product)
-    if not use_promociones_table():
-        return enriched
     promo_id = product.get("promocion_id")
     if isinstance(promo_id, bool) or not isinstance(promo_id, int):
         return enriched

@@ -4,9 +4,6 @@ from __future__ import annotations
 
 import json
 
-import pytest
-
-from bakery.app import promotions as promotions_mod
 from bakery.app.purchase import SaleDraft
 from bakery.persistence.schema import (
     ESTADO_ACTIVO,
@@ -15,12 +12,6 @@ from bakery.persistence.schema import (
 )
 
 CANONICAL = PROMOCION_PAN_PEQUENO_CONFIG
-
-
-@pytest.fixture(autouse=True)
-def _flag_on(monkeypatch):
-    monkeypatch.delenv("BAKERY_USE_PROMOCIONES_TABLE", raising=False)
-    monkeypatch.setattr(promotions_mod, "USE_PROMOCIONES_TABLE", True)
 
 
 def _pan(id_producto: int, nombre: str = "Pan") -> dict:

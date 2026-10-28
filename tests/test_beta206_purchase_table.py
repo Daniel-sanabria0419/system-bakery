@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 
-from bakery.app import promotions as promotions_mod
 from bakery.app.money import format_cop
 from bakery.desktop.main import create_window
 from bakery.persistence.schema import (
@@ -106,8 +105,7 @@ def test_table_headers_visible(qtbot) -> None:
     _assert_footer(window, subtotal=0, discount=0, total=0)
 
 
-def test_footer_7_panes_descuento_100(qtbot, monkeypatch) -> None:
-    monkeypatch.setattr(promotions_mod, "USE_PROMOCIONES_TABLE", True)
+def test_footer_7_panes_descuento_100(qtbot) -> None:
     api = _api_pan()
     window = create_window(api)
     qtbot.addWidget(window)
@@ -128,8 +126,7 @@ def test_footer_7_panes_descuento_100(qtbot, monkeypatch) -> None:
     _assert_footer(window, subtotal=2100, discount=100, total=2000)
 
 
-def test_footer_8_panes_descuento_0(qtbot, monkeypatch) -> None:
-    monkeypatch.setattr(promotions_mod, "USE_PROMOCIONES_TABLE", True)
+def test_footer_8_panes_descuento_0(qtbot) -> None:
     api = _api_pan()
     window = create_window(api)
     qtbot.addWidget(window)
@@ -143,8 +140,7 @@ def test_footer_8_panes_descuento_0(qtbot, monkeypatch) -> None:
     _assert_footer(window, subtotal=2400, discount=0, total=2400)
 
 
-def test_footer_4_plus_3_and_delete_recalculates(qtbot, monkeypatch) -> None:
-    monkeypatch.setattr(promotions_mod, "USE_PROMOCIONES_TABLE", True)
+def test_footer_4_plus_3_and_delete_recalculates(qtbot) -> None:
     api = _api_pan()
     window = create_window(api)
     qtbot.addWidget(window)
@@ -173,8 +169,7 @@ def test_footer_4_plus_3_and_delete_recalculates(qtbot, monkeypatch) -> None:
     assert _find(window, "selected_product_label").text() == "Torta"
 
 
-def test_footer_sin_promo_descuento_0(qtbot, monkeypatch) -> None:
-    monkeypatch.setattr(promotions_mod, "USE_PROMOCIONES_TABLE", True)
+def test_footer_sin_promo_descuento_0(qtbot) -> None:
     api = _api_pan()
     window = create_window(api)
     qtbot.addWidget(window)

@@ -1,60 +1,33 @@
 """Motor de promociones tipadas (cantidad_por_monto por línea).
 
-Cutover 2.0.4: ``USE_PROMOCIONES_TABLE`` default True; cobro por FK.
-JSON de DB slim: ``{"precio_base": N, "modo": "ceil"}``.
+JSON de DB: ``{"precio_base": N, "modo": "ceil"}``.
 Cada línea usa su propia cantidad. Promo solo si esa cantidad es un nudo
 de la tabla ceil en miles (17 → 5000); si no, ``cantidad × precio_base``.
-Otra línea no cambia el cobro de las demás. ``modo: ceil`` también define
-valor→qty. Desactivar con ``BAKERY_USE_PROMOCIONES_TABLE=0``.
+Otra línea no cambia el cobro de las demás.
 """
 
 from __future__ import annotations
 
 import json
-import os
-from typing import Any, Dict, List, Mapping, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Sequence
 
 from bakery.persistence.schema import (
     ESTADO_ACTIVO,
-    PROMO_GRUPO_CANTIDAD_DEFAULT,
-    PROMO_GRUPO_MONTO_DEFAULT,
-    PROMO_POLITICA_RESTO_DEFAULT,
     TIPO_PROMOCION_CANTIDAD_POR_MONTO,
 )
 
-# Flag de cobro. Default True tras cutover (Etapa 5).
-USE_PROMOCIONES_TABLE = True
-
-# Tabla valor→cantidad en miles, de 1000 a 10000. Promo solo si la cantidad
-# del grupo es exactamente ceil(monto / precio_base) para uno de esos montos.
+# Tabla de nudos en miles, de 1000 a 10000. Promo solo si la cantidad
+# de la línea es exactamente ceil(monto / precio_base) para uno de esos montos.
 PROMO_MONTO_ESCALA = 1000
 PROMO_TABLA_MILES = 10
 
-# DB seed: solo precio_base + modo. El motor acepta grupo_*/politica opcionales
-# (p. ej. re-parse del dict normalizado) y rellena defaults si faltan.
-_ALLOWED_CONFIG_KEYS = frozenset(
-    {
-        "precio_base",
-        "modo",
-        "grupo_cantidad",
-        "grupo_monto",
-        "politica_resto",
-    }
-)
-
-
-def use_promociones_table() -> bool:
-    env = os.environ.get("BAKERY_USE_PROMOCIONES_TABLE")
-    if env is not None and env.strip() != "":
-        return env.strip().lower() in ("1", "true", "yes", "on")
-    return bool(USE_PROMOCIONES_TABLE)
+_ALLOWED_CONFIG_KEYS = frozenset({"precio_base", "modo"})
 
 
 def parse_cantidad_por_monto_config(configuracion: object) -> Dict[str, Any]:
-    """Valida config; DB canónica es ``precio_base`` + ``modo``.
+    """Valida config canónica: ``precio_base`` + ``modo`` ``ceil``.
 
-    Si faltan ``grupo_cantidad`` / ``grupo_monto`` / ``politica_resto``, usa
-    defaults de código (7 / 2000 / greedy). Rechaza ``ajuste_manual``.
+    Rechaza ``ajuste_manual`` y claves que no entran al cobro.
     """
     if isinstance(configuracion, Mapping):
         raw = dict(configuracion)
@@ -85,35 +58,9 @@ def parse_cantidad_por_monto_config(configuracion: object) -> Dict[str, Any]:
     if modo != "ceil":
         raise ValueError("modo debe ser 'ceil'.")
 
-    if "grupo_cantidad" in raw:
-        grupo_cantidad = _require_positive_int(
-            raw.get("grupo_cantidad"),
-            "grupo_cantidad debe ser un entero mayor que 0.",
-        )
-    else:
-        grupo_cantidad = PROMO_GRUPO_CANTIDAD_DEFAULT
-    if "grupo_monto" in raw:
-        grupo_monto = _require_positive_int(
-            raw.get("grupo_monto"),
-            "grupo_monto debe ser un entero mayor que 0.",
-        )
-    else:
-        grupo_monto = PROMO_GRUPO_MONTO_DEFAULT
-    if "politica_resto" in raw:
-        politica = raw.get("politica_resto")
-        if politica != PROMO_POLITICA_RESTO_DEFAULT:
-            raise ValueError(
-                f"politica_resto debe ser '{PROMO_POLITICA_RESTO_DEFAULT}'."
-            )
-    else:
-        politica = PROMO_POLITICA_RESTO_DEFAULT
-
     return {
         "precio_base": precio_base,
-        "grupo_cantidad": grupo_cantidad,
-        "grupo_monto": grupo_monto,
         "modo": "ceil",
-        "politica_resto": politica,
     }
 
 
@@ -137,67 +84,6 @@ def amount_for_quantity(cantidad: int, config: Mapping) -> int:
             return monto
         monto += PROMO_MONTO_ESCALA
     return cantidad_ok * precio_base
-
-
-def quantity_from_value(valor: int, config: Mapping) -> Tuple[int, int]:
-    """Pad valor→cantidad: ``ceil(valor / precio_base)`` (sin cambio).
-
-    El segundo valor es el cobro de esa qty (nudo de la tabla, o
-    cantidad × precio_base). Puede diferir del valor tipado.
-    """
-    valor_ok = _require_positive_int(valor, "El valor debe ser un entero mayor que 0.")
-    cfg = parse_cantidad_por_monto_config(config)
-    precio_base = cfg["precio_base"]
-    cantidad = (valor_ok + precio_base - 1) // precio_base
-    return cantidad, amount_for_quantity(cantidad, cfg)
-
-
-def amount_for_cart_group(lines: Sequence[Mapping], config: Mapping) -> int:
-    """Suma el cobro de cada línea por su propia cantidad.
-
-    No junta las cantidades del carrito. 17 + 5 → 5000 + 1500.
-    """
-    if not lines:
-        raise ValueError("El grupo de carrito no puede estar vacío.")
-    cfg = parse_cantidad_por_monto_config(config)
-    total = 0
-    for line in lines:
-        id_producto = line.get("id_producto")
-        if isinstance(id_producto, bool) or not isinstance(id_producto, int):
-            raise ValueError("id_producto debe ser un entero.")
-        cantidad = _require_positive_int(
-            line.get("cantidad"), "La cantidad debe ser un entero mayor que 0."
-        )
-        total += amount_for_quantity(cantidad, cfg)
-    return total
-
-
-def allocate_group_subtotals(
-    lines: Sequence[Mapping], monto_grupo: int
-) -> List[int]:
-    """Reparto B: proporcional por cantidad en enteros; residuo en la última."""
-    if not lines:
-        return []
-    monto = _require_positive_int(
-        monto_grupo, "El monto de grupo debe ser un entero mayor que 0."
-    )
-    cantidades = [
-        _require_positive_int(
-            line.get("cantidad"), "La cantidad debe ser un entero mayor que 0."
-        )
-        for line in lines
-    ]
-    qty_total = sum(cantidades)
-    subtotals: List[int] = []
-    assigned = 0
-    for index, cantidad in enumerate(cantidades):
-        if index == len(cantidades) - 1:
-            subtotals.append(monto - assigned)
-        else:
-            part = (monto * cantidad) // qty_total
-            subtotals.append(part)
-            assigned += part
-    return subtotals
 
 
 def is_active_cantidad_por_monto(promo: Mapping) -> bool:

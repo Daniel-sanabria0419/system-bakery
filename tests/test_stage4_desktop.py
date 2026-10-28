@@ -11,7 +11,6 @@ from bakery.app.money import format_cop
 from bakery.app.promotions import (
     compute_cart_line_subtotals,
     is_active_cantidad_por_monto,
-    use_promociones_table,
 )
 from bakery.desktop import style
 from bakery.desktop.main import create_window
@@ -142,15 +141,7 @@ class FakeApiClient:
     ) -> Mapping[str, Any]:
         self.request_count += 1
         prod_by_id = {p["id_producto"]: p for p in self.products}
-        if use_promociones_table():
-            valor_total = self._valor_total_promociones(lineas, prod_by_id)
-        else:
-            valor_total = sum(
-                int(line["subtotal"])
-                if line.get("subtotal") is not None
-                else int(line["precio_aplicado"]) * int(line["cantidad"])
-                for line in lineas
-            )
+        valor_total = self._valor_total_promociones(lineas, prod_by_id)
         sale = {
             "id_venta": "11111111-1111-4111-8111-111111111111",
             "valor_total": valor_total,
@@ -170,11 +161,7 @@ class FakeApiClient:
     ) -> int:
         pending: List[Mapping[str, Any]] = []
         promos_by_id: dict = {}
-        fixed_total = 0
         for line in lineas:
-            if line.get("subtotal") is not None:
-                fixed_total += int(line["subtotal"])
-                continue
             product = prod_by_id.get(int(line["id_producto"]))
             promo_id = None
             promo = None
@@ -201,12 +188,9 @@ class FakeApiClient:
                     "promocion_id": promo_id if promo is not None else None,
                 }
             )
-        flexible = (
-            sum(compute_cart_line_subtotals(pending, promos_by_id=promos_by_id))
-            if pending
-            else 0
-        )
-        return fixed_total + flexible
+        if not pending:
+            return 0
+        return sum(compute_cart_line_subtotals(pending, promos_by_id=promos_by_id))
 
 
 def _click(qtbot, widget) -> None:

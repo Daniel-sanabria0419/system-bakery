@@ -28,14 +28,11 @@ NOMBRE_CATEGORIA_PAN_PEQUENO = "Pan pequeño"
 # Semilla Beta 2.0.4 Etapa 2 (cobro sigue por nombre de categoría hasta dual-path).
 NOMBRE_PROMOCION_PAN_PEQUENO = "Pan pequeño 7 por 2000"
 TIPO_PROMOCION_CANTIDAD_POR_MONTO = "cantidad_por_monto"
-# JSON exacto en DB. Packs 7/2000 y política greedy viven como defaults del motor.
+# JSON exacto en DB. El cobro lee precio_base y modo; los nudos están en el motor.
 PROMOCION_PAN_PEQUENO_CONFIG = {
     "precio_base": 300,
     "modo": "ceil",
 }
-PROMO_GRUPO_CANTIDAD_DEFAULT = 7
-PROMO_GRUPO_MONTO_DEFAULT = 2000
-PROMO_POLITICA_RESTO_DEFAULT = "greedy"
 
 _CREATE_MEDIOS_PAGO = """
 CREATE TABLE IF NOT EXISTS medios_pago (

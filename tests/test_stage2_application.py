@@ -2,7 +2,6 @@ from pathlib import Path
 
 import pytest
 
-from bakery.app.calculator import Calculator
 from bakery.app.money import format_cop
 from bakery.app.products import create_product
 from bakery.app.purchase import Purchase, SaleDraft, candidates_by_exact_price
@@ -10,11 +9,6 @@ from bakery.app.sales import SaleValidationError, register_sale
 from bakery.persistence import initialize
 from bakery.persistence.connection import connect
 from bakery.persistence.repositories import list_venta_lineas
-
-
-def _enter_digits(calculator: Calculator, digits: str) -> None:
-    for character in digits:
-        calculator.press_digit(character)
 
 
 def _product(
@@ -29,138 +23,6 @@ def _product(
         "precio": precio,
         "id_estado": id_estado,
     }
-
-
-def test_empty_entry_has_no_amount() -> None:
-    assert Calculator().current_amount() is None
-    assert Calculator().digits() == ""
-
-
-def test_enter_single_amount() -> None:
-    calculator = Calculator()
-    _enter_digits(calculator, "5000")
-    assert calculator.digits() == "5000"
-    assert calculator.current_amount() == 5000
-
-
-def test_leading_zero_is_replaced() -> None:
-    calculator = Calculator()
-    calculator.press_digit("0")
-    calculator.press_digit("0")
-    calculator.press_digit("5")
-    assert calculator.digits() == "5"
-    assert calculator.current_amount() == 5
-
-
-def test_non_digit_is_ignored() -> None:
-    calculator = Calculator()
-    calculator.press_digit(".")
-    calculator.press_digit("/")
-    assert calculator.digits() == ""
-    assert calculator.current_amount() is None
-
-
-def test_backspace_deletes_last_digit() -> None:
-    calculator = Calculator()
-    _enter_digits(calculator, "5000")
-    calculator.backspace()
-    assert calculator.digits() == "500"
-    assert calculator.current_amount() == 500
-
-
-def test_backspace_until_empty() -> None:
-    calculator = Calculator()
-    _enter_digits(calculator, "12")
-    calculator.backspace()
-    calculator.backspace()
-    assert calculator.digits() == ""
-    assert calculator.current_amount() is None
-    calculator.backspace()
-    assert calculator.digits() == ""
-
-
-def test_clear_entry_resets_digits() -> None:
-    calculator = Calculator()
-    _enter_digits(calculator, "5000")
-    calculator.clear_entry()
-    assert calculator.digits() == ""
-    assert calculator.current_amount() is None
-
-
-def test_press_zeros_appends_on_nonzero_entry() -> None:
-    calculator = Calculator()
-    calculator.press_digit("5")
-    calculator.press_zeros()
-    assert calculator.digits() == "500"
-    assert calculator.current_amount() == 500
-
-
-def test_press_zeros_on_empty_becomes_zero() -> None:
-    calculator = Calculator()
-    calculator.press_zeros()
-    assert calculator.digits() == "0"
-    assert calculator.current_amount() == 0
-
-
-def test_press_zeros_on_single_zero_stays_zero() -> None:
-    calculator = Calculator()
-    calculator.press_digit("0")
-    calculator.press_zeros()
-    assert calculator.digits() == "0"
-    assert calculator.current_amount() == 0
-
-
-def test_display_text_empty_when_no_digits() -> None:
-    assert Calculator().display_text() == "$ 0"
-
-
-def test_display_text_formats_while_typing() -> None:
-    calculator = Calculator()
-    cases = [
-        ("1", "$ 1"),
-        ("10", "$ 10"),
-        ("100", "$ 100"),
-        ("1000", "$ 1.000"),
-        ("10000", "$ 10.000"),
-        ("12500", "$ 12.500"),
-    ]
-    for digits, expected in cases:
-        calculator.clear_entry()
-        _enter_digits(calculator, digits)
-        assert calculator.display_text() == expected
-
-    calculator.clear_entry()
-    for digit, expected in [
-        ("1", "$ 1"),
-        ("2", "$ 12"),
-        ("5", "$ 125"),
-        ("0", "$ 1.250"),
-        ("0", "$ 12.500"),
-    ]:
-        calculator.press_digit(digit)
-        assert calculator.display_text() == expected
-
-
-def test_display_text_updates_on_backspace() -> None:
-    calculator = Calculator()
-    _enter_digits(calculator, "12500")
-    assert calculator.display_text() == "$ 12.500"
-    expected_after_backspace = [
-        "$ 1.250",
-        "$ 125",
-        "$ 12",
-        "$ 1",
-        "$ 0",
-    ]
-    for expected in expected_after_backspace:
-        calculator.backspace()
-        assert calculator.display_text() == expected
-
-
-def test_display_text_zero_entry() -> None:
-    calculator = Calculator()
-    calculator.press_digit("0")
-    assert calculator.display_text() == "$ 0"
 
 
 def test_purchase_add_line_and_total() -> None:

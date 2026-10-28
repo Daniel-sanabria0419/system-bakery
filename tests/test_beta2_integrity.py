@@ -182,12 +182,11 @@ def test_subtotal_and_total_are_computed_not_client_editable(tmp_path: Path) -> 
             "/productos",
             json={"nombre": "Pan", "precio": 5000, "id_categoria": 1},
         ).json()
-        # Cliente no puede mandar subtotal ni valor_total.
+        # El 400 lo provoca subtotal en la línea, no un valor_total extra.
         bad = client.post(
             "/ventas",
             json={
                 "id_medio_pago": 1,
-                "valor_total": 1,
                 "lineas": [
                     {
                         "id_producto": product["id_producto"],
@@ -199,6 +198,7 @@ def test_subtotal_and_total_are_computed_not_client_editable(tmp_path: Path) -> 
             },
         )
         assert bad.status_code == 400
+        assert "subtotal" in bad.json()["detail"]
 
         ok = client.post(
             "/ventas",

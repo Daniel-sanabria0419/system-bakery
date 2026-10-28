@@ -57,17 +57,6 @@ def product_thumb_path(full_image: Path) -> Path:
     return full_image.with_name(f"{full_image.stem}_thumb{full_image.suffix}")
 
 
-def resolve_product_chip_image(ruta: Optional[str]) -> Optional[Path]:
-    """Prefiere thumbnail si existe; si no, la imagen completa (o None)."""
-    full = resolve_relative_image(ruta)
-    if full is None:
-        return None
-    thumb = product_thumb_path(full)
-    if thumb.is_file():
-        return thumb
-    return full
-
-
 def save_product_image(id_producto: int, source: Path) -> str:
     """Copia la imagen a imagenes/productos/{id}{ext} y devuelve ruta relativa."""
     if isinstance(id_producto, bool) or not isinstance(id_producto, int) or id_producto <= 0:

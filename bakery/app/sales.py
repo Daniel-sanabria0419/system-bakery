@@ -7,7 +7,6 @@ from bakery.app.promotions import (
     compute_cart_line_subtotals,
     is_active_cantidad_por_monto,
     parse_cantidad_por_monto_config,
-    use_promociones_table,
 )
 from bakery.persistence.repositories import (
     get_producto,
@@ -45,10 +44,7 @@ def register_sale(
     if not isinstance(lineas, (list, tuple)) or len(lineas) < 1:
         raise SaleValidationError("Debe enviar al menos una línea de producto.")
 
-    if use_promociones_table():
-        resolved = _resolve_lines_with_promociones(connection, lineas)
-    else:
-        resolved = [_resolve_line_plain(connection, raw) for raw in lineas]
+    resolved = _resolve_lines_with_promociones(connection, lineas)
 
     valor_total = sum(line["subtotal"] for line in resolved)
     if valor_total <= 0:
@@ -83,29 +79,13 @@ def register_sale(
     return sale
 
 
-def _resolve_line_plain(connection: sqlite3.Connection, raw: Mapping) -> Mapping:
-    """Sin tabla de promociones: solo precio × cantidad (sin montos por categoría)."""
-    product, cantidad, _precio_aplicado = _validate_raw_line(connection, raw)
-    subtotal = product["precio"] * cantidad
-    return {
-        "id_producto": product["id_producto"],
-        "nombre_producto": product["nombre"],
-        "precio_aplicado": product["precio"],
-        "cantidad": cantidad,
-        "subtotal": subtotal,
-        "id_promocion": None,
-        "nombre_promocion": None,
-    }
-
-
 def _resolve_lines_with_promociones(
     connection: sqlite3.Connection, lineas: Sequence[Mapping]
 ) -> List[Mapping]:
     pending: List[Mapping] = []
     promos_by_id: Dict[int, Mapping] = {}
     for raw in lineas:
-        product, cantidad, precio_aplicado = _validate_raw_line(connection, raw)
-        subtotal_fijo = _optional_fixed_subtotal(raw)
+        product, cantidad, _precio_aplicado = _validate_raw_line(connection, raw)
         promo_id = product.get("promocion_id")
         promo: Optional[Mapping] = None
         if isinstance(promo_id, int) and not isinstance(promo_id, bool):
@@ -141,35 +121,22 @@ def _resolve_lines_with_promociones(
                 "nombre_promocion": (
                     str(active_promo["nombre"]) if active_promo is not None else None
                 ),
-                "subtotal_fijo": subtotal_fijo,
             }
         )
 
-    flexible_indices = [
-        index
-        for index, line in enumerate(pending)
-        if line["subtotal_fijo"] is None
+    line_maps = [
+        {
+            "id_producto": line["id_producto"],
+            "cantidad": line["cantidad"],
+            "precio_aplicado": line["precio_aplicado"],
+            "promocion_id": line["promocion_id"],
+        }
+        for line in pending
     ]
-    computed: List[int] = []
-    if flexible_indices:
-        flexible_maps = [
-            {
-                "id_producto": pending[index]["id_producto"],
-                "cantidad": pending[index]["cantidad"],
-                "precio_aplicado": pending[index]["precio_aplicado"],
-                "promocion_id": pending[index]["promocion_id"],
-            }
-            for index in flexible_indices
-        ]
-        computed = compute_cart_line_subtotals(
-            flexible_maps, promos_by_id=promos_by_id
-        )
-    computed_by_index = dict(zip(flexible_indices, computed))
+    computed = compute_cart_line_subtotals(line_maps, promos_by_id=promos_by_id)
 
     resolved: List[Mapping] = []
-    for index, line in enumerate(pending):
-        fixed = line["subtotal_fijo"]
-        subtotal = fixed if fixed is not None else computed_by_index[index]
+    for line, subtotal in zip(pending, computed):
         resolved.append(
             {
                 "id_producto": line["id_producto"],
@@ -182,20 +149,6 @@ def _resolve_lines_with_promociones(
             }
         )
     return resolved
-
-
-def _optional_fixed_subtotal(raw: Mapping) -> Optional[int]:
-    """Subtotal tipado opcional (pad valor→qty). None = recalcular con promo."""
-    if "subtotal" not in raw:
-        return None
-    subtotal = raw.get("subtotal")
-    if subtotal is None:
-        return None
-    if isinstance(subtotal, bool) or not isinstance(subtotal, int) or subtotal <= 0:
-        raise SaleValidationError(
-            "El subtotal tipado debe ser un entero mayor que 0."
-        )
-    return subtotal
 
 
 def _validate_raw_line(

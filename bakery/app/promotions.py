@@ -80,33 +80,19 @@ def amount_for_quantity(cantidad: int, config: Mapping) -> int:
 
 
 def quantity_from_value(valor: int, config: Mapping) -> Tuple[int, int]:
-    """Menor cantidad cuyo subtotal (misma fórmula) es ≥ valor (modo ceil)."""
+    """Menor cantidad cuyo subtotal (misma fórmula) es ≥ valor (modo ceil).
+
+    Minimiza la **cantidad** (no el subtotal). Ej.: 10000 → 34 panes a 10200,
+    no 35 panes a 10000 aunque el subtotal sea menor.
+    """
     valor_ok = _require_positive_int(valor, "El valor debe ser un entero mayor que 0.")
     cfg = parse_cantidad_por_monto_config(config)
-    precio_base = cfg["precio_base"]
-    grupo_cantidad = cfg["grupo_cantidad"]
-    q_max = max(valor_ok // precio_base + grupo_cantidad + 1, grupo_cantidad + 1)
-    best_q: Optional[int] = None
-    best_sub: Optional[int] = None
-    for cantidad in range(1, q_max + 1):
+    cantidad = 1
+    while True:
         subtotal = amount_for_quantity(cantidad, cfg)
-        if subtotal < valor_ok:
-            continue
-        if (
-            best_sub is None
-            or subtotal < best_sub
-            or (subtotal == best_sub and cantidad < best_q)  # type: ignore[operator]
-        ):
-            best_q = cantidad
-            best_sub = subtotal
-    if best_q is None or best_sub is None:
-        cantidad = q_max + 1
-        while True:
-            subtotal = amount_for_quantity(cantidad, cfg)
-            if subtotal >= valor_ok:
-                return cantidad, subtotal
-            cantidad += 1
-    return best_q, best_sub
+        if subtotal >= valor_ok:
+            return cantidad, subtotal
+        cantidad += 1
 
 
 def amount_for_cart_group(lines: Sequence[Mapping], config: Mapping) -> int:

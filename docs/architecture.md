@@ -200,7 +200,7 @@ Detalle: `docs/beta-2/stages.md` y resumen de cierre en el Context del proyecto.
 ## Beta 2.0.1 (resumen)
 
 - Detección Pan pequeño por **nombre** de categoría.
-- Precios de promo en `bakery/app/promotions.py` (sin floats); packs greedy `(qty//G)*M + (qty%G)*P` y agrupación de carrito por `promocion_id`. `pan_pequeno_pricing` es shim post-cutover.
+- Precios de promo en `bakery/app/promotions.py` (sin floats); agrupación de carrito por `promocion_id` con `todo_o_nada`. `pan_pequeno_pricing` es shim post-cutover.
 - Calculadora: valor + ceil para Pan pequeño; resto como Beta 2.0.
 - Persistencia: `schema_version` + migraciones ordenadas en `bakery/persistence/migrations.py` (sin ORM).
 - `ruta_imagen` nullable; archivos bajo `imagenes/productos/`; categorías por convención de archivo.

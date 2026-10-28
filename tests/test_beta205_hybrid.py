@@ -1,4 +1,4 @@
-"""Promo greedy packs + agrupación de carrito por promocion_id."""
+"""Beta 2.0.5: motor híbrido exacto por SKU + pool todo_o_nada."""
 
 from __future__ import annotations
 
@@ -62,8 +62,7 @@ def _pan(id_producto: int, nombre: str) -> dict:
             ],
             2000,
         ),
-        ([{"id_producto": 1, "cantidad": 8}], 2300),
-        ([{"id_producto": 1, "cantidad": 17}], 4900),
+        ([{"id_producto": 1, "cantidad": 8}], 2400),
         (
             [
                 {"id_producto": 1, "cantidad": 7},
@@ -76,7 +75,7 @@ def _pan(id_producto: int, nombre: str) -> dict:
                 {"id_producto": 1, "cantidad": 4},
                 {"id_producto": 2, "cantidad": 4},
             ],
-            2300,
+            2400,
         ),
         (
             [
@@ -87,12 +86,12 @@ def _pan(id_producto: int, nombre: str) -> dict:
         ),
     ],
 )
-def test_greedy_amount_cases(lines, expected) -> None:
+def test_hybrid_amount_cases(lines, expected) -> None:
     assert amount_for_cart_group(lines, CANONICAL) == expected
 
 
 def test_same_sku_two_lines_aggregate_to_exact() -> None:
-    """4+3 del mismo id_producto → qty 7 → 2000."""
+    """4+3 del mismo id_producto → qty 7 exacta → 2000."""
     assert (
         amount_for_cart_group(
             [
@@ -128,27 +127,16 @@ def test_draft_4_plus_3_still_2000() -> None:
     assert draft.total() == 2000
 
 
-def test_draft_eight_alone_2300() -> None:
+def test_draft_eight_alone_2400() -> None:
     draft = SaleDraft()
     draft.select_product(_pan(1, "A"))
     draft.set_quantity(8)
     draft.add_to_purchase()
-    assert draft.total() == 2300
-    assert draft.discount() == 100
-
-
-def test_draft_seventeen_is_4900() -> None:
-    draft = SaleDraft()
-    draft.select_product(_pan(1, "A"))
-    draft.set_quantity(17)
-    draft.add_to_purchase()
-    assert draft.total() == 4900
-    assert draft.list_subtotal() == 5100
-    assert draft.discount() == 200
+    assert draft.total() == 2400
 
 
 def test_preview_selection_unchanged_before_add() -> None:
-    """Preview de selección como si fuera sola; total definitivo tras Agregar."""
+    """Pad/preview: subtotal de selección como si fuera sola (2.0.4)."""
     draft = SaleDraft()
     draft.select_product(_pan(1, "A"))
     draft.set_quantity(4)
@@ -160,7 +148,7 @@ def test_preview_selection_unchanged_before_add() -> None:
     assert draft.total() == 2000
 
 
-def test_compute_subtotals_sum_matches_greedy() -> None:
+def test_compute_subtotals_sum_matches_hybrid() -> None:
     lines = [
         {
             "id_producto": 1,

@@ -45,8 +45,7 @@ def test_seed_promocion_pan_pequeno_config(tmp_path: Path) -> None:
         assert config["grupo_cantidad"] == 7
         assert config["grupo_monto"] == 2000
         assert config["modo"] == "ceil"
-        assert "politica_resto" not in config
-        assert "ajuste_manual" not in config
+        assert config["politica_resto"] == "todo_o_nada"
         assert promo["configuracion"] == promocion_pan_pequeno_config_json()
     finally:
         connection.close()

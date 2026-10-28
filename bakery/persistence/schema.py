@@ -28,13 +28,12 @@ NOMBRE_CATEGORIA_PAN_PEQUENO = "Pan pequeño"
 # Semilla Beta 2.0.4 Etapa 2 (cobro sigue por nombre de categoría hasta dual-path).
 NOMBRE_PROMOCION_PAN_PEQUENO = "Pan pequeño 7 por 2000"
 TIPO_PROMOCION_CANTIDAD_POR_MONTO = "cantidad_por_monto"
-# Cobro greedy: (qty // grupo_cantidad) * grupo_monto + (qty % grupo_cantidad) * precio_base.
-# modo=ceil aplica a valor→qty del pad. Sin politica_resto ni ajuste_manual.
 PROMOCION_PAN_PEQUENO_CONFIG = {
     "precio_base": 300,
     "grupo_cantidad": 7,
     "grupo_monto": 2000,
     "modo": "ceil",
+    "politica_resto": "todo_o_nada",
 }
 
 _CREATE_MEDIOS_PAGO = """

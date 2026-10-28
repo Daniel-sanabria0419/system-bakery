@@ -147,13 +147,13 @@ Preservar Beta 2.0.2. **No** features de Beta 2.1+.
 
 ## Beta 2.0.4
 
-**Beta 2.0.4 está implementada** (etapas 1–7; cierre documental en curso vía PR de regresión). Migra la promo hardcodeada de Pan pequeño hacia `promociones` + FK, con agrupación de carrito.
+**Beta 2.0.4 está terminada** (etapas 1–7 en main vía #39–#44; OK final de Daniel 2026-10-27). Migra la promo hardcodeada de Pan pequeño hacia `promociones` + FK, con agrupación de carrito.
 
-Alcance:
+Alcance implementado:
 
 1. Schema/seed/dual-path/UI/cutover (#39–#43).
-2. `USE_PROMOCIONES_TABLE` default **True**; cobro por FK/grupo.
-3. Snapshot `venta_lineas.id_promocion` / `nombre_promocion` (schema v3).
+2. `USE_PROMOCIONES_TABLE` default **True**; cobro por FK/grupo (`cantidad_por_monto`, `todo_o_nada`).
+3. Snapshot `venta_lineas.id_promocion` / `nombre_promocion` (schema v3) (#44).
 4. `pan_pequeno_pricing` = shim; docs: `docs/beta-2.0.4/stages.md`, `regression-notes.md`.
 
 Requisitos y etapas:
@@ -161,9 +161,9 @@ Requisitos y etapas:
 - `docs/product-requirements.md` (sección Beta 2.0.4)
 - `docs/database.md`
 - `docs/beta-2.0.4/stages.md`
-- Plan Context: `docs/beta-2.0.4-promociones-plan.md`
+- Plan / cierre Context: `docs/beta-2.0.4-promociones-plan.md`, `docs/beta-2.0.4-closure.md`
 
-Preservar Beta 2.0.3. Trabajar etapa a etapa; no anticipar Etapa 2+ sin orden.
+Preservar Beta 2.0.4. **No** features de Beta 2.1+ hasta que estén en los requisitos.
 
 ## Fuera del alcance
 

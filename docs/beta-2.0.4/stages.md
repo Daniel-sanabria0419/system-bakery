@@ -2,7 +2,7 @@
 
 Documento de etapas de **Beta 2.0.4** (migración Pan pequeño → tabla `promociones` + FK `productos.promocion_id`, agrupación de carrito). Plan técnico: Context `docs/beta-2.0.4-promociones-plan.md`.
 
-**Estado:** cierre Etapas 6–7 (regresión + docs + snapshot). Base: `main` con Etapas 1–5 (#39–#43).
+**Estado:** **cerrada** (etapas 0–7 en `main` vía #39–#44; OK final Daniel 2026-10-27). No quedan etapas pendientes.
 
 ## Decisiones (resumen CLOSED)
 
@@ -23,16 +23,16 @@ Documento de etapas de **Beta 2.0.4** (migración Pan pequeño → tabla `promoc
 | 3 | Dual-path / feature flag | Hecha | [#41](https://github.com/Daniel-sanabria0419/system-bakery/pull/41) |
 | 4 | Recálculo carrito + UI subtotal/total | Hecha | [#42](https://github.com/Daniel-sanabria0419/system-bakery/pull/42) |
 | 5 | Cutover | Hecha | [#43](https://github.com/Daniel-sanabria0419/system-bakery/pull/43) |
-| 6 | Tests + regresión | En revisión | [#44](https://github.com/Daniel-sanabria0419/system-bakery/pull/44) — snapshot + huecos; suite offscreen |
-| 7 | Pantallas / docs / nota reportes | En revisión | [#44](https://github.com/Daniel-sanabria0419/system-bakery/pull/44) — `regression-notes.md`; invariante `SUM(subtotal)` |
+| 6 | Tests + regresión | Hecha | [#44](https://github.com/Daniel-sanabria0419/system-bakery/pull/44) — snapshot + huecos; suite offscreen |
+| 7 | Pantallas / docs / nota reportes | Hecha | [#44](https://github.com/Daniel-sanabria0419/system-bakery/pull/44) — `regression-notes.md`; invariante `SUM(subtotal)` |
 
-## Etapas 6–7 — Cierre (alcance de este PR)
+## Etapas 6–7 — Cierre (hecho en #44)
 
 1. `schema_version` v3: `venta_lineas.id_promocion` + `nombre_promocion` (snapshot).
 2. `register_sale` persiste refs/nombre de promo al confirmar.
 3. Tests: snapshot estable tras rename/desactivar; 7 sola → 2000; mezcla promo + normal; migración v2→v3.
 4. Docs: `docs/beta-2.0.4/regression-notes.md`, impacto pantallas, invariante reportes.
-5. Criterio de cierre: cobro sin path por nombre de categoría; suite completa verde.
+5. Criterio de cierre: cobro sin path por nombre de categoría; suite completa verde (**241 passed**).
 
 ## Fuera de alcance de Beta 2.0.4
 

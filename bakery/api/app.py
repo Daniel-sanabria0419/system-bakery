@@ -26,13 +26,15 @@ API_PORT = 8765
 
 
 class SaleLineCreate(BaseModel):
-    """Subtotal lo calcula el backend; no se acepta en el cuerpo."""
+    """Línea de venta. ``subtotal`` opcional = cobro tipado del pad (no recalcular)."""
 
     model_config = ConfigDict(extra="forbid")
 
     id_producto: int
     cantidad: int
     precio_aplicado: int
+    # Cobro tipado desde el pad (valor→qty); si viene, el backend no lo recalcula.
+    subtotal: Optional[int] = None
 
 
 class SaleCreate(BaseModel):

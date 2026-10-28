@@ -736,14 +736,16 @@ class RegisterSalePage(QWidget):
         dialog = ConfirmSaleDialog(value, self._selected_payment_name, self)
         if dialog.exec() != QDialog.Accepted:
             return
-        lineas = [
-            {
+        lineas = []
+        for line in self._draft.purchase.items():
+            payload = {
                 "id_producto": line.id_producto,
                 "cantidad": line.cantidad,
                 "precio_aplicado": line.precio_aplicado,
             }
-            for line in self._draft.purchase.items()
-        ]
+            if line.cobro_fijo:
+                payload["subtotal"] = line.subtotal
+            lineas.append(payload)
         try:
             self._api.create_sale(payment_id, lineas)
         except httpx.HTTPError as error:

@@ -45,11 +45,11 @@ def test_pan_pequeno_value_1900_previews_ceil_before_add(qtbot) -> None:
     assert _find(window, "purchase_list").text() == ""
 
     _click(qtbot, _find(window, "agregar_button"))
-    # Agregar / carrito puede seguir con todo_o_nada (7 → 2000).
+    # Tipado 1900 se conserva en la línea (no todo_o_nada → 2000).
     assert _find(window, "purchase_list").text() == (
-        f"Pan rollo × 7 — {format_cop(2000)}"
+        f"Pan rollo × 7 — {format_cop(1900)}"
     )
-    assert _find(window, "purchase_total").text() == f"Total: {format_cop(2000)}"
+    assert _find(window, "purchase_total").text() == f"Total: {format_cop(1900)}"
 
 
 def test_pan_pequeno_plus_minus_transitions_6_7_8(qtbot) -> None:
@@ -168,7 +168,7 @@ def test_pad_shows_subtotal_and_pan_pequeno_typed_value(qtbot) -> None:
     ],
 )
 def test_pad_keeps_typed_money_no_bump(qtbot, digits: str, quantity: str) -> None:
-    """Tipar 5000/8000/10000 no debe pasar a 5100/8100/10200 en el pad."""
+    """Tipar 5000/8000/10000 no debe pasar a 5100/8100/10200 en pad ni tras Agregar."""
     api = FakeApiClient()
     window = create_window(api)
     qtbot.addWidget(window)
@@ -190,6 +190,12 @@ def test_pad_keeps_typed_money_no_bump(qtbot, digits: str, quantity: str) -> Non
     assert preview == f"{format_cop(typed)} = {quantity} panes"
     assert "→" not in preview
     assert "redondeo" not in preview
+
+    _click(qtbot, _find(window, "agregar_button"))
+    assert _find(window, "purchase_list").text() == (
+        f"Pan rollo × {quantity} — {format_cop(typed)}"
+    )
+    assert _find(window, "purchase_total").text() == f"Total: {format_cop(typed)}"
 
 
 def test_reject_agregar_without_product_still_works(qtbot) -> None:

@@ -76,7 +76,8 @@ def test_subtotal_promociones(cantidad: int, subtotal: int) -> None:
         (2000, 7, 2000),
         (2400, 8, 2400),
         (9000, 30, 9000),
-        (10000, 35, 10000),
+        # 10000: menor qty con monto ≥ valor es 34 (10200), no 35 (10000).
+        (10000, 34, 10200),
     ],
 )
 def test_quantity_from_value_exacta(
@@ -94,6 +95,8 @@ def test_quantity_from_value_exacta(
         (1900, 7, 2000),
         (2100, 8, 2400),
         (3950, 14, 4000),
+        (5000, 17, 5100),  # 16×300=4800 < 5000 → ceil a 17
+        (9950, 34, 10200),
     ],
 )
 def test_quantity_from_value_redondeo_ceil(
@@ -157,4 +160,6 @@ def test_quantity_from_value_never_rounds_down() -> None:
     assert subtotal == subtotal_for_quantity(cantidad)
     cantidad2, subtotal2 = quantity_from_value(9950)
     assert subtotal2 >= 9950
-    assert (cantidad2, subtotal2) == (35, 10000)
+    assert (cantidad2, subtotal2) == (34, 10200)
+    # Minimiza cantidad, no subtotal: 34@10200 gana a 35@10000.
+    assert quantity_from_value(10000) == (34, 10200)

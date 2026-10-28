@@ -88,7 +88,7 @@ Historial avanzado, edición de ventas, pedidos/clientes, recetas/inventario/pro
 
 ## Pruebas
 
-- Comando: `QT_QPA_PLATFORM=offscreen python3 -m pytest`
+- Comando canónico: `QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest`
 - Resultado al cierre de Etapa 9: **105 passed**
 - Adaptaciones intencionales documentadas en `regression-notes.md` (Agregar, lista, POST, request_count al abrir venta).
 

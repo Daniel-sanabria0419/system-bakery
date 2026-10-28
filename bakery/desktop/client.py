@@ -89,6 +89,7 @@ class ApiClient:
         id_categoria: Optional[int] = None,
         precio: Optional[int] = None,
     ) -> List[Mapping[str, Any]]:
+        """Lista activos. ``precio`` es legado (match exacto); el cobro usa prefijo local."""
         params = {}
         if id_categoria is not None:
             params["id_categoria"] = id_categoria

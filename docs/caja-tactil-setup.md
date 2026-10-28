@@ -39,11 +39,33 @@ Puesto de cobro en el local: pantalla táctil grande, caja de dinero, PC pequeñ
 
 ## Software
 
-1. Instalar Python + dependencias (`requirements.txt`) en el PC de caja.
+1. Instalar Python + dependencias (`requirements.txt`) en el PC de caja (preferir `.venv` del repo).
 2. Carpeta de datos con `data/bakery.sqlite3` en disco local (offline).
-3. Arranque: `python3 -m bakery.desktop` (o acceso directo / LaunchAgent en Mac).
+3. Arranque: `.venv/bin/python -m bakery.desktop` o `python3 -m bakery.desktop` (o acceso directo / LaunchAgent en Mac).
 4. Probar: menú → Productos → Registrar venta → cobro completo.
-5. Backup periódico del SQLite (USB o copia a otro disco).
+5. **Backup manual** del SQLite (ver sección siguiente). No hay backup automático en la app.
+
+---
+
+## Backup de SQLite (manual)
+
+La app **no** hace backup automático. En producción de caja, copiar periódicamente `data/bakery.sqlite3` (y, si existen, `data/bakery.sqlite3-wal` / `-shm`) a USB u otro disco.
+
+Ejemplo (Mac/Linux, app cerrada o en un momento de poca actividad):
+
+```bash
+cp data/bakery.sqlite3 "/ruta/backup/bakery-$(date +%Y%m%d).sqlite3"
+```
+
+Sin esta copia periódica, un disco dañado o un borrado accidental pierde ventas y catálogo.
+
+---
+
+## Puerto de la API local (8765)
+
+La ventana levanta uvicorn en `http://127.0.0.1:8765` (puerto fijo). Si ya hay otra instancia de la app (o un proceso que ocupó 8765), la segunda puede **fallar al bindear** o comportarse mal.
+
+Antes de reabrir: cerrar la instancia anterior, o liberar el puerto (`lsof -i :8765` / Administrador de tareas). No hay manejo explícito de “API ya ocupada” en esta Beta.
 
 ---
 
@@ -58,11 +80,13 @@ Puesto de cobro en el local: pantalla táctil grande, caja de dinero, PC pequeñ
 ## Prueba en el negocio (checklist)
 
 - [ ] App abre sin Internet.
+- [ ] Solo una instancia (puerto 8765 libre).
 - [ ] Chips de categoría/producto se tocan sin miss-clicks.
 - [ ] Pad numérico usable con dedo.
 - [ ] Popups confirmar/éxito/medio tienen botones grandes.
 - [ ] Flujo Pan pequeño (valor → cantidad) usable de pie.
 - [ ] Caja abre (manual) y cierra bien en el mostrador.
+- [ ] Hay copia de respaldo reciente de `data/bakery.sqlite3`.
 
 ---
 

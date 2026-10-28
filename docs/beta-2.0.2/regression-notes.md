@@ -5,10 +5,10 @@
 Comando:
 
 ```bash
-QT_QPA_PLATFORM=offscreen python3 -m pytest --import-mode=importlib
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest
 ```
 
-Al cierre de Etapa 6: **195 passed** (incl. smokes Beta 2 / 2.0.1 / 2.0.2).
+Al cierre de Etapa 6: **195 passed** (incl. smokes Beta 2 / 2.0.1 / 2.0.2). Comando canónico vigente: `.venv` (ver `AGENTS.md`).
 
 ## Adaptaciones / comportamientos intencionales
 

@@ -142,6 +142,7 @@ def list_active_products(
 def find_active_products_by_price(
     connection: sqlite3.Connection, precio: int
 ) -> List[Mapping]:
+    """Legado / API-only: activos con precio exacto. Desktop de cobro usa prefijo."""
     return list_active_products(connection, precio=precio)
 
 

@@ -13,7 +13,7 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Beta 1.2 | Completada | Ajustes estéticos / UX táctil; sin lógica de negocio nueva |
 | Beta 2.0 | Implementada (código); cierre documental Etapa 10 | Productos (CRUD), categorías, venta con líneas y filtro por precio |
 | Beta 2.0.1 | **Terminada** 2026-10-26 (OK final Daniel) | Pan pequeño (promo), cobro por valor, chips, imágenes, formularios |
-| Beta 2.0.2 | Implementada (código); pendiente OK final | Layout cobro, prefijo de precio, listado Productos blanco |
+| Beta 2.0.2 | **Terminada** 2026-10-27 (OK final Daniel) | Layout cobro, prefijo de precio, listado Productos blanco |
 | Beta 2.0.3 | **Terminada** 2026-10-27 (OK final Daniel) | Navegación catálogo Vista A/B; chips más grandes / tipografía editable |
 
 ---
@@ -40,7 +40,7 @@ Historial, órdenes, clientes, recetas, inventario, promos genéricas, Beta 2.1+
 
 ---
 
-# Beta 2.0.2 (implementada; pendiente OK final)
+# Beta 2.0.2 (terminada)
 
 ## Objetivo
 
@@ -127,7 +127,7 @@ Cada producto tiene **un único precio actual**. Sin variantes ni listas de prec
 
 - Catálogo de productos **activos** (por categoría) en el panel de venta (`#future_panel`; nombre legado; es el panel de catálogo).
 - Cantidad por línea; subtotal = precio × cantidad en el caso general; **excepción Beta 2.0.1:** Pan pequeño puede tener subtotal de promo (ver sección Pan pequeño). Total = suma de subtotales (siempre recalculado en backend).
-- Calculadora: dígitos locales. **Vigente (2.0.2+):** sin producto seleccionado, filtran la grilla por **prefijo** de precio (`candidates_by_price_prefix`). (En 2.0 la búsqueda era exacta; el helper/API exacta puede seguir existiendo, pero la UI de cobro usa prefijo.)
+- Calculadora: dígitos locales. **Vigente (2.0.2+):** sin producto seleccionado, filtran la grilla por **prefijo** de precio (`candidates_by_price_prefix`). En 2.0 la búsqueda era exacta; `candidates_by_exact_price` / `GET /productos/activos?precio=` / `find_active_products_by_price` quedan como **legado API/helper** (tests y contrato HTTP); el desktop de cobro **no** los usa.
 - **AGREGAR** exige producto seleccionado; sin selección → rechazo con feedback visible (no se agrega monto suelto).
 - Lista de compra muestra nombre, cantidad y subtotal.
 - Medio de pago: mismo patrón 1.2 (botón + popup).

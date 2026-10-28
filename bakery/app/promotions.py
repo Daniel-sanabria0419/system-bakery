@@ -16,10 +16,9 @@ from bakery.persistence.schema import (
     TIPO_PROMOCION_CANTIDAD_POR_MONTO,
 )
 
-# Tabla de nudos en miles, de 1000 a 10000. Promo solo si la cantidad
+# Nudos en miles (1000, 2000, …) sin tope. Promo solo si la cantidad
 # de la línea es exactamente ceil(monto / precio_base) para uno de esos montos.
 PROMO_MONTO_ESCALA = 1000
-PROMO_TABLA_MILES = 10
 
 _ALLOWED_CONFIG_KEYS = frozenset({"precio_base", "modo"})
 
@@ -65,12 +64,11 @@ def parse_cantidad_por_monto_config(configuracion: object) -> Dict[str, Any]:
 
 
 def amount_for_quantity(cantidad: int, config: Mapping) -> int:
-    """Promo solo en los nudos exactos de la tabla ceil (miles, hasta 10000).
+    """Promo solo en los nudos exactos de la tabla ceil (miles, sin tope).
 
-    Con precio_base 300: 4→1000, 7→2000, 10→3000, 14→4000, 17→5000,
-    20→6000, 24→7000, 27→8000, 30→9000, 34→10000.
+    Con precio_base 300: 4→1000, 7→2000, …, 34→10000, 37→11000, 40→12000.
     Cualquier otra cantidad: ``cantidad × precio_base``
-    (1→300, 8→2400, 12→3600).
+    (1→300, 8→2400, 12→3600, 35→10500).
     """
     cantidad_ok = _require_positive_int(
         cantidad, "La cantidad debe ser un entero mayor que 0."
@@ -78,10 +76,12 @@ def amount_for_quantity(cantidad: int, config: Mapping) -> int:
     cfg = parse_cantidad_por_monto_config(config)
     precio_base = cfg["precio_base"]
     monto = PROMO_MONTO_ESCALA
-    tope = PROMO_TABLA_MILES * PROMO_MONTO_ESCALA
-    while monto <= tope:
-        if (monto + precio_base - 1) // precio_base == cantidad_ok:
+    while True:
+        nodo = (monto + precio_base - 1) // precio_base
+        if nodo == cantidad_ok:
             return monto
+        if nodo > cantidad_ok:
+            break
         monto += PROMO_MONTO_ESCALA
     return cantidad_ok * precio_base
 

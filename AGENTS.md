@@ -167,11 +167,11 @@ Preservar Beta 2.0.4.
 
 ## Beta 2.0.5
 
-**Cobro por nudos de la tabla ceil** (miles, 1000 a 10000). Fuera de esos nudos: `cantidad × precio_base`.
+**Cobro por nudos de la tabla ceil** (miles, sin tope). Fuera de esos nudos: `cantidad × precio_base`.
 
 Alcance:
 
-1. Nudos: 4→1000, 7→2000, 10→3000, 14→4000, **17→5000**, 20→6000, 24→7000, 27→8000, 30→9000, 34→10000.
+1. Nudos: 4→1000, 7→2000, …, 34→10000, 37→11000, 40→12000 (sigue en miles).
 2. Resto: 1→300, 8→2400, 12→3600. Cada línea se cobra sola (17 + 5 → 5000 + 1500). Sin pool de carrito.
 3. JSON DB slim: `{"precio_base":300,"modo":"ceil"}`; G/M/política greedy en defaults de código.
 4. `modo: ceil` = valor→qty sin cambio.

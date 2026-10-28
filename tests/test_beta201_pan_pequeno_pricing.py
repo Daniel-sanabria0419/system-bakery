@@ -59,6 +59,8 @@ def test_subtotal_cantidades_normales(cantidad: int, subtotal: int) -> None:
         (27, 8000),
         (30, 9000),
         (34, 10000),
+        (37, 11000),
+        (40, 12000),
     ],
 )
 def test_subtotal_tabla_ceil(cantidad: int, subtotal: int) -> None:

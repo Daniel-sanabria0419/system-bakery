@@ -30,8 +30,8 @@ Detalle: `docs/beta-2.0.5/stages.md`. Diseño: Context `docs/beta-2.0.5-promo-po
 
 ## Comportamiento
 
-- Promo solo en los nudos exactos (4→1000, 7→2000, 10→3000, 14→4000, 17→5000, 20→6000, 24→7000, 27→8000, 30→9000, 34→10000).
-- Fuera de tabla: `cantidad × precio_base` (1→300, 8→2400, 12→3600). No se sube al siguiente mil.
+- Promo solo en los nudos exactos de miles sin tope (4→1000, 7→2000, …, 34→10000, 37→11000, 40→12000).
+- Fuera de nudo: `cantidad × precio_base` (1→300, 8→2400, 12→3600, 35→10500). No se sube al siguiente mil.
 - Cada línea se cobra sola (17 + 5 → 5000 + 1500 = 6500). No se suma la cantidad del carrito.
 - JSON slim `precio_base`+`modo`; ceil valor→qty sin cambio.
 

@@ -55,6 +55,9 @@ def _line_amounts(lines, config) -> int:
         (27, 8000),
         (30, 9000),
         (34, 10000),
+        (35, 10500),
+        (37, 11000),
+        (40, 12000),
     ],
 )
 def test_amount_for_quantity_knots_and_plain(

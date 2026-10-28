@@ -15,7 +15,7 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Beta 2.0.1 | **Terminada** 2026-10-26 (OK final Daniel) | Pan pequeño (promo), cobro por valor, chips, imágenes, formularios |
 | Beta 2.0.2 | **Terminada** 2026-10-27 (OK final Daniel) | Layout cobro, prefijo de precio, listado Productos blanco |
 | Beta 2.0.3 | **Terminada** 2026-10-27 (OK final Daniel) | Navegación catálogo Vista A/B; chips más grandes / tipografía editable |
-| Beta 2.0.4 | **En curso** (Etapa 3 dual-path) | Migrar Pan pequeño a `promociones` + FK; agrupación carrito detrás de flag |
+| Beta 2.0.4 | **En curso** (Etapa 4 UI carrito) | Migrar Pan pequeño a `promociones` + FK; UI subtotal/total con agrupación |
 
 ---
 
@@ -27,12 +27,12 @@ Reemplazar la promo hardcodeada de Pan pequeño (`pan_pequeno_pricing` por nombr
 
 Detalle: `docs/beta-2.0.4/stages.md`. Plan: Context `docs/beta-2.0.4-promociones-plan.md`.
 
-## Etapas 1–3
+## Etapas 1–4
 
-- **Etapa 1 (hecha #39):** tabla `promociones` y FK nullable `productos.promocion_id`; `schema_version` = 2.
-- **Etapa 2 (hecha #40):** seed promo `cantidad_por_monto` (300 / 7 / 2000, ceil, todo_o_nada) + backfill FK.
-- **Etapa 3 (este alcance):** motor `promotions` + flag `USE_PROMOCIONES_TABLE` default False (off = legado; on = agrupación carrito). Enrich API con tipo/config solo con flag on.
-- **Sin** cutover ni columnas promo en `venta_lineas` aún.
+- **Etapa 1 (hecha #39):** tabla `promociones` y FK nullable `productos.promocion_id`.
+- **Etapa 2 (hecha #40):** seed promo + backfill FK.
+- **Etapa 3 (hecha #41):** motor `promotions` + flag default False; enrich API con flag on.
+- **Etapa 4 (este alcance):** UI lista/total con subtotales post-grupo; path activable (`BAKERY_USE_PROMOCIONES_TABLE`); sin cutover aún.
 
 ## Fuera del alcance de Beta 2.0.4
 

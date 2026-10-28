@@ -147,14 +147,14 @@ Preservar Beta 2.0.2. **No** features de Beta 2.1+.
 
 ## Beta 2.0.4
 
-**Beta 2.0.4 está en curso** (Etapa 3 = dual-path). Migra la promo hardcodeada de Pan pequeño hacia tabla `promociones` + FK `productos.promocion_id`, con agrupación de carrito detrás de flag.
+**Beta 2.0.4 está en curso** (Etapa 4 = UI carrito / subtotal+total). Migra la promo hardcodeada de Pan pequeño hacia tabla `promociones` + FK, con agrupación de carrito detrás de flag.
 
-Alcance hasta Etapa 3:
+Alcance hasta Etapa 4:
 
-1. `schema_version` v2: tabla `promociones`; `productos.promocion_id` nullable (#39).
-2. Seed promo canónica + backfill FK (#40).
-3. Motor `bakery/app/promotions.py` + flag `USE_PROMOCIONES_TABLE` default **False** (off = cobro legado seguro; on = FK + agrupación carrito).
-4. UI subtotal/total post-recálculo y cutover = Etapas 4–5 (aún pendientes).
+1. Schema + seed (#39, #40).
+2. Motor + dual-path (#41); flag default **False**; activable con `BAKERY_USE_PROMOCIONES_TABLE=1`.
+3. UI lista/total refleja subtotales post-grupo cuando el path está on.
+4. Cutover (flag on por defecto / retirar path por categoría) = Etapa 5.
 
 Requisitos y etapas:
 

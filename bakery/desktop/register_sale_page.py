@@ -708,6 +708,11 @@ class RegisterSalePage(QWidget):
             self._products_layout.addWidget(button)
 
     def _refresh_display(self) -> None:
+        """Pad + lista de compra + total.
+
+        Con flag de promociones on, ``line.subtotal`` y ``total`` ya vienen
+        recalculados por grupo tras cada Agregar (Etapa 4).
+        """
         self._display.setText(format_cop(self._draft.pad_display_amount()))
         items = self._draft.purchase.items()
         self._purchase_list.setText(

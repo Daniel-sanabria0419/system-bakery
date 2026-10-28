@@ -17,7 +17,8 @@ Las tablas de catálogo y líneas (`categorias`, `productos`, `venta_lineas`) se
 - Durante el cobro, la lista de compra sigue viviendo solo en memoria hasta confirmar.
 - **Beta 2.0.1 Etapa 1:** categoría «Pan pequeño» garantizada por nombre; columna nullable `productos.ruta_imagen`; carpetas `imagenes/categorias` y `imagenes/productos`.
 - **Beta 2.0.4 Etapa 1:** tabla `promociones`; columna nullable `productos.promocion_id` (FK). Sin columnas promo en `venta_lineas` en esta etapa.
-- **Beta 2.0.4 Etapa 2:** seed de promo canónica Pan pequeño + backfill de `promocion_id` en productos de esa categoría. El cobro **sigue** por nombre de categoría hasta dual-path/cutover.
+- **Beta 2.0.4 Etapa 2:** seed de promo canónica Pan pequeño + backfill de `promocion_id` en productos de esa categoría.
+- **Beta 2.0.4 cutover + cierre:** cobro por FK/grupo; `venta_lineas.id_promocion` / `nombre_promocion` (snapshot, schema v3).
 - **Meta:** tabla `schema_version` para migraciones ordenadas (ver sección Versión de esquema).
 
 ## Tabla: medios_pago
@@ -97,7 +98,7 @@ Un producto desactivado se conserva (soft-delete). No se elimina físicamente un
 
 Las imágenes de producto viven bajo `imagenes/productos/` (ruta relativa en `ruta_imagen`, p. ej. `imagenes/productos/{id}.png`). Las de categoría (convención por archivo `imagenes/categorias/{id}.{ext}`, sin columna obligatoria) bajo `imagenes/categorias/`. Si el archivo falta, la UI no debe fallar.
 
-## Tabla: venta_lineas (Beta 2.0)
+## Tabla: venta_lineas (Beta 2.0 / 2.0.4)
 
 Campos:
 
@@ -109,7 +110,9 @@ Campos:
 | nombre_producto | Snapshot del nombre al momento de la venta |
 | precio_aplicado | Snapshot del precio aplicado (entero > 0) |
 | cantidad | Cantidad vendida (entero > 0) |
-| subtotal | Subtotal de la línea (entero > 0). En el caso general = `precio_aplicado × cantidad`. **Excepción Pan pequeño (Beta 2.0.1):** si la cantidad es múltiplo exacto de 7, el subtotal es `(cantidad // 7) × 2000`; si no, `cantidad × 300`. Por tanto `subtotal` puede ser ≠ `precio_aplicado × cantidad` cuando aplica la promo. |
+| subtotal | Subtotal de la línea (entero > 0). Puede ser ≠ `precio_aplicado × cantidad` con promo de grupo (`todo_o_nada` / combo). |
+| id_promocion | Snapshot nullable de la promo aplicada (Beta 2.0.4) |
+| nombre_promocion | Snapshot texto del nombre de promo (Beta 2.0.4); estable si la promo se renombra o desactiva después |
 
 Las ventas antiguas (solo `valor_total`, sin detalle de productos) **permanecen sin filas** en `venta_lineas`. No se inventan líneas sintéticas.
 
@@ -201,13 +204,14 @@ Versión vigente:
 | 0 | Sin meta (bases antiguas o vacías antes de este mecanismo) |
 | 1 | Baseline Beta 2.0.1: tablas de catálogo/líneas, `productos.ruta_imagen` si faltaba |
 | 2 | Beta 2.0.4 Etapa 1: tabla `promociones`; `productos.promocion_id` nullable FK |
+| 3 | Beta 2.0.4 cierre: `venta_lineas.id_promocion` + `nombre_promocion` |
 
 ## Migración
 
 Al llamar `initialize`, se ejecuta:
 
 1. `CREATE TABLE IF NOT EXISTS` para todas las tablas de negocio (incl. `promociones` y `schema_version`);
-2. migraciones ordenadas hasta `CURRENT_SCHEMA_VERSION` (hoy: v2 = `promociones` + `promocion_id`);
+2. migraciones ordenadas hasta `CURRENT_SCHEMA_VERSION` (hoy: v3 = snapshot promo en `venta_lineas`);
 3. semilla de medios (si la tabla está vacía);
 4. semilla de categorías Beta 2.0 (si la tabla está vacía);
 5. ensure de «Pan pequeño» por nombre;

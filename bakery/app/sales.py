@@ -73,6 +73,8 @@ def register_sale(
                 precio_aplicado=line["precio_aplicado"],
                 cantidad=line["cantidad"],
                 subtotal=line["subtotal"],
+                id_promocion=line.get("id_promocion"),
+                nombre_promocion=line.get("nombre_promocion"),
             )
         connection.commit()
     except Exception:
@@ -91,6 +93,8 @@ def _resolve_line_plain(connection: sqlite3.Connection, raw: Mapping) -> Mapping
         "precio_aplicado": product["precio"],
         "cantidad": cantidad,
         "subtotal": subtotal,
+        "id_promocion": None,
+        "nombre_promocion": None,
     }
 
 
@@ -121,6 +125,9 @@ def _resolve_lines_with_promociones(
                         "El precio de lista no coincide con precio_base "
                         "de la promoción."
                     )
+        active_promo = (
+            promo if promo is not None and is_active_cantidad_por_monto(promo) else None
+        )
         pending.append(
             {
                 "id_producto": product["id_producto"],
@@ -128,9 +135,10 @@ def _resolve_lines_with_promociones(
                 "precio_aplicado": product["precio"],
                 "cantidad": cantidad,
                 "promocion_id": (
-                    promo_id
-                    if promo is not None and is_active_cantidad_por_monto(promo)
-                    else None
+                    int(active_promo["id"]) if active_promo is not None else None
+                ),
+                "nombre_promocion": (
+                    str(active_promo["nombre"]) if active_promo is not None else None
                 ),
             }
         )
@@ -145,6 +153,8 @@ def _resolve_lines_with_promociones(
                 "precio_aplicado": line["precio_aplicado"],
                 "cantidad": line["cantidad"],
                 "subtotal": subtotal,
+                "id_promocion": line["promocion_id"],
+                "nombre_promocion": line["nombre_promocion"],
             }
         )
     return resolved

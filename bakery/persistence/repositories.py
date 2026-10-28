@@ -46,13 +46,16 @@ def insert_venta_linea(
     precio_aplicado: int,
     cantidad: int,
     subtotal: int,
+    id_promocion: Optional[int] = None,
+    nombre_promocion: Optional[str] = None,
 ) -> int:
     cursor = connection.execute(
         """
         INSERT INTO venta_lineas (
             id_venta, id_producto, nombre_producto,
-            precio_aplicado, cantidad, subtotal
-        ) VALUES (?, ?, ?, ?, ?, ?)
+            precio_aplicado, cantidad, subtotal,
+            id_promocion, nombre_promocion
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             id_venta,
@@ -61,6 +64,8 @@ def insert_venta_linea(
             precio_aplicado,
             cantidad,
             subtotal,
+            id_promocion,
+            nombre_promocion,
         ),
     )
     return int(cursor.lastrowid)
@@ -72,7 +77,8 @@ def list_venta_lineas(
     rows = connection.execute(
         """
         SELECT id_linea, id_venta, id_producto, nombre_producto,
-               precio_aplicado, cantidad, subtotal
+               precio_aplicado, cantidad, subtotal,
+               id_promocion, nombre_promocion
         FROM venta_lineas
         WHERE id_venta = ?
         ORDER BY id_linea

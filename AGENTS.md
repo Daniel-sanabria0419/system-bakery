@@ -147,13 +147,14 @@ Preservar Beta 2.0.2. **No** features de Beta 2.1+.
 
 ## Beta 2.0.4
 
-**Beta 2.0.4 está en curso** (Etapa 1 = schema). Migra la promo hardcodeada de Pan pequeño hacia tabla `promociones` + FK `productos.promocion_id`, con agrupación de carrito en etapas posteriores.
+**Beta 2.0.4 está en curso** (Etapa 2 = seed + backfill). Migra la promo hardcodeada de Pan pequeño hacia tabla `promociones` + FK `productos.promocion_id`, con agrupación de carrito en etapas posteriores.
 
-Alcance Etapa 1 (solo schema; cobro sin cambios):
+Alcance hasta Etapa 2 (cobro sin cambios de motor):
 
-1. `schema_version` v2: tabla `promociones`; `productos.promocion_id` nullable.
+1. `schema_version` v2: tabla `promociones`; `productos.promocion_id` nullable (#39).
 2. Repos mínimos; API de productos expone `promocion_id` (sin usarlo en cobro).
-3. Sin seed/backfill (Etapa 2); sin dual-path ni recálculo de carrito aún.
+3. Seed promo canónica `cantidad_por_monto` + backfill FK a productos «Pan pequeño».
+4. Sin dual-path ni recálculo de carrito aún (Etapas 3–4).
 
 Requisitos y etapas:
 

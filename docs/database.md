@@ -16,7 +16,8 @@ Las tablas de catálogo y líneas (`categorias`, `productos`, `venta_lineas`) se
 - **Legado Beta 1.x:** filas de `ventas` solo con `valor_total` **permanecen** sin `venta_lineas`. No se inventan líneas sintéticas.
 - Durante el cobro, la lista de compra sigue viviendo solo en memoria hasta confirmar.
 - **Beta 2.0.1 Etapa 1:** categoría «Pan pequeño» garantizada por nombre; columna nullable `productos.ruta_imagen`; carpetas `imagenes/categorias` y `imagenes/productos`.
-- **Beta 2.0.4 Etapa 1:** tabla `promociones`; columna nullable `productos.promocion_id` (FK). Sin seed aún; el cobro sigue por nombre de categoría hasta etapas posteriores. Sin columnas promo en `venta_lineas` en esta etapa.
+- **Beta 2.0.4 Etapa 1:** tabla `promociones`; columna nullable `productos.promocion_id` (FK). Sin columnas promo en `venta_lineas` en esta etapa.
+- **Beta 2.0.4 Etapa 2:** seed de promo canónica Pan pequeño + backfill de `promocion_id` en productos de esa categoría. El cobro **sigue** por nombre de categoría hasta dual-path/cutover.
 - **Meta:** tabla `schema_version` para migraciones ordenadas (ver sección Versión de esquema).
 
 ## Tabla: medios_pago
@@ -73,7 +74,7 @@ Campos:
 | configuracion | JSON en `TEXT` (no JSONB en SQLite); validado en aplicación |
 | activo | 0/1 (soft off) |
 
-En Etapa 1 la tabla puede quedar vacía (seed = Etapa 2). El cobro **no** lee esta tabla todavía.
+Etapa 2 siembra una fila canónica (`Pan pequeño 7 por 2000`, tipo `cantidad_por_monto`, config JSON con `precio_base` 300 / `grupo_cantidad` 7 / `grupo_monto` 2000 / `modo` ceil / `politica_resto` todo_o_nada, `activo=1`). El cobro **aún no** lee esta tabla (sigue `pan_pequeno_pricing` por nombre de categoría).
 
 ## Tabla: productos (Beta 2.0 / 2.0.1 / 2.0.4)
 
@@ -88,7 +89,7 @@ Campos:
 | descripcion | Descripción opcional (puede ser NULL) |
 | id_estado | Estado activo / inactivo (mismo criterio que medios: activo = 1) |
 | ruta_imagen | Ruta relativa opcional al archivo de imagen (nullable; p. ej. `imagenes/productos/...`) |
-| promocion_id | FK nullable a `promociones(id)`. `NULL` = sin promo de tabla. Etapa 1: expuesto en API; cobro aún no lo usa |
+| promocion_id | FK nullable a `promociones(id)`. `NULL` = sin promo de tabla. Etapa 2: backfill a productos de «Pan pequeño»; expuesto en API; cobro aún no lo usa |
 
 Un producto desactivado se conserva (soft-delete). No se elimina físicamente un producto referenciado en `venta_lineas`.
 
@@ -208,12 +209,13 @@ Al llamar `initialize`, se ejecuta:
 3. semilla de medios (si la tabla está vacía);
 4. semilla de categorías Beta 2.0 (si la tabla está vacía);
 5. ensure de «Pan pequeño» por nombre;
-6. creación idempotente de `imagenes/categorias` y `imagenes/productos` en la raíz del proyecto.
+6. ensure de promo canónica Pan pequeño + backfill de `promocion_id` en productos de esa categoría (Beta 2.0.4 Etapa 2);
+7. creación idempotente de `imagenes/categorias` y `imagenes/productos` en la raíz del proyecto.
 
 Es idempotente:
 
-- en una base nueva: esquema completo, `schema_version = CURRENT`, semillas y Pan pequeño (`promociones` vacía en Etapa 1);
-- en una base con las cinco categorías de Beta 2.0: se añade Pan pequeño, `ruta_imagen` y `promocion_id`, y se marca `schema_version`;
-- en una base en v1: se crea `promociones` y se añade `promocion_id` sin tocar datos de venta;
+- en una base nueva: esquema completo, `schema_version = CURRENT`, semillas, Pan pequeño y promo canónica;
+- en una base con las cinco categorías de Beta 2.0: se añade Pan pequeño, `ruta_imagen` y `promocion_id`, promo + backfill, y se marca `schema_version`;
+- en una base en v1: se crea `promociones` y se añade `promocion_id` sin tocar datos de venta; luego seed/backfill;
 - en una base solo-`medios_pago` / `ventas`: agrega tablas faltantes sin alterar ventas existentes;
 - re-ejecutar `initialize` no duplica datos ni re-aplica migraciones ya aplicadas.

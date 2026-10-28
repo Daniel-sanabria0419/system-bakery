@@ -342,6 +342,7 @@ class SaleDraft:
             return
         line_maps = [
             {
+                "id_producto": item.id_producto,
                 "cantidad": item.cantidad,
                 "precio_aplicado": item.precio_aplicado,
                 "promocion_id": item.promocion_id,

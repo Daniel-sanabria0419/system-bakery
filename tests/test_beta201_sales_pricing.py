@@ -93,9 +93,9 @@ def test_draft_pan_pequeno_promo_and_normal_qty() -> None:
     draft.set_quantity(8)
     assert draft.current_subtotal() == 2400  # preview de la selección sola
     assert draft.add_to_purchase() is True
-    # Cutover: agrupación de carrito 7+8=15 → 15×300 = 4500
-    assert draft.total() == 4500
-    assert sum(item.subtotal for item in draft.purchase.items()) == 4500
+    # 2.0.5 híbrido: 7 exacto → 2000; 8 en pool → 2400; total 4400
+    assert draft.total() == 4400
+    assert sum(item.subtotal for item in draft.purchase.items()) == 4400
 
 
 def test_draft_apply_value_sets_quantity_for_pan_pequeno() -> None:

@@ -16,6 +16,27 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Beta 2.0.2 | **Terminada** 2026-10-27 (OK final Daniel) | Layout cobro, prefijo de precio, listado Productos blanco |
 | Beta 2.0.3 | **Terminada** 2026-10-27 (OK final Daniel) | Navegación catálogo Vista A/B; chips más grandes / tipografía editable |
 | Beta 2.0.4 | **Terminada** 2026-10-27 (OK final Daniel) | Migrar Pan pequeño a `promociones` + FK; cobro por FK/grupo |
+| Beta 2.0.5 | **En curso** | Promo híbrida: exacto por SKU + pool grupo `todo_o_nada` |
+
+---
+
+# Beta 2.0.5 (en curso)
+
+## Objetivo
+
+Ajustar el cobro de `cantidad_por_monto` para que un SKU con múltiplo exacto de `grupo_cantidad` reciba promo aunque el total del carrito del mismo `promocion_id` no sea múltiplo; conservar el combo cruzado (4+3 → 2000) vía pool de no-exactos.
+
+Detalle: `docs/beta-2.0.5/stages.md`. Diseño: Context `docs/beta-2.0.5-promo-por-producto-y-grupo.md`.
+
+## Comportamiento
+
+- Capa 1: por `id_producto`, solo múltiplos **exactos** (7, 14, …); no greedy (8 → 2400).
+- Capa 2: pool de qty no exactas del mismo promo + `todo_o_nada` (7+5 → 3500; 10+4 → 4000).
+- Pad/preview: igual que Beta 2.0.4.
+
+## Fuera del alcance de Beta 2.0.5
+
+CRUD rico de promos, otros tipos, inventario, sync, login, reportes, PostgreSQL, Beta 2.1+.
 
 ---
 

@@ -163,7 +163,26 @@ Requisitos y etapas:
 - `docs/beta-2.0.4/stages.md`
 - Plan / cierre Context: `docs/beta-2.0.4-promociones-plan.md`, `docs/beta-2.0.4-closure.md`
 
-Preservar Beta 2.0.4. **No** features de Beta 2.1+ hasta que estén en los requisitos.
+Preservar Beta 2.0.4.
+
+## Beta 2.0.5
+
+**Beta 2.0.5 en curso** (motor híbrido de promo). Sobre 2.0.4: múltiplos exactos por `id_producto` + pool `todo_o_nada` del mismo `promocion_id`.
+
+Alcance:
+
+1. Capa 1: si qty agregada del SKU es múltiplo exacto de `grupo_cantidad` → promo esa qty (no greedy; 8 → 2400).
+2. Capa 2: qty no exactas del mismo promo → pool + `todo_o_nada` (4+3 → 2000; 7+5 → 3500; 10+4 → 4000).
+3. Pad/preview de selección igual que 2.0.4; total definitivo tras Agregar.
+4. Sin schema nuevo.
+
+Requisitos y etapas:
+
+- `docs/product-requirements.md` (sección Beta 2.0.5)
+- `docs/beta-2.0.5/stages.md`
+- Diseño Context: `docs/beta-2.0.5-promo-por-producto-y-grupo.md`
+
+Preservar Beta 2.0.5. **No** features de Beta 2.1+ hasta que estén en los requisitos.
 
 ## Fuera del alcance
 

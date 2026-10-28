@@ -21,7 +21,7 @@ Documento de etapas de **Beta 2.0.4** (migración Pan pequeño → tabla `promoc
 | 1 | Schema (`promociones` + `promocion_id`) | Hecha | [#39](https://github.com/Daniel-sanabria0419/system-bakery/pull/39) |
 | 2 | Seed + backfill | Hecha | [#40](https://github.com/Daniel-sanabria0419/system-bakery/pull/40) |
 | 3 | Dual-path / feature flag | Hecha | [#41](https://github.com/Daniel-sanabria0419/system-bakery/pull/41) |
-| 4 | Recálculo carrito + UI subtotal/total | En revisión | Lista/total UI + path activable (`BAKERY_USE_PROMOCIONES_TABLE` / flag); sin cutover |
+| 4 | Recálculo carrito + UI subtotal/total | En revisión | [#42](https://github.com/Daniel-sanabria0419/system-bakery/pull/42); lista/total UI + path activable (`BAKERY_USE_PROMOCIONES_TABLE` / flag); sin cutover |
 | 5 | Cutover | Pendiente | Flag on por defecto; retirar path por nombre de categoría |
 | 6 | Tests + regresión | Pendiente | Incl. 4+3 / 4+4 |
 | 7 | Pantallas / docs / nota reportes | Pendiente | |

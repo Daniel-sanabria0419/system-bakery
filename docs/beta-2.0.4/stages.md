@@ -19,7 +19,7 @@ Documento de etapas de **Beta 2.0.4** (migración Pan pequeño → tabla `promoc
 |---|---|---|---|
 | 0 | Alcance documentado (decisiones CLOSED) | Hecha (plan Context) | PRD/`stages` en repo |
 | 1 | Schema (`promociones` + `promocion_id`) | Hecha | [#39](https://github.com/Daniel-sanabria0419/system-bakery/pull/39) |
-| 2 | Seed + backfill | En revisión | Promo canónica + FK a productos Pan pequeño; cobro sigue por nombre de categoría |
+| 2 | Seed + backfill | En revisión | [#40](https://github.com/Daniel-sanabria0419/system-bakery/pull/40); promo canónica + FK a productos Pan pequeño; cobro sigue por nombre de categoría |
 | 3 | Dual-path / feature flag | Pendiente | Flag off = cobro actual |
 | 4 | Recálculo carrito + UI subtotal/total | Pendiente | **Obligatoria** |
 | 5 | Cutover | Pendiente | Retirar path por nombre de categoría |

@@ -23,8 +23,8 @@ Documento de etapas de **Beta 2.0.4** (migración Pan pequeño → tabla `promoc
 | 3 | Dual-path / feature flag | Hecha | [#41](https://github.com/Daniel-sanabria0419/system-bakery/pull/41) |
 | 4 | Recálculo carrito + UI subtotal/total | Hecha | [#42](https://github.com/Daniel-sanabria0419/system-bakery/pull/42) |
 | 5 | Cutover | Hecha | [#43](https://github.com/Daniel-sanabria0419/system-bakery/pull/43) |
-| 6 | Tests + regresión | En revisión | Snapshot + huecos 7 sola / mezcla; suite offscreen |
-| 7 | Pantallas / docs / nota reportes | En revisión | `regression-notes.md`; invariante `SUM(subtotal)` |
+| 6 | Tests + regresión | En revisión | [#44](https://github.com/Daniel-sanabria0419/system-bakery/pull/44) — snapshot + huecos; suite offscreen |
+| 7 | Pantallas / docs / nota reportes | En revisión | [#44](https://github.com/Daniel-sanabria0419/system-bakery/pull/44) — `regression-notes.md`; invariante `SUM(subtotal)` |
 
 ## Etapas 6–7 — Cierre (alcance de este PR)
 

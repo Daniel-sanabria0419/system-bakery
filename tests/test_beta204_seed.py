@@ -24,7 +24,6 @@ from bakery.persistence.schema import (
     promocion_pan_pequeno_config_json,
 )
 
-
 def _db(tmp_path: Path) -> Path:
     path = tmp_path / "bakery.sqlite3"
     initialize(path)
@@ -141,20 +140,15 @@ def test_backfill_on_reinit_exposes_fk_in_api(tmp_path: Path) -> None:
             },
         )
         assert created.status_code == 200
-        # create_product aún no asigna promo; backfill solo en initialize.
-        assert created.json()["promocion_id"] is None
-
-    initialize(db_path)
-    with TestClient(create_app(db_path)) as client:
-        products = client.get("/productos").json()
-        pan_products = [p for p in products if p["nombre"] == "Pan API"]
-        assert len(pan_products) == 1
-        assert pan_products[0]["promocion_id"] is not None
+        body = created.json()
+        # Cutover: create/update asigna FK de promo canónica al instante.
+        assert body["promocion_id"] is not None
+        assert body["promocion_tipo"] == TIPO_PROMOCION_CANTIDAD_POR_MONTO
 
     connection = connect(db_path)
     try:
         promos = list_promociones(connection)
         assert len(promos) == 1
-        assert pan_products[0]["promocion_id"] == promos[0]["id"]
+        assert body["promocion_id"] == promos[0]["id"]
     finally:
         connection.close()

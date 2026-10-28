@@ -2,12 +2,6 @@ from dataclasses import dataclass
 from typing import Dict, List, Mapping, Optional, Sequence
 
 from bakery.app.calculator import Calculator
-from bakery.app.pan_pequeno_pricing import (
-    PRECIO_UNITARIO_PAN_PEQUENO,
-    is_pan_pequeno,
-    quantity_from_value as pan_quantity_from_value,
-    subtotal_for_quantity as pan_subtotal_for_quantity,
-)
 from bakery.app.promotions import (
     amount_for_quantity,
     compute_cart_line_subtotals,
@@ -222,13 +216,12 @@ class SaleDraft:
         return dict(self._selected_product)
 
     def selected_is_pan_pequeno(self) -> bool:
-        """True si la selección usa pad/valor de promo (legado o dual-path)."""
-        product = self._selected_product
-        if product is None:
+        """True si la selección usa pad valor→cantidad (promo activa por FK)."""
+        if self._selected_product is None:
             return False
-        if use_promociones_table():
-            return self._selected_promo_config() is not None
-        return is_pan_pequeno(product.get("nombre_categoria"))
+        if not use_promociones_table():
+            return False
+        return self._selected_promo_config() is not None
 
     def set_quantity(self, quantity: int) -> bool:
         if isinstance(quantity, bool) or not isinstance(quantity, int) or quantity <= 0:
@@ -248,13 +241,10 @@ class SaleDraft:
             config = self._selected_promo_config()
             if config is not None:
                 return amount_for_quantity(self._quantity, config)
-            return product["precio"] * self._quantity
-        if is_pan_pequeno(product.get("nombre_categoria")):
-            return pan_subtotal_for_quantity(self._quantity)
         return product["precio"] * self._quantity
 
     def pad_display_amount(self) -> int:
-        """Monto del display del pad: entrada, valor tipado PP, o subtotal a agregar."""
+        """Monto del display del pad: entrada, valor tipado promo, o subtotal a agregar."""
         if self._selected_product is None:
             amount = self.entry.current_amount()
             return 0 if amount is None else amount
@@ -266,17 +256,14 @@ class SaleDraft:
         return 0 if subtotal is None else subtotal
 
     def apply_value(self, valor: int) -> bool:
-        """Promo cantidad_por_monto / Pan pequeño: valor → cantidad (ceil)."""
+        """Promo cantidad_por_monto: valor → cantidad (ceil)."""
         if not self.selected_is_pan_pequeno():
             return False
+        config = self._selected_promo_config()
+        if config is None:
+            return False
         try:
-            if use_promociones_table():
-                config = self._selected_promo_config()
-                if config is None:
-                    return False
-                cantidad, _subtotal = promo_quantity_from_value(valor, config)
-            else:
-                cantidad, _subtotal = pan_quantity_from_value(valor)
+            cantidad, _subtotal = promo_quantity_from_value(valor, config)
         except ValueError:
             return False
         self._quantity = cantidad
@@ -297,9 +284,6 @@ class SaleDraft:
             else:
                 precio_aplicado = product["precio"]
                 subtotal = precio_aplicado * self._quantity
-        elif is_pan_pequeno(product.get("nombre_categoria")):
-            precio_aplicado = PRECIO_UNITARIO_PAN_PEQUENO
-            subtotal = pan_subtotal_for_quantity(self._quantity)
         else:
             precio_aplicado = product["precio"]
             subtotal = precio_aplicado * self._quantity

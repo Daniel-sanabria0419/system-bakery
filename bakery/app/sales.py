@@ -3,11 +3,6 @@ import uuid
 from datetime import datetime
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
-from bakery.app.pan_pequeno_pricing import (
-    PRECIO_UNITARIO_PAN_PEQUENO,
-    is_pan_pequeno,
-    subtotal_for_quantity,
-)
 from bakery.app.promotions import (
     compute_cart_line_subtotals,
     is_active_cantidad_por_monto,
@@ -15,7 +10,6 @@ from bakery.app.promotions import (
     use_promociones_table,
 )
 from bakery.persistence.repositories import (
-    get_categoria,
     get_producto,
     get_promocion,
     insert_sale,
@@ -54,7 +48,7 @@ def register_sale(
     if use_promociones_table():
         resolved = _resolve_lines_with_promociones(connection, lineas)
     else:
-        resolved = [_resolve_line_legacy(connection, raw) for raw in lineas]
+        resolved = [_resolve_line_plain(connection, raw) for raw in lineas]
 
     valor_total = sum(line["subtotal"] for line in resolved)
     if valor_total <= 0:
@@ -87,25 +81,9 @@ def register_sale(
     return sale
 
 
-def _resolve_line_legacy(connection: sqlite3.Connection, raw: Mapping) -> Mapping:
-    product, cantidad, precio_aplicado = _validate_raw_line(connection, raw)
-
-    categoria = get_categoria(connection, product["id_categoria"])
-    if categoria is not None and is_pan_pequeno(categoria):
-        if product["precio"] != PRECIO_UNITARIO_PAN_PEQUENO:
-            raise SaleValidationError(
-                "El precio de lista de Pan pequeño debe ser "
-                f"{PRECIO_UNITARIO_PAN_PEQUENO}."
-            )
-        subtotal = subtotal_for_quantity(cantidad)
-        return {
-            "id_producto": product["id_producto"],
-            "nombre_producto": product["nombre"],
-            "precio_aplicado": product["precio"],
-            "cantidad": cantidad,
-            "subtotal": subtotal,
-        }
-
+def _resolve_line_plain(connection: sqlite3.Connection, raw: Mapping) -> Mapping:
+    """Sin tabla de promociones: solo precio × cantidad (sin montos por categoría)."""
+    product, cantidad, _precio_aplicado = _validate_raw_line(connection, raw)
     subtotal = product["precio"] * cantidad
     return {
         "id_producto": product["id_producto"],

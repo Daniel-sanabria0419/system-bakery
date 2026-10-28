@@ -146,7 +146,7 @@ def test_desktop_flag_on_4_plus_4_total_2400(qtbot, monkeypatch) -> None:
     assert _find(window, "purchase_total").text() == f"Total: {format_cop(2400)}"
 
 
-def test_desktop_flag_off_4_plus_3_still_2100(qtbot, monkeypatch) -> None:
+def test_desktop_flag_off_4_plus_3_plain_2100(qtbot, monkeypatch) -> None:
     monkeypatch.setattr(promotions_mod, "USE_PROMOCIONES_TABLE", False)
     monkeypatch.delenv("BAKERY_USE_PROMOCIONES_TABLE", raising=False)
     api = _api_with_two_pan_products()
@@ -163,7 +163,7 @@ def test_desktop_flag_off_4_plus_3_still_2100(qtbot, monkeypatch) -> None:
     _set_quantity(qtbot, window, 3)
     _click(qtbot, _find(window, "agregar_button"))
 
-    # Legado: promo por línea (nombre categoría) → 1200 + 900
+    # Flag off: precio × cantidad (sin agrupación ni path por categoría)
     assert _find(window, "purchase_total").text() == f"Total: {format_cop(2100)}"
     subtotals = _parse_line_subtotals(_find(window, "purchase_list").text())
     assert subtotals == [1200, 900]

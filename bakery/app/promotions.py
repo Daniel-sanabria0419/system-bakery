@@ -1,7 +1,8 @@
 """Motor de promociones tipadas (Beta 2.0.4).
 
-Etapa 3: dual-path. Con ``USE_PROMOCIONES_TABLE`` en False (default) el cobro
-sigue en ``pan_pequeno_pricing``. Con True usa FK + fórmula de grupo.
+Etapa 5 cutover: ``USE_PROMOCIONES_TABLE`` default True. El cobro usa FK +
+agrupación de carrito; no hay path de montos por nombre de categoría.
+Desactivar solo con ``BAKERY_USE_PROMOCIONES_TABLE=0`` (precio × cantidad plano).
 """
 
 from __future__ import annotations
@@ -15,9 +16,8 @@ from bakery.persistence.schema import (
     TIPO_PROMOCION_CANTIDAD_POR_MONTO,
 )
 
-# Flag de cobro. Default False = path legado (Pan pequeño por nombre).
-# Activar en runtime: BAKERY_USE_PROMOCIONES_TABLE=1 (Etapa 4 UI / pruebas).
-USE_PROMOCIONES_TABLE = False
+# Flag de cobro. Default True tras cutover (Etapa 5).
+USE_PROMOCIONES_TABLE = True
 
 
 def use_promociones_table() -> bool:

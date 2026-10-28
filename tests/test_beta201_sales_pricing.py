@@ -6,6 +6,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from bakery.api.app import create_app
+import json
+
 from bakery.app.pan_pequeno_pricing import PRECIO_UNITARIO_PAN_PEQUENO
 from bakery.app.products import ProductValidationError, create_product, update_product
 from bakery.app.purchase import Purchase, SaleDraft
@@ -13,7 +15,12 @@ from bakery.app.sales import register_sale
 from bakery.persistence import initialize
 from bakery.persistence.connection import connect
 from bakery.persistence.repositories import get_categoria_by_nombre, list_venta_lineas
-from bakery.persistence.schema import NOMBRE_CATEGORIA_PAN_PEQUENO
+from bakery.persistence.schema import (
+    ESTADO_ACTIVO,
+    NOMBRE_CATEGORIA_PAN_PEQUENO,
+    PROMOCION_PAN_PEQUENO_CONFIG,
+    TIPO_PROMOCION_CANTIDAD_POR_MONTO,
+)
 
 
 def _db(tmp_path: Path):
@@ -39,6 +46,12 @@ def _pan_pequeno_product(
         "nombre": nombre,
         "precio": precio,
         "nombre_categoria": NOMBRE_CATEGORIA_PAN_PEQUENO,
+        "promocion_id": 1,
+        "promocion_tipo": TIPO_PROMOCION_CANTIDAD_POR_MONTO,
+        "promocion_configuracion": json.dumps(
+            PROMOCION_PAN_PEQUENO_CONFIG, separators=(",", ":"), sort_keys=True
+        ),
+        "promocion_activo": ESTADO_ACTIVO,
     }
 
 
@@ -78,10 +91,11 @@ def test_draft_pan_pequeno_promo_and_normal_qty() -> None:
 
     draft.select_product(_pan_pequeno_product(id_producto=2))
     draft.set_quantity(8)
-    assert draft.current_subtotal() == 2400
+    assert draft.current_subtotal() == 2400  # preview de la selección sola
     assert draft.add_to_purchase() is True
-    assert draft.purchase.items()[1].subtotal == 2400
-    assert draft.total() == 4400
+    # Cutover: agrupación de carrito 7+8=15 → 15×300 = 4500
+    assert draft.total() == 4500
+    assert sum(item.subtotal for item in draft.purchase.items()) == 4500
 
 
 def test_draft_apply_value_sets_quantity_for_pan_pequeno() -> None:

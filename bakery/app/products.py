@@ -16,10 +16,15 @@ from bakery.persistence.repositories import (
     list_categorias,
     list_productos,
     set_producto_estado,
+    set_producto_promocion_id,
     set_producto_ruta_imagen,
     update_producto,
 )
-from bakery.persistence.schema import ESTADO_ACTIVO, ESTADO_INACTIVO
+from bakery.persistence.schema import (
+    ESTADO_ACTIVO,
+    ESTADO_INACTIVO,
+    ensure_promocion_pan_pequeno,
+)
 
 
 class ProductValidationError(Exception):
@@ -58,6 +63,7 @@ def create_product(
         id_estado=ESTADO_ACTIVO,
         ruta_imagen=ruta_ok,
     )
+    _sync_promocion_for_categoria(connection, id_producto, id_categoria_ok)
     connection.commit()
     product = get_producto(connection, id_producto)
     assert product is not None
@@ -96,6 +102,9 @@ def update_product(
         except ValueError as error:
             raise ProductValidationError(str(error)) from error
         set_producto_ruta_imagen(connection, product["id_producto"], ruta_ok)
+    _sync_promocion_for_categoria(
+        connection, product["id_producto"], id_categoria_ok
+    )
     connection.commit()
     updated = get_producto(connection, product["id_producto"])
     assert updated is not None
@@ -244,6 +253,18 @@ def _require_pan_pequeno_precio(
             "Los productos de Pan pequeño deben tener precio "
             f"{PRECIO_UNITARIO_PAN_PEQUENO}."
         )
+
+
+def _sync_promocion_for_categoria(
+    connection: sqlite3.Connection, id_producto: int, id_categoria: int
+) -> None:
+    """Asigna/limpia FK de promo según categoría (no calcula montos de cobro)."""
+    categoria = get_categoria(connection, id_categoria)
+    if categoria is not None and is_pan_pequeno(categoria):
+        promo_id = ensure_promocion_pan_pequeno(connection)
+        set_producto_promocion_id(connection, id_producto, promo_id)
+    else:
+        set_producto_promocion_id(connection, id_producto, None)
 
 
 def _require_positive_int(value: object, message: str) -> int:

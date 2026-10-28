@@ -119,13 +119,17 @@ def test_compute_cart_line_subtotals_mixed() -> None:
     assert sum(subs) == 5000
 
 
-def test_flag_off_draft_keeps_line_pricing_4_plus_3() -> None:
+def test_flag_off_draft_uses_plain_precio_times_qty() -> None:
     draft = SaleDraft()
     product = {
         "id_producto": 1,
         "nombre": "Pan A",
         "precio": 300,
         "nombre_categoria": NOMBRE_CATEGORIA_PAN_PEQUENO,
+        "promocion_id": 1,
+        "promocion_tipo": TIPO_PROMOCION_CANTIDAD_POR_MONTO,
+        "promocion_configuracion": json.dumps(CANONICAL),
+        "promocion_activo": ESTADO_ACTIVO,
     }
     draft.select_product(product)
     draft.set_quantity(4)
@@ -133,7 +137,7 @@ def test_flag_off_draft_keeps_line_pricing_4_plus_3() -> None:
     draft.select_product({**product, "id_producto": 2, "nombre": "Pan B"})
     draft.set_quantity(3)
     assert draft.add_to_purchase() is True
-    # Legado: promo por línea → 1200 + 900 = 2100
+    # Flag off tras cutover: sin montos por categoría → precio × cantidad
     assert draft.total() == 2100
 
 

@@ -7,7 +7,13 @@ from bakery.app.money import format_cop
 from bakery.desktop.main import create_window
 from bakery.desktop.ui import ConfirmSaleDialog, SaleSavedDialog
 from bakery.persistence.schema import ESTADO_ACTIVO, NOMBRE_CATEGORIA_PAN_PEQUENO
-from tests.test_stage4_desktop import FakeApiClient, _click, _find, _select_payment
+from tests.test_stage4_desktop import (
+    FakeApiClient,
+    _PAN_PROMO_FIELDS,
+    _click,
+    _find,
+    _select_payment,
+)
 
 
 def test_smoke_menu_products_pan_pequeno_checkout(qtbot) -> None:
@@ -34,6 +40,7 @@ def test_smoke_menu_products_pan_pequeno_checkout(qtbot) -> None:
                 "descripcion": None,
                 "id_estado": ESTADO_ACTIVO,
                 "ruta_imagen": None,
+                **_PAN_PROMO_FIELDS,
             },
         ],
     )

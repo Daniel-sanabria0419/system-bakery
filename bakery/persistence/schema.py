@@ -93,7 +93,9 @@ CREATE TABLE IF NOT EXISTS venta_lineas (
     nombre_producto TEXT NOT NULL,
     precio_aplicado INTEGER NOT NULL CHECK (precio_aplicado > 0),
     cantidad INTEGER NOT NULL CHECK (cantidad > 0),
-    subtotal INTEGER NOT NULL CHECK (subtotal > 0)
+    subtotal INTEGER NOT NULL CHECK (subtotal > 0),
+    id_promocion INTEGER REFERENCES promociones(id),
+    nombre_promocion TEXT
 )
 """
 
@@ -265,6 +267,35 @@ def migrate_productos_promocion_id(connection: sqlite3.Connection) -> None:
         "ALTER TABLE productos ADD COLUMN promocion_id INTEGER "
         "REFERENCES promociones(id)"
     )
+
+
+def _venta_lineas_has_column(connection: sqlite3.Connection, column: str) -> bool:
+    rows = connection.execute("PRAGMA table_info(venta_lineas)").fetchall()
+    names = {row[1] for row in rows}
+    return column in names
+
+
+def migrate_venta_lineas_promocion_snapshot(
+    connection: sqlite3.Connection,
+) -> None:
+    """Añade id_promocion / nombre_promocion en venta_lineas si faltan."""
+    tables = {
+        row[0]
+        for row in connection.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table'"
+        ).fetchall()
+    }
+    if "venta_lineas" not in tables:
+        return
+    if not _venta_lineas_has_column(connection, "id_promocion"):
+        connection.execute(
+            "ALTER TABLE venta_lineas ADD COLUMN id_promocion INTEGER "
+            "REFERENCES promociones(id)"
+        )
+    if not _venta_lineas_has_column(connection, "nombre_promocion"):
+        connection.execute(
+            "ALTER TABLE venta_lineas ADD COLUMN nombre_promocion TEXT"
+        )
 
 
 def ensure_imagenes_dirs(project_root: Optional[Path] = None) -> None:

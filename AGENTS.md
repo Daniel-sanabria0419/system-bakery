@@ -147,14 +147,14 @@ Preservar Beta 2.0.2. **No** features de Beta 2.1+.
 
 ## Beta 2.0.4
 
-**Beta 2.0.4 está en curso** (Etapa 5 = cutover). Migra la promo hardcodeada de Pan pequeño hacia tabla `promociones` + FK, con agrupación de carrito.
+**Beta 2.0.4 está implementada** (etapas 1–7; cierre documental en curso vía PR de regresión). Migra la promo hardcodeada de Pan pequeño hacia `promociones` + FK, con agrupación de carrito.
 
-Alcance hasta Etapa 5:
+Alcance:
 
-1. Schema + seed + dual-path + UI (#39–#42).
-2. Cutover: `USE_PROMOCIONES_TABLE` default **True**; cobro por FK/grupo (no por nombre de categoría).
-3. `pan_pequeno_pricing` = shim; apagar path solo con `BAKERY_USE_PROMOCIONES_TABLE=0` (precio × cantidad plano).
-4. Regresión/docs finales = Etapas 6–7.
+1. Schema/seed/dual-path/UI/cutover (#39–#43).
+2. `USE_PROMOCIONES_TABLE` default **True**; cobro por FK/grupo.
+3. Snapshot `venta_lineas.id_promocion` / `nombre_promocion` (schema v3).
+4. `pan_pequeno_pricing` = shim; docs: `docs/beta-2.0.4/stages.md`, `regression-notes.md`.
 
 Requisitos y etapas:
 

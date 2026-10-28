@@ -140,7 +140,7 @@ def test_new_db_has_promociones_and_promocion_id(tmp_path: Path) -> None:
         }
         assert "promocion_id" in columns
         assert get_schema_version(connection) == CURRENT_SCHEMA_VERSION
-        assert CURRENT_SCHEMA_VERSION == 2
+        assert CURRENT_SCHEMA_VERSION >= 2
         promos = list_promociones(connection)
         assert len(promos) == 1
         product_id = insert_producto(
@@ -185,7 +185,7 @@ def test_migrate_v1_to_v2_round_trip_idempotent(tmp_path: Path) -> None:
 
     connection = connect(path)
     try:
-        assert get_schema_version(connection) == 2
+        assert get_schema_version(connection) == CURRENT_SCHEMA_VERSION
         tables = {
             row[0]
             for row in connection.execute(
@@ -198,6 +198,14 @@ def test_migrate_v1_to_v2_round_trip_idempotent(tmp_path: Path) -> None:
             for row in connection.execute("PRAGMA table_info(productos)").fetchall()
         }
         assert "promocion_id" in columns
+        line_columns = {
+            row[1]
+            for row in connection.execute(
+                "PRAGMA table_info(venta_lineas)"
+            ).fetchall()
+        }
+        assert "id_promocion" in line_columns
+        assert "nombre_promocion" in line_columns
         product = get_producto(connection, 1)
         assert product is not None
         assert product["nombre"] == "Torta"

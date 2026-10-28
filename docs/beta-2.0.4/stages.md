@@ -2,7 +2,7 @@
 
 Documento de etapas de **Beta 2.0.4** (migración Pan pequeño → tabla `promociones` + FK `productos.promocion_id`, agrupación de carrito). Plan técnico: Context `docs/beta-2.0.4-promociones-plan.md`.
 
-**Estado:** en curso (Etapa 5 cutover). Base: `main` con Etapas 1–4 mergeadas (#39–#42).
+**Estado:** cierre Etapas 6–7 (regresión + docs + snapshot). Base: `main` con Etapas 1–5 (#39–#43).
 
 ## Decisiones (resumen CLOSED)
 
@@ -17,23 +17,22 @@ Documento de etapas de **Beta 2.0.4** (migración Pan pequeño → tabla `promoc
 
 | Etapa | Nombre | Estado | Notas |
 |---|---|---|---|
-| 0 | Alcance documentado (decisiones CLOSED) | Hecha (plan Context) | PRD/`stages` en repo |
+| 0 | Alcance documentado (decisiones CLOSED) | Hecha | PRD/`stages`/regression en repo |
 | 1 | Schema (`promociones` + `promocion_id`) | Hecha | [#39](https://github.com/Daniel-sanabria0419/system-bakery/pull/39) |
 | 2 | Seed + backfill | Hecha | [#40](https://github.com/Daniel-sanabria0419/system-bakery/pull/40) |
 | 3 | Dual-path / feature flag | Hecha | [#41](https://github.com/Daniel-sanabria0419/system-bakery/pull/41) |
 | 4 | Recálculo carrito + UI subtotal/total | Hecha | [#42](https://github.com/Daniel-sanabria0419/system-bakery/pull/42) |
-| 5 | Cutover | En revisión | [#43](https://github.com/Daniel-sanabria0419/system-bakery/pull/43); flag default True; sin montos por nombre de categoría en cobro |
-| 6 | Tests + regresión | Pendiente | Incl. 4+3 / 4+4 |
-| 7 | Pantallas / docs / nota reportes | Pendiente | |
+| 5 | Cutover | Hecha | [#43](https://github.com/Daniel-sanabria0419/system-bakery/pull/43) |
+| 6 | Tests + regresión | En revisión | Snapshot + huecos 7 sola / mezcla; suite offscreen |
+| 7 | Pantallas / docs / nota reportes | En revisión | `regression-notes.md`; invariante `SUM(subtotal)` |
 
-## Etapa 5 — Cutover (alcance de este PR)
+## Etapas 6–7 — Cierre (alcance de este PR)
 
-1. `USE_PROMOCIONES_TABLE = True` por defecto (apagable con `BAKERY_USE_PROMOCIONES_TABLE=0` → precio × cantidad plano).
-2. Eliminado path de cobro por `is_pan_pequeno` / nombre de categoría en `SaleDraft` y `register_sale`.
-3. `pan_pequeno_pricing` queda como **shim** (montos delegan a `promotions`; `is_pan_pequeno` solo catálogo/validación de lista).
-4. Categoría «Pan pequeño» permanece; create/update asigna FK de promo canónica.
-5. Invariante ingresos: `ventas.valor_total` = `SUM(venta_lineas.subtotal)` (no `precio × cantidad`).
-6. Criterio: ningún path de cobro usa nombre de categoría para montos.
+1. `schema_version` v3: `venta_lineas.id_promocion` + `nombre_promocion` (snapshot).
+2. `register_sale` persiste refs/nombre de promo al confirmar.
+3. Tests: snapshot estable tras rename/desactivar; 7 sola → 2000; mezcla promo + normal; migración v2→v3.
+4. Docs: `docs/beta-2.0.4/regression-notes.md`, impacto pantallas, invariante reportes.
+5. Criterio de cierre: cobro sin path por nombre de categoría; suite completa verde.
 
 ## Fuera de alcance de Beta 2.0.4
 
@@ -43,5 +42,4 @@ CRUD rico de promociones en UI, otros `tipo` ≠ `cantidad_por_monto`, inventari
 
 Comando canónico: `QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest`
 
-- Etapa 1–4: `tests/test_beta204_*.py`
-- Cutover: suite completa + regresión Pan pequeño existente
+Ver `docs/beta-2.0.4/regression-notes.md`.

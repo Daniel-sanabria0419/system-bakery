@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QApplication
 from bakery.desktop.main import create_window
 from bakery.desktop.ui import ConfirmSaleDialog, SaleSavedDialog
 from bakery.persistence.schema import ESTADO_ACTIVO
-from tests.test_stage4_desktop import FakeApiClient, _click, _find, _line_text, _select_payment
+from tests.test_stage4_desktop import FakeApiClient, _click, _find, _line_text, _select_payment, _purchase_list_text
 
 
 def test_smoke_menu_products_sale_checkout(qtbot) -> None:
@@ -50,7 +50,7 @@ def test_smoke_menu_products_sale_checkout(qtbot) -> None:
     _click(qtbot, _find(window, "sale_product_1"))
     _click(qtbot, _find(window, "quantity_plus_button"))
     _click(qtbot, _find(window, "agregar_button"))
-    assert _find(window, "purchase_list").text() == _line_text("Pan", 5000, 2)
+    assert _purchase_list_text(window) == _line_text("Pan", 5000, 2)
 
     _click(qtbot, _find(window, "catalog_back_to_categories"))
     _click(qtbot, _find(window, "sale_category_todos"))
@@ -77,7 +77,7 @@ def test_smoke_menu_products_sale_checkout(qtbot) -> None:
     QTimer.singleShot(0, accept_flow)
     _click(qtbot, _find(window, "submit_sale_button"))
     qtbot.waitUntil(
-        lambda: len(api.sales) == 1 and _find(window, "purchase_list").text() == "",
+        lambda: len(api.sales) == 1 and _purchase_list_text(window) == "",
         timeout=2000,
     )
 

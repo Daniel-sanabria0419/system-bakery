@@ -220,14 +220,9 @@ def test_promocion_repo_and_nullable_fk(tmp_path: Path) -> None:
     connection = connect(_db(tmp_path))
     try:
         config = json.dumps(
-            {
-                "precio_base": 300,
-                "grupo_cantidad": 7,
-                "grupo_monto": 2000,
-                "modo": "ceil",
-                "politica_resto": "todo_o_nada",
-            },
+            {"precio_base": 300, "modo": "ceil"},
             separators=(",", ":"),
+            sort_keys=True,
         )
         promo_id = insert_promocion(
             connection,
@@ -242,7 +237,7 @@ def test_promocion_repo_and_nullable_fk(tmp_path: Path) -> None:
         assert promo["nombre"] == "Pan pequeño 7 por 2000"
         assert promo["tipo"] == "cantidad_por_monto"
         assert promo["activo"] == ESTADO_INACTIVO
-        assert json.loads(promo["configuracion"])["grupo_cantidad"] == 7
+        assert json.loads(promo["configuracion"]) == {"modo": "ceil", "precio_base": 300}
 
         product_id = insert_producto(
             connection,

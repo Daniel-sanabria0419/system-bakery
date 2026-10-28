@@ -75,7 +75,7 @@ Campos:
 | configuracion | JSON en `TEXT` (no JSONB en SQLite); validado en aplicación |
 | activo | 0/1 (soft off) |
 
-Etapa 2 siembra una fila canónica (`Pan pequeño 7 por 2000`, tipo `cantidad_por_monto`, config JSON con `precio_base` 300 / `grupo_cantidad` 7 / `grupo_monto` 2000 / `modo` ceil / `politica_resto` todo_o_nada, `activo=1`). **Etapa 5 cutover:** el cobro lee esta tabla vía `productos.promocion_id` (agrupación de carrito); ya no usa el nombre de categoría para montos.
+Etapa 2 siembra una fila canónica (`Pan pequeño 7 por 2000`, tipo `cantidad_por_monto`, config JSON exacto `{"precio_base":300,"modo":"ceil"}`, `activo=1`). Packs 7/2000 y `todo_o_nada` son defaults del motor en código. **Etapa 5 cutover:** el cobro lee esta tabla vía `productos.promocion_id` (agrupación de carrito); ya no usa el nombre de categoría para montos. Schema v4 backfill reescribe configs antiguas al JSON slim.
 
 **Invariante de ingresos / reportes:** `ventas.valor_total` = `SUM(venta_lineas.subtotal)`. No usar `SUM(precio_aplicado × cantidad)` (inflaría combos).
 

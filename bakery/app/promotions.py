@@ -14,11 +14,26 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from bakery.persistence.schema import (
     ESTADO_ACTIVO,
+    PROMO_GRUPO_CANTIDAD_DEFAULT,
+    PROMO_GRUPO_MONTO_DEFAULT,
+    PROMO_POLITICA_RESTO_DEFAULT,
     TIPO_PROMOCION_CANTIDAD_POR_MONTO,
 )
 
 # Flag de cobro. Default True tras cutover (Etapa 5).
 USE_PROMOCIONES_TABLE = True
+
+# DB seed: solo precio_base + modo. El motor acepta grupo_*/politica opcionales
+# (p. ej. re-parse del dict normalizado) y rellena defaults si faltan.
+_ALLOWED_CONFIG_KEYS = frozenset(
+    {
+        "precio_base",
+        "modo",
+        "grupo_cantidad",
+        "grupo_monto",
+        "politica_resto",
+    }
+)
 
 
 def use_promociones_table() -> bool:
@@ -29,7 +44,12 @@ def use_promociones_table() -> bool:
 
 
 def parse_cantidad_por_monto_config(configuracion: object) -> Dict[str, Any]:
-    """Valida y normaliza config JSON de tipo cantidad_por_monto."""
+    """Valida config; DB canónica es ``precio_base`` + ``modo``.
+
+    Si faltan ``grupo_cantidad`` / ``grupo_monto`` / ``politica_resto``, usa
+    defaults de código (7 / 2000 / todo_o_nada). Rechaza ``ajuste_manual`` y
+    otras claves.
+    """
     if isinstance(configuracion, Mapping):
         raw = dict(configuracion)
     elif isinstance(configuracion, str):
@@ -43,27 +63,51 @@ def parse_cantidad_por_monto_config(configuracion: object) -> Dict[str, Any]:
     else:
         raise ValueError("La configuración de promoción es inválida.")
 
+    if "ajuste_manual" in raw:
+        raise ValueError("ajuste_manual no está soportado.")
+    extra = set(raw) - _ALLOWED_CONFIG_KEYS
+    if extra:
+        raise ValueError(
+            "configuracion tiene claves no permitidas: "
+            f"{sorted(extra)}"
+        )
+
     precio_base = _require_positive_int(
         raw.get("precio_base"), "precio_base debe ser un entero mayor que 0."
-    )
-    grupo_cantidad = _require_positive_int(
-        raw.get("grupo_cantidad"), "grupo_cantidad debe ser un entero mayor que 0."
-    )
-    grupo_monto = _require_positive_int(
-        raw.get("grupo_monto"), "grupo_monto debe ser un entero mayor que 0."
     )
     modo = raw.get("modo")
     if modo != "ceil":
         raise ValueError("modo debe ser 'ceil'.")
-    politica = raw.get("politica_resto")
-    if politica != "todo_o_nada":
-        raise ValueError("politica_resto debe ser 'todo_o_nada'.")
+
+    if "grupo_cantidad" in raw:
+        grupo_cantidad = _require_positive_int(
+            raw.get("grupo_cantidad"),
+            "grupo_cantidad debe ser un entero mayor que 0.",
+        )
+    else:
+        grupo_cantidad = PROMO_GRUPO_CANTIDAD_DEFAULT
+    if "grupo_monto" in raw:
+        grupo_monto = _require_positive_int(
+            raw.get("grupo_monto"),
+            "grupo_monto debe ser un entero mayor que 0.",
+        )
+    else:
+        grupo_monto = PROMO_GRUPO_MONTO_DEFAULT
+    if "politica_resto" in raw:
+        politica = raw.get("politica_resto")
+        if politica != PROMO_POLITICA_RESTO_DEFAULT:
+            raise ValueError(
+                f"politica_resto debe ser '{PROMO_POLITICA_RESTO_DEFAULT}'."
+            )
+    else:
+        politica = PROMO_POLITICA_RESTO_DEFAULT
+
     return {
         "precio_base": precio_base,
         "grupo_cantidad": grupo_cantidad,
         "grupo_monto": grupo_monto,
         "modo": "ceil",
-        "politica_resto": "todo_o_nada",
+        "politica_resto": politica,
     }
 
 

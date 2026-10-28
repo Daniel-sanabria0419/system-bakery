@@ -76,6 +76,17 @@ def test_parse_config_rejects_invalid() -> None:
         parse_cantidad_por_monto_config({**CANONICAL, "modo": "floor"})
     with pytest.raises(ValueError):
         parse_cantidad_por_monto_config({**CANONICAL, "politica_resto": "ceil"})
+    with pytest.raises(ValueError):
+        parse_cantidad_por_monto_config({**CANONICAL, "ajuste_manual": {"8000": 28}})
+
+
+def test_parse_slim_json_fills_code_defaults() -> None:
+    cfg = parse_cantidad_por_monto_config({"precio_base": 300, "modo": "ceil"})
+    assert cfg["precio_base"] == 300
+    assert cfg["modo"] == "ceil"
+    assert cfg["grupo_cantidad"] == 7
+    assert cfg["grupo_monto"] == 2000
+    assert cfg["politica_resto"] == "todo_o_nada"
 
 
 def test_amount_for_cart_group_4_plus_3_and_4_plus_4() -> None:
@@ -392,4 +403,5 @@ def test_api_enrich_promo_fields_only_when_flag_on(
         assert pan_products[0]["promocion_tipo"] == TIPO_PROMOCION_CANTIDAD_POR_MONTO
         assert pan_products[0]["promocion_activo"] == ESTADO_ACTIVO
         config = json.loads(pan_products[0]["promocion_configuracion"])
-        assert config["grupo_cantidad"] == 7
+        assert config == {"modo": "ceil", "precio_base": 300}
+        assert "grupo_cantidad" not in config

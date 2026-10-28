@@ -2,7 +2,7 @@
 
 Documento de etapas de **Beta 2.0.4** (migración Pan pequeño → tabla `promociones` + FK `productos.promocion_id`, agrupación de carrito). Plan técnico: Context `docs/beta-2.0.4-promociones-plan.md`.
 
-**Estado:** en curso (Etapa 2). Base: `main` con Etapa 1 mergeada (#39).
+**Estado:** en curso (Etapa 3). Base: `main` con Etapas 1–2 mergeadas (#39, #40).
 
 ## Decisiones (resumen CLOSED)
 
@@ -19,34 +19,31 @@ Documento de etapas de **Beta 2.0.4** (migración Pan pequeño → tabla `promoc
 |---|---|---|---|
 | 0 | Alcance documentado (decisiones CLOSED) | Hecha (plan Context) | PRD/`stages` en repo |
 | 1 | Schema (`promociones` + `promocion_id`) | Hecha | [#39](https://github.com/Daniel-sanabria0419/system-bakery/pull/39) |
-| 2 | Seed + backfill | En revisión | [#40](https://github.com/Daniel-sanabria0419/system-bakery/pull/40); promo canónica + FK a productos Pan pequeño; cobro sigue por nombre de categoría |
-| 3 | Dual-path / feature flag | Pendiente | Flag off = cobro actual |
-| 4 | Recálculo carrito + UI subtotal/total | Pendiente | **Obligatoria** |
+| 2 | Seed + backfill | Hecha | [#40](https://github.com/Daniel-sanabria0419/system-bakery/pull/40) |
+| 3 | Dual-path / feature flag | En revisión | Motor `promotions` + flag `USE_PROMOCIONES_TABLE` default False |
+| 4 | Recálculo carrito + UI subtotal/total | Pendiente | **Obligatoria** (pulido UI; motor ya agrupa con flag on) |
 | 5 | Cutover | Pendiente | Retirar path por nombre de categoría |
 | 6 | Tests + regresión | Pendiente | Incl. 4+3 / 4+4 |
 | 7 | Pantallas / docs / nota reportes | Pendiente | |
 
 ## Etapa 1 — Schema (hecha)
 
-Sin cambiar cobro ni precios.
+`schema_version` v2; tabla `promociones`; `productos.promocion_id`; repos/API; sin seed.
 
-1. `CURRENT_SCHEMA_VERSION = 2`.
-2. Tabla `promociones` (`id`, `nombre`, `tipo`, `configuracion` TEXT JSON, `activo`).
-3. `productos.promocion_id` nullable FK a `promociones(id)` (ALTER idempotente).
-4. DDL en `create_schema` para bases nuevas.
-5. Repos mínimos + `promocion_id` expuesto en respuestas API de productos (aún sin usarlo en cobro).
-6. Tests de migración idempotente / round-trip v1→v2.
-7. Sin seed (Etapa 2). Sin columnas promo en `venta_lineas`.
+## Etapa 2 — Seed + backfill (hecha)
 
-## Etapa 2 — Seed + backfill (alcance de este PR)
+Promo canónica + backfill FK a productos «Pan pequeño». Cobro por nombre de categoría.
 
-Cobro **sigue** por nombre de categoría (`pan_pequeno_pricing`). Sin dual-path.
+## Etapa 3 — Dual-path / feature flag (alcance de este PR)
 
-1. `ensure_promocion_pan_pequeno`: promo `cantidad_por_monto` con config `{precio_base: 300, grupo_cantidad: 7, grupo_monto: 2000, modo: ceil, politica_resto: todo_o_nada}`, `activo=1`.
-2. `backfill_productos_promocion_pan_pequeno`: asigna `promocion_id` a todos los productos de categoría «Pan pequeño».
-3. Ambos en `initialize` (idempotentes).
-4. Tests FK / config / idempotencia (`tests/test_beta204_seed.py`).
-5. **Sin** motor nuevo, flag ni cambio de precios en cobro.
+1. Módulo `bakery/app/promotions.py`: fórmula §4.1, `quantity_from_value`, `amount_for_cart_group`, reparto B, `compute_cart_line_subtotals`.
+2. Paridad unitaria vs montos 2.0.1 (6/7/8/14, 1900→7/2000).
+3. Flag `USE_PROMOCIONES_TABLE` default **False**:
+   - off → path actual (`pan_pequeno_pricing`, promo por línea; 4+3 = 2100).
+   - on → FK + motor + **agrupación carrito** (4+3 = 2000) en `SaleDraft` y `register_sale`.
+4. Enrich API/productos con `promocion_tipo` / `promocion_configuracion` / `promocion_activo` solo con flag on.
+5. Suite espejo on/off (`tests/test_beta204_promotions.py`).
+6. **Sin cutover**; flujo de venta seguro con flag off.
 
 ## Fuera de alcance de Beta 2.0.4
 
@@ -56,4 +53,6 @@ CRUD rico de promociones en UI, otros `tipo` ≠ `cantidad_por_monto`, inventari
 
 Comando canónico: `QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest`
 
-Etapa 1: `tests/test_beta204_schema.py`. Etapa 2: `tests/test_beta204_seed.py`.
+- Etapa 1: `tests/test_beta204_schema.py`
+- Etapa 2: `tests/test_beta204_seed.py`
+- Etapa 3: `tests/test_beta204_promotions.py`

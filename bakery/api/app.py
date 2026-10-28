@@ -88,6 +88,9 @@ class ProductResponse(BaseModel):
     id_estado: int
     ruta_imagen: Optional[str] = None
     promocion_id: Optional[int] = None
+    promocion_tipo: Optional[str] = None
+    promocion_configuracion: Optional[str] = None
+    promocion_activo: Optional[int] = None
 
 
 def create_app(db_path: Path = DEFAULT_DB_PATH) -> FastAPI:

@@ -1,16 +1,23 @@
 import sqlite3
 import uuid
 from datetime import datetime
-from typing import List, Mapping, Sequence
+from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
 from bakery.app.pan_pequeno_pricing import (
     PRECIO_UNITARIO_PAN_PEQUENO,
     is_pan_pequeno,
     subtotal_for_quantity,
 )
+from bakery.app.promotions import (
+    compute_cart_line_subtotals,
+    is_active_cantidad_por_monto,
+    parse_cantidad_por_monto_config,
+    use_promociones_table,
+)
 from bakery.persistence.repositories import (
     get_categoria,
     get_producto,
+    get_promocion,
     insert_sale,
     insert_venta_linea,
     list_active_payment_methods,
@@ -44,9 +51,10 @@ def register_sale(
     if not isinstance(lineas, (list, tuple)) or len(lineas) < 1:
         raise SaleValidationError("Debe enviar al menos una línea de producto.")
 
-    resolved: List[Mapping] = []
-    for raw in lineas:
-        resolved.append(_resolve_line(connection, raw))
+    if use_promociones_table():
+        resolved = _resolve_lines_with_promociones(connection, lineas)
+    else:
+        resolved = [_resolve_line_legacy(connection, raw) for raw in lineas]
 
     valor_total = sum(line["subtotal"] for line in resolved)
     if valor_total <= 0:
@@ -79,7 +87,94 @@ def register_sale(
     return sale
 
 
-def _resolve_line(connection: sqlite3.Connection, raw: Mapping) -> Mapping:
+def _resolve_line_legacy(connection: sqlite3.Connection, raw: Mapping) -> Mapping:
+    product, cantidad, precio_aplicado = _validate_raw_line(connection, raw)
+
+    categoria = get_categoria(connection, product["id_categoria"])
+    if categoria is not None and is_pan_pequeno(categoria):
+        if product["precio"] != PRECIO_UNITARIO_PAN_PEQUENO:
+            raise SaleValidationError(
+                "El precio de lista de Pan pequeño debe ser "
+                f"{PRECIO_UNITARIO_PAN_PEQUENO}."
+            )
+        subtotal = subtotal_for_quantity(cantidad)
+        return {
+            "id_producto": product["id_producto"],
+            "nombre_producto": product["nombre"],
+            "precio_aplicado": product["precio"],
+            "cantidad": cantidad,
+            "subtotal": subtotal,
+        }
+
+    subtotal = product["precio"] * cantidad
+    return {
+        "id_producto": product["id_producto"],
+        "nombre_producto": product["nombre"],
+        "precio_aplicado": product["precio"],
+        "cantidad": cantidad,
+        "subtotal": subtotal,
+    }
+
+
+def _resolve_lines_with_promociones(
+    connection: sqlite3.Connection, lineas: Sequence[Mapping]
+) -> List[Mapping]:
+    pending: List[Mapping] = []
+    promos_by_id: Dict[int, Mapping] = {}
+    for raw in lineas:
+        product, cantidad, precio_aplicado = _validate_raw_line(connection, raw)
+        promo_id = product.get("promocion_id")
+        promo: Optional[Mapping] = None
+        if isinstance(promo_id, int) and not isinstance(promo_id, bool):
+            cached = promos_by_id.get(promo_id)
+            if cached is None:
+                loaded = get_promocion(connection, promo_id)
+                if loaded is not None:
+                    promos_by_id[promo_id] = loaded
+                    cached = loaded
+            promo = cached
+            if promo is not None and is_active_cantidad_por_monto(promo):
+                try:
+                    config = parse_cantidad_por_monto_config(promo["configuracion"])
+                except ValueError as error:
+                    raise SaleValidationError(str(error)) from error
+                if product["precio"] != config["precio_base"]:
+                    raise SaleValidationError(
+                        "El precio de lista no coincide con precio_base "
+                        "de la promoción."
+                    )
+        pending.append(
+            {
+                "id_producto": product["id_producto"],
+                "nombre_producto": product["nombre"],
+                "precio_aplicado": product["precio"],
+                "cantidad": cantidad,
+                "promocion_id": (
+                    promo_id
+                    if promo is not None and is_active_cantidad_por_monto(promo)
+                    else None
+                ),
+            }
+        )
+
+    subtotals = compute_cart_line_subtotals(pending, promos_by_id=promos_by_id)
+    resolved: List[Mapping] = []
+    for line, subtotal in zip(pending, subtotals):
+        resolved.append(
+            {
+                "id_producto": line["id_producto"],
+                "nombre_producto": line["nombre_producto"],
+                "precio_aplicado": line["precio_aplicado"],
+                "cantidad": line["cantidad"],
+                "subtotal": subtotal,
+            }
+        )
+    return resolved
+
+
+def _validate_raw_line(
+    connection: sqlite3.Connection, raw: Mapping
+) -> Tuple[Mapping, int, int]:
     if not isinstance(raw, Mapping):
         raise SaleValidationError("Cada línea debe ser un objeto válido.")
 
@@ -107,31 +202,7 @@ def _resolve_line(connection: sqlite3.Connection, raw: Mapping) -> Mapping:
         raise SaleValidationError(
             "El precio aplicado no coincide con el precio actual del producto."
         )
-
-    categoria = get_categoria(connection, product["id_categoria"])
-    if categoria is not None and is_pan_pequeno(categoria):
-        if product["precio"] != PRECIO_UNITARIO_PAN_PEQUENO:
-            raise SaleValidationError(
-                "El precio de lista de Pan pequeño debe ser "
-                f"{PRECIO_UNITARIO_PAN_PEQUENO}."
-            )
-        subtotal = subtotal_for_quantity(cantidad)
-        return {
-            "id_producto": product["id_producto"],
-            "nombre_producto": product["nombre"],
-            "precio_aplicado": product["precio"],
-            "cantidad": cantidad,
-            "subtotal": subtotal,
-        }
-
-    subtotal = product["precio"] * cantidad
-    return {
-        "id_producto": product["id_producto"],
-        "nombre_producto": product["nombre"],
-        "precio_aplicado": product["precio"],
-        "cantidad": cantidad,
-        "subtotal": subtotal,
-    }
+    return product, cantidad, precio_aplicado
 
 
 def _now() -> str:

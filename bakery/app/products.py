@@ -1,14 +1,16 @@
 import sqlite3
-from typing import List, Mapping, Optional
+from typing import Dict, List, Mapping, Optional
 
 from bakery.app.pan_pequeno_pricing import (
     PRECIO_UNITARIO_PAN_PEQUENO,
     is_pan_pequeno,
 )
 from bakery.app.product_images import normalize_ruta_imagen
+from bakery.app.promotions import use_promociones_table
 from bakery.persistence.repositories import (
     get_categoria,
     get_producto,
+    get_promocion,
     insert_producto,
     list_active_productos,
     list_categorias,
@@ -59,7 +61,7 @@ def create_product(
     connection.commit()
     product = get_producto(connection, id_producto)
     assert product is not None
-    return product
+    return _enrich_product_promocion(connection, product)
 
 
 def update_product(
@@ -97,7 +99,7 @@ def update_product(
     connection.commit()
     updated = get_producto(connection, product["id_producto"])
     assert updated is not None
-    return updated
+    return _enrich_product_promocion(connection, updated)
 
 
 def set_product_image(
@@ -114,11 +116,11 @@ def set_product_image(
     connection.commit()
     updated = get_producto(connection, product["id_producto"])
     assert updated is not None
-    return updated
+    return _enrich_product_promocion(connection, updated)
 
 
 def list_all_products(connection: sqlite3.Connection) -> List[Mapping]:
-    return list_productos(connection)
+    return _enrich_products(connection, list_productos(connection))
 
 
 def list_active_products(
@@ -134,8 +136,11 @@ def list_active_products(
         precio_ok = _require_positive_int(
             precio, "El precio debe ser un entero mayor que 0."
         )
-    return list_active_productos(
-        connection, id_categoria=id_categoria, precio=precio_ok
+    return _enrich_products(
+        connection,
+        list_active_productos(
+            connection, id_categoria=id_categoria, precio=precio_ok
+        ),
     )
 
 
@@ -166,7 +171,7 @@ def _set_product_estado(
     connection.commit()
     updated = get_producto(connection, product["id_producto"])
     assert updated is not None
-    return updated
+    return _enrich_product_promocion(connection, updated)
 
 
 def _require_product(connection: sqlite3.Connection, id_producto: int) -> Mapping:
@@ -175,7 +180,47 @@ def _require_product(connection: sqlite3.Connection, id_producto: int) -> Mappin
     product = get_producto(connection, id_producto)
     if product is None:
         raise ProductValidationError("El producto no existe.")
-    return product
+    return _enrich_product_promocion(connection, product)
+
+
+def _enrich_products(
+    connection: sqlite3.Connection, products: List[Mapping]
+) -> List[Mapping]:
+    if not use_promociones_table():
+        return list(products)
+    cache: Dict[int, Optional[Mapping]] = {}
+    return [
+        _enrich_product_promocion(connection, product, cache=cache)
+        for product in products
+    ]
+
+
+def _enrich_product_promocion(
+    connection: sqlite3.Connection,
+    product: Mapping,
+    *,
+    cache: Optional[Dict[int, Optional[Mapping]]] = None,
+) -> Mapping:
+    """Adjunta tipo/config/activo de promo cuando el flag dual-path está on."""
+    enriched = dict(product)
+    if not use_promociones_table():
+        return enriched
+    promo_id = product.get("promocion_id")
+    if isinstance(promo_id, bool) or not isinstance(promo_id, int):
+        return enriched
+    promo: Optional[Mapping]
+    if cache is not None and promo_id in cache:
+        promo = cache[promo_id]
+    else:
+        promo = get_promocion(connection, promo_id)
+        if cache is not None:
+            cache[promo_id] = promo
+    if promo is None:
+        return enriched
+    enriched["promocion_tipo"] = promo["tipo"]
+    enriched["promocion_configuracion"] = promo["configuracion"]
+    enriched["promocion_activo"] = promo["activo"]
+    return enriched
 
 
 def _require_existing_categoria(

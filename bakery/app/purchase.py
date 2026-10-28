@@ -1,13 +1,22 @@
 from dataclasses import dataclass
-from typing import List, Mapping, Optional, Sequence
+from typing import Dict, List, Mapping, Optional, Sequence
 
 from bakery.app.calculator import Calculator
 from bakery.app.pan_pequeno_pricing import (
     PRECIO_UNITARIO_PAN_PEQUENO,
     is_pan_pequeno,
-    quantity_from_value,
-    subtotal_for_quantity,
+    quantity_from_value as pan_quantity_from_value,
+    subtotal_for_quantity as pan_subtotal_for_quantity,
 )
+from bakery.app.promotions import (
+    amount_for_quantity,
+    compute_cart_line_subtotals,
+    is_active_cantidad_por_monto,
+    parse_cantidad_por_monto_config,
+    quantity_from_value as promo_quantity_from_value,
+    use_promociones_table,
+)
+from bakery.persistence.schema import ESTADO_ACTIVO
 
 
 @dataclass(frozen=True)
@@ -19,6 +28,7 @@ class PurchaseLine:
     precio_aplicado: int
     cantidad: int
     subtotal: int
+    promocion_id: Optional[int] = None
 
 
 class Purchase:
@@ -35,6 +45,7 @@ class Purchase:
         precio_aplicado: int,
         cantidad: int,
         subtotal: Optional[int] = None,
+        promocion_id: Optional[int] = None,
     ) -> bool:
         if isinstance(id_producto, bool) or not isinstance(id_producto, int):
             return False
@@ -52,6 +63,10 @@ class Purchase:
             or cantidad <= 0
         ):
             return False
+        if promocion_id is not None and (
+            isinstance(promocion_id, bool) or not isinstance(promocion_id, int)
+        ):
+            return False
         if subtotal is None:
             computed = precio_aplicado * cantidad
         else:
@@ -67,9 +82,13 @@ class Purchase:
                 precio_aplicado=precio_aplicado,
                 cantidad=cantidad,
                 subtotal=computed,
+                promocion_id=promocion_id,
             )
         )
         return True
+
+    def replace_items(self, items: Sequence[PurchaseLine]) -> None:
+        self._items = list(items)
 
     def clear(self) -> None:
         self._items.clear()
@@ -140,6 +159,7 @@ class SaleDraft:
         self.purchase = Purchase()
         self._selected_product: Optional[Mapping] = None
         self._quantity = 1
+        self._promo_by_id: Dict[int, Mapping] = {}
 
     def select_product(self, product: Mapping) -> bool:
         if not isinstance(product, Mapping):
@@ -164,6 +184,11 @@ class SaleDraft:
         ruta_imagen = product.get("ruta_imagen")
         if ruta_imagen is not None and not isinstance(ruta_imagen, str):
             return False
+        promocion_id = product.get("promocion_id")
+        if promocion_id is not None and (
+            isinstance(promocion_id, bool) or not isinstance(promocion_id, int)
+        ):
+            return False
         selected = {
             "id_producto": id_producto,
             "nombre": nombre.strip(),
@@ -175,6 +200,16 @@ class SaleDraft:
             selected["nombre_categoria"] = nombre_categoria.strip()
         if isinstance(ruta_imagen, str) and ruta_imagen.strip():
             selected["ruta_imagen"] = ruta_imagen.strip()
+        if promocion_id is not None:
+            selected["promocion_id"] = promocion_id
+        if use_promociones_table():
+            promo = _promo_payload_from_product(product)
+            if promo is not None:
+                selected["promocion_id"] = promo["id"]
+                selected["promocion_tipo"] = promo["tipo"]
+                selected["promocion_configuracion"] = promo["configuracion"]
+                selected["promocion_activo"] = promo["activo"]
+                self._promo_by_id[int(promo["id"])] = promo
         self._selected_product = selected
         return True
 
@@ -187,9 +222,12 @@ class SaleDraft:
         return dict(self._selected_product)
 
     def selected_is_pan_pequeno(self) -> bool:
+        """True si la selección usa pad/valor de promo (legado o dual-path)."""
         product = self._selected_product
         if product is None:
             return False
+        if use_promociones_table():
+            return self._selected_promo_config() is not None
         return is_pan_pequeno(product.get("nombre_categoria"))
 
     def set_quantity(self, quantity: int) -> bool:
@@ -202,12 +240,17 @@ class SaleDraft:
         return self._quantity
 
     def current_subtotal(self) -> Optional[int]:
-        """Subtotal de la selección actual (promo Pan pequeño vía módulo)."""
+        """Subtotal de la selección actual (preview pre-Agregar)."""
         product = self._selected_product
         if product is None:
             return None
+        if use_promociones_table():
+            config = self._selected_promo_config()
+            if config is not None:
+                return amount_for_quantity(self._quantity, config)
+            return product["precio"] * self._quantity
         if is_pan_pequeno(product.get("nombre_categoria")):
-            return subtotal_for_quantity(self._quantity)
+            return pan_subtotal_for_quantity(self._quantity)
         return product["precio"] * self._quantity
 
     def pad_display_amount(self) -> int:
@@ -223,11 +266,17 @@ class SaleDraft:
         return 0 if subtotal is None else subtotal
 
     def apply_value(self, valor: int) -> bool:
-        """Para Pan pequeño: valor → cantidad/subtotal (ceil). Otras: no-op False."""
+        """Promo cantidad_por_monto / Pan pequeño: valor → cantidad (ceil)."""
         if not self.selected_is_pan_pequeno():
             return False
         try:
-            cantidad, _subtotal = quantity_from_value(valor)
+            if use_promociones_table():
+                config = self._selected_promo_config()
+                if config is None:
+                    return False
+                cantidad, _subtotal = promo_quantity_from_value(valor, config)
+            else:
+                cantidad, _subtotal = pan_quantity_from_value(valor)
         except ValueError:
             return False
         self._quantity = cantidad
@@ -238,9 +287,19 @@ class SaleDraft:
         product = self._selected_product
         if product is None:
             return False
-        if is_pan_pequeno(product.get("nombre_categoria")):
+        promocion_id = None
+        if use_promociones_table():
+            config = self._selected_promo_config()
+            if config is not None:
+                promocion_id = int(product["promocion_id"])
+                precio_aplicado = int(config["precio_base"])
+                subtotal = amount_for_quantity(self._quantity, config)
+            else:
+                precio_aplicado = product["precio"]
+                subtotal = precio_aplicado * self._quantity
+        elif is_pan_pequeno(product.get("nombre_categoria")):
             precio_aplicado = PRECIO_UNITARIO_PAN_PEQUENO
-            subtotal = subtotal_for_quantity(self._quantity)
+            subtotal = pan_subtotal_for_quantity(self._quantity)
         else:
             precio_aplicado = product["precio"]
             subtotal = precio_aplicado * self._quantity
@@ -250,8 +309,11 @@ class SaleDraft:
             precio_aplicado=precio_aplicado,
             cantidad=self._quantity,
             subtotal=subtotal,
+            promocion_id=promocion_id,
         ):
             return False
+        if use_promociones_table():
+            self._recalculate_purchase_subtotals()
         self.entry.clear_entry()
         self.clear_product_selection()
         self._quantity = 1
@@ -262,6 +324,84 @@ class SaleDraft:
         self.entry.clear_entry()
         self.clear_product_selection()
         self._quantity = 1
+        self._promo_by_id.clear()
 
     def total(self) -> int:
         return self.purchase.total()
+
+    def _selected_promo_config(self) -> Optional[Mapping]:
+        product = self._selected_product
+        if product is None:
+            return None
+        promo_id = product.get("promocion_id")
+        if isinstance(promo_id, bool) or not isinstance(promo_id, int):
+            return None
+        promo = {
+            "id": promo_id,
+            "tipo": product.get("promocion_tipo"),
+            "configuracion": product.get("promocion_configuracion"),
+            "activo": product.get("promocion_activo", ESTADO_ACTIVO),
+        }
+        if not is_active_cantidad_por_monto(promo):
+            cached = self._promo_by_id.get(promo_id)
+            if cached is None or not is_active_cantidad_por_monto(cached):
+                return None
+            promo = dict(cached)
+        try:
+            return parse_cantidad_por_monto_config(promo["configuracion"])
+        except ValueError:
+            return None
+
+    def _recalculate_purchase_subtotals(self) -> None:
+        items = self.purchase.items()
+        if not items:
+            return
+        line_maps = [
+            {
+                "cantidad": item.cantidad,
+                "precio_aplicado": item.precio_aplicado,
+                "promocion_id": item.promocion_id,
+            }
+            for item in items
+        ]
+        subtotals = compute_cart_line_subtotals(
+            line_maps, promos_by_id=self._promo_by_id
+        )
+        rebuilt = [
+            PurchaseLine(
+                id_producto=item.id_producto,
+                nombre=item.nombre,
+                precio_aplicado=item.precio_aplicado,
+                cantidad=item.cantidad,
+                subtotal=subtotal,
+                promocion_id=item.promocion_id,
+            )
+            for item, subtotal in zip(items, subtotals)
+        ]
+        self.purchase.replace_items(rebuilt)
+
+
+def _promo_payload_from_product(product: Mapping) -> Optional[Mapping]:
+    promo_id = product.get("promocion_id")
+    if isinstance(promo_id, bool) or not isinstance(promo_id, int):
+        return None
+    tipo = product.get("promocion_tipo")
+    configuracion = product.get("promocion_configuracion")
+    activo = product.get("promocion_activo", ESTADO_ACTIVO)
+    if not isinstance(tipo, str) or not isinstance(configuracion, str):
+        return None
+    if isinstance(activo, bool) or not isinstance(activo, int):
+        return None
+    promo = {
+        "id": promo_id,
+        "tipo": tipo,
+        "configuracion": configuracion,
+        "activo": activo,
+    }
+    if not is_active_cantidad_por_monto(promo):
+        return None
+    try:
+        parse_cantidad_por_monto_config(configuracion)
+    except ValueError:
+        return None
+    return promo

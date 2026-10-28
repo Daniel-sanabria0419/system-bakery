@@ -11,11 +11,13 @@ from typing import Callable, List, Tuple
 
 from bakery.persistence.schema import (
     create_schema_version_table,
+    ensure_promociones_table,
+    migrate_productos_promocion_id,
     migrate_productos_ruta_imagen,
 )
 
 # Versión objetivo tras aplicar todas las migraciones listadas abajo.
-CURRENT_SCHEMA_VERSION = 1
+CURRENT_SCHEMA_VERSION = 2
 
 MigrationFn = Callable[[sqlite3.Connection], None]
 
@@ -54,9 +56,16 @@ def _migrate_to_v1(connection: sqlite3.Connection) -> None:
     migrate_productos_ruta_imagen(connection)
 
 
+def _migrate_to_v2(connection: sqlite3.Connection) -> None:
+    """Beta 2.0.4 Etapa 1: tabla promociones + productos.promocion_id nullable."""
+    ensure_promociones_table(connection)
+    migrate_productos_promocion_id(connection)
+
+
 # Lista ordenada: (versión destino, función). Se aplica si version actual < destino.
 MIGRATIONS: List[Tuple[int, MigrationFn]] = [
     (1, _migrate_to_v1),
+    (2, _migrate_to_v2),
 ]
 
 

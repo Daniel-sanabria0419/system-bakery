@@ -122,8 +122,11 @@ def get_categoria_by_nombre(
 
 
 _PRODUCTO_COLUMNS = (
-    "id_producto, nombre, precio, id_categoria, descripcion, id_estado, ruta_imagen"
+    "id_producto, nombre, precio, id_categoria, descripcion, id_estado, "
+    "ruta_imagen, promocion_id"
 )
+
+_PROMOCION_COLUMNS = "id, nombre, tipo, configuracion, activo"
 
 
 def insert_producto(
@@ -192,6 +195,64 @@ def set_producto_estado(
         """,
         (id_estado, id_producto),
     )
+
+
+def set_producto_promocion_id(
+    connection: sqlite3.Connection,
+    id_producto: int,
+    promocion_id: Optional[int],
+) -> None:
+    connection.execute(
+        """
+        UPDATE productos
+        SET promocion_id = ?
+        WHERE id_producto = ?
+        """,
+        (promocion_id, id_producto),
+    )
+
+
+def insert_promocion(
+    connection: sqlite3.Connection,
+    *,
+    nombre: str,
+    tipo: str,
+    configuracion: str,
+    activo: int,
+) -> int:
+    cursor = connection.execute(
+        """
+        INSERT INTO promociones (nombre, tipo, configuracion, activo)
+        VALUES (?, ?, ?, ?)
+        """,
+        (nombre, tipo, configuracion, activo),
+    )
+    return int(cursor.lastrowid)
+
+
+def get_promocion(
+    connection: sqlite3.Connection, id_promocion: int
+) -> Optional[Mapping]:
+    row = connection.execute(
+        f"""
+        SELECT {_PROMOCION_COLUMNS}
+        FROM promociones
+        WHERE id = ?
+        """,
+        (id_promocion,),
+    ).fetchone()
+    return dict(row) if row else None
+
+
+def list_promociones(connection: sqlite3.Connection) -> List[Mapping]:
+    rows = connection.execute(
+        f"""
+        SELECT {_PROMOCION_COLUMNS}
+        FROM promociones
+        ORDER BY id
+        """
+    ).fetchall()
+    return [dict(row) for row in rows]
 
 
 def get_producto(

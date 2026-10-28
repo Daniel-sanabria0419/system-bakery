@@ -50,6 +50,16 @@ CREATE TABLE IF NOT EXISTS categorias (
 )
 """
 
+_CREATE_PROMOCIONES = """
+CREATE TABLE IF NOT EXISTS promociones (
+    id INTEGER PRIMARY KEY,
+    nombre TEXT NOT NULL,
+    tipo TEXT NOT NULL,
+    configuracion TEXT NOT NULL,
+    activo INTEGER NOT NULL
+)
+"""
+
 _CREATE_PRODUCTOS = """
 CREATE TABLE IF NOT EXISTS productos (
     id_producto INTEGER PRIMARY KEY,
@@ -58,7 +68,8 @@ CREATE TABLE IF NOT EXISTS productos (
     id_categoria INTEGER NOT NULL REFERENCES categorias(id_categoria),
     descripcion TEXT,
     id_estado INTEGER NOT NULL,
-    ruta_imagen TEXT
+    ruta_imagen TEXT,
+    promocion_id INTEGER REFERENCES promociones(id)
 )
 """
 
@@ -90,6 +101,7 @@ def create_schema(connection: sqlite3.Connection) -> None:
     connection.execute(_CREATE_MEDIOS_PAGO)
     connection.execute(_CREATE_VENTAS)
     connection.execute(_CREATE_CATEGORIAS)
+    connection.execute(_CREATE_PROMOCIONES)
     connection.execute(_CREATE_PRODUCTOS)
     connection.execute(_CREATE_VENTA_LINEAS)
     create_schema_version_table(connection)
@@ -155,6 +167,29 @@ def migrate_productos_ruta_imagen(connection: sqlite3.Connection) -> None:
     if _productos_has_column(connection, "ruta_imagen"):
         return
     connection.execute("ALTER TABLE productos ADD COLUMN ruta_imagen TEXT")
+
+
+def ensure_promociones_table(connection: sqlite3.Connection) -> None:
+    """Crea la tabla promociones si falta (idempotente)."""
+    connection.execute(_CREATE_PROMOCIONES)
+
+
+def migrate_productos_promocion_id(connection: sqlite3.Connection) -> None:
+    """Añade productos.promocion_id nullable FK si la tabla existe sin esa columna."""
+    tables = {
+        row[0]
+        for row in connection.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table'"
+        ).fetchall()
+    }
+    if "productos" not in tables:
+        return
+    if _productos_has_column(connection, "promocion_id"):
+        return
+    connection.execute(
+        "ALTER TABLE productos ADD COLUMN promocion_id INTEGER "
+        "REFERENCES promociones(id)"
+    )
 
 
 def ensure_imagenes_dirs(project_root: Optional[Path] = None) -> None:

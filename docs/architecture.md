@@ -127,7 +127,7 @@ Rutas de negocio vigentes:
 | GET | `/medios-pago` | Medios activos |
 | GET | `/categorias` | Listado de categorías |
 | GET | `/productos` | Listado (incl. inactivos; admin UI) |
-| GET | `/productos/activos` | Activos; query opcional `id_categoria`, `precio` |
+| GET | `/productos/activos` | Activos; query opcional `id_categoria`; `precio` = **legado** (match exacto; desktop no lo usa) |
 | GET | `/productos/{id}` | Detalle |
 | POST | `/productos` | Crear |
 | PUT | `/productos/{id}` | Editar |
@@ -141,7 +141,19 @@ Rutas de negocio vigentes:
 { "id_medio_pago": int, "lineas": [ { "id_producto", "cantidad", "precio_aplicado" }, ... ] }
 ```
 
-No hay endpoint de calculadora ni HTTP por tecla. La búsqueda por precio en UI usa catálogo ya cargado / `list_active_products` según el flujo; los dígitos son locales.
+No hay endpoint de calculadora ni HTTP por tecla. El cobro (2.0.2+) filtra en desktop con `candidates_by_price_prefix` sobre el catálogo ya cargado; los dígitos son locales.
+
+### Precio exacto (legado / API-only)
+
+Desde Beta 2.0.2 el desktop **no** busca por precio exacto. Se mantienen por contrato/tests (no eliminar sin decisión explícita):
+
+| Pieza | Rol |
+|---|---|
+| `candidates_by_exact_price` (`bakery/app/purchase.py`) | Helper de match exacto; solo tests / legado |
+| `find_active_products_by_price` / `list_active_products(..., precio=)` | Capa app + query SQLite |
+| `GET /productos/activos?precio=` | API; `ApiClient.list_active_products(precio=)` |
+
+UI vigente: `candidates_by_price_prefix`.
 
 ## Navegación entre pantallas
 
@@ -178,7 +190,7 @@ No hay endpoint de calculadora ni HTTP por tecla. La búsqueda por precio en UI 
 1. Categorías como entidad mínima con semilla; sin CRUD UI.
 2. Snapshot en `venta_lineas` para integridad histórica.
 3. `POST /ventas` con líneas; total en backend; sin dual-shape legacy.
-4. Calculadora = búsqueda por precio + rechazo duro sin producto *(Beta 2.0.2: prefijo en grilla en lugar de UI de búsqueda exacta)*.
+4. Calculadora = filtro de catálogo + rechazo duro sin producto *(2.0.2+: prefijo en grilla; exacto = legado API/helper)*.
 5. UI Productos separada de UI de cobro.
 6. Solo soft-delete de productos.
 7. Ventas antiguas value-only sin backfill de líneas.

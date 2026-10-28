@@ -84,7 +84,11 @@ class Purchase:
 def candidates_by_exact_price(
     products: Sequence[Mapping], precio: int
 ) -> List[Mapping]:
-    """Filtra productos activos (o ya filtrados) con precio exacto entero."""
+    """Legado / API-only: match por precio exacto.
+
+    El cobro desktop (2.0.2+) usa ``candidates_by_price_prefix``. Se mantiene
+    para tests y el espíritu del filtro exacto vía API; no eliminar sin decisión.
+    """
     if isinstance(precio, bool) or not isinstance(precio, int) or precio <= 0:
         return []
     matches: List[Mapping] = []

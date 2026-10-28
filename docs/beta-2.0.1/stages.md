@@ -38,6 +38,6 @@ Motor genérico de promociones, `tiene_promocion` por producto, inventario, sync
 
 ## Pruebas
 
-Comando: `QT_QPA_PLATFORM=offscreen python3 -m pytest`
+Comando canónico: `QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest`
 
 Casos obligatorios: scope §§20–23 (ver `tests/test_beta201_*`). Smoke: `tests/test_beta201_smoke.py`. Notas: `docs/beta-2.0.1/regression-notes.md`.

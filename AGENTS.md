@@ -105,7 +105,7 @@ Preservar Beta 2.0. **No** motor genérico de promociones ni features de Beta 2.
 
 ## Beta 2.0.2
 
-**Beta 2.0.2 está implementada** (etapas 1–6; PRs #28–#33). Pendiente OK final de Daniel para declarar cerrada. Solo UX/layout y filtro de catálogo sobre 2.0.1.
+**Beta 2.0.2 está terminada** (etapas 1–6 en main vía #28–#33; OK final de Daniel 2026-10-27). Solo UX/layout y filtro de catálogo sobre 2.0.1.
 
 Alcance implementado:
 
@@ -237,8 +237,9 @@ Se debe optimizar para construir correctamente una Beta pequeña y funcional.
 
 ## Cursor Cloud specific instructions
 
-Las dependencias de Python se instalan con `python3 -m pip install --user -r requirements.txt`. PySide6 además necesita bibliotecas de sistema (libEGL y XCB); el entorno ya las instala.
+Preferir el venv del repo (`.venv`) para dependencias y pruebas. Si no existe: `python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt`. Alternativa cloud sin venv: `python3 -m pip install --user -r requirements.txt`. PySide6 además necesita bibliotecas de sistema (libEGL y XCB); el entorno cloud ya las instala.
 
-- Pruebas: `python3 -m pytest` desde la raíz del repositorio. Sin pantalla, usar `QT_QPA_PLATFORM=offscreen python3 -m pytest`.
-- Aplicación: `python3 -m bakery.desktop`. Arranca la ventana y la API local en `http://127.0.0.1:8765`. La base SQLite queda en `data/bakery.sqlite3`.
+- **Pruebas (comando canónico):** `QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest` desde la raíz. Evitar `python3 -m pytest` sin venv: en algunas Mac un paquete `tests` en site-packages sombrea `./tests` y la suite no se recolecta bien.
+- Aplicación: `.venv/bin/python -m bakery.desktop` (o `python3 -m bakery.desktop`). Arranca la ventana y la API local en `http://127.0.0.1:8765`. La base SQLite queda en `data/bakery.sqlite3`.
+- Puerto fijo `8765`: una segunda instancia puede fallar al bindear si la primera sigue viva. Ver `docs/caja-tactil-setup.md`.
 - No hay un servidor que deba quedar en marcha por separado: la ventana inicia uvicorn en un hilo.

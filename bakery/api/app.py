@@ -164,7 +164,13 @@ def create_app(db_path: Path = DEFAULT_DB_PATH) -> FastAPI:
     @app.get("/productos/activos", response_model=List[ProductResponse])
     def get_active_products(
         id_categoria: Optional[int] = Query(default=None),
-        precio: Optional[int] = Query(default=None),
+        precio: Optional[int] = Query(
+            default=None,
+            description=(
+                "Legado: filtro por precio exacto. El desktop de cobro "
+                "(2.0.2+) usa prefijo local; no eliminar sin decisión."
+            ),
+        ),
     ) -> List[dict]:
         connection = connect(app.state.db_path)
         try:

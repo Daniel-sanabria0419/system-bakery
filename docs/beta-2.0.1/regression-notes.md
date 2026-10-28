@@ -5,7 +5,7 @@
 Comando:
 
 ```bash
-QT_QPA_PLATFORM=offscreen python3 -m pytest
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest
 ```
 
 Al cierre de Etapa 8: **178 passed** (incl. smoke Beta 2 y Beta 2.0.1).

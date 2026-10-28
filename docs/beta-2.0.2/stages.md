@@ -2,7 +2,7 @@
 
 Documento de referencia de **Beta 2.0.2** (layout cobro, filtro por prefijo de precio, listado Productos blanco). Alcance autoritativo y plan detallado viven en el Context del proyecto (`beta-2.0.2-scope.md`, `beta-2.0.2-plan.md`).
 
-**Estado:** etapas 1–6 en código (PRs #28–#33); **pendiente OK final de Daniel** para declarar la versión cerrada.
+**Estado:** etapas 1–6 en `main` (#28–#33); **Beta 2.0.2 cerrada** (OK final de Daniel, 2026-10-27).
 
 Base: Beta 2.0.1 en `main` (Pan pequeño, chips, imágenes).
 
@@ -28,7 +28,7 @@ Base: Beta 2.0.1 en `main` (Pan pequeño, chips, imágenes).
 | 3 | Wrap + `#d7d4ce` + divisor | Hecha | #30 |
 | 4 | Panel producto seleccionado | Hecha | #31 |
 | 5 | Fondo blanco listado Productos | Hecha | #32 |
-| 6 | Regresión + docs | Hecha; pendiente OK final | #33 |
+| 6 | Regresión + docs | Hecha; versión cerrada | #33 |
 
 ## Fuera de alcance
 
@@ -36,6 +36,6 @@ Historial de ventas, órdenes, clientes, recetas, inventario, motor genérico de
 
 ## Pruebas
 
-Comando: `QT_QPA_PLATFORM=offscreen python3 -m pytest --import-mode=importlib`
+Comando canónico: `QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest`
 
 Casos: `tests/test_beta202_*`. Smoke: `tests/test_beta202_smoke.py`. Notas: `docs/beta-2.0.2/regression-notes.md`.

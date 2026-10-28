@@ -233,13 +233,21 @@ class SaleDraft:
         return self._quantity
 
     def current_subtotal(self) -> Optional[int]:
-        """Subtotal de la selección actual (preview pre-Agregar)."""
+        """Subtotal de la selección actual (preview pre-Agregar).
+
+        Con promo y valor tipado en el pad, conserva el dinero tipado (no
+        reemplaza por ``qty * precio_base`` ni por subtotal ``todo_o_nada``).
+        Sin dígitos (p. ej. tras −/+), usa la fórmula de cantidad.
+        """
         product = self._selected_product
         if product is None:
             return None
         if use_promociones_table():
             config = self._selected_promo_config()
             if config is not None:
+                typed = self.entry.current_amount()
+                if typed is not None and typed > 0:
+                    return typed
                 return amount_for_quantity(self._quantity, config)
         return product["precio"] * self._quantity
 
@@ -256,7 +264,7 @@ class SaleDraft:
         return 0 if subtotal is None else subtotal
 
     def apply_value(self, valor: int) -> bool:
-        """Promo cantidad_por_monto: valor → cantidad (ceil)."""
+        """Promo cantidad_por_monto: valor → cantidad = ceil(valor / precio_base)."""
         if not self.selected_is_pan_pequeno():
             return False
         config = self._selected_promo_config()

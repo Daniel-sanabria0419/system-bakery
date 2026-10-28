@@ -70,39 +70,40 @@ def test_subtotal_promociones(cantidad: int, subtotal: int) -> None:
 
 
 @pytest.mark.parametrize(
-    ("valor", "cantidad", "subtotal"),
+    ("valor", "cantidad", "subtotal_ref"),
     [
         (1800, 6, 1800),
         (2000, 7, 2000),
         (2400, 8, 2400),
         (9000, 30, 9000),
-        # 10000: menor qty con monto ≥ valor es 34 (10200), no 35 (10000).
+        # ceil(10000/300)=34; ref todo_o_nada(34)=10200 (pad conserva tipado).
         (10000, 34, 10200),
     ],
 )
 def test_quantity_from_value_exacta(
-    valor: int, cantidad: int, subtotal: int
+    valor: int, cantidad: int, subtotal_ref: int
 ) -> None:
-    assert quantity_from_value(valor) == (cantidad, subtotal)
+    assert quantity_from_value(valor) == (cantidad, subtotal_ref)
 
 
-# --- §20 redondeo hacia arriba ---
+# --- §20 redondeo hacia arriba (ceil valor/precio_base) ---
 
 
 @pytest.mark.parametrize(
-    ("valor", "cantidad", "subtotal"),
+    ("valor", "cantidad", "subtotal_ref"),
     [
-        (1900, 7, 2000),
-        (2100, 8, 2400),
+        (1900, 7, 2000),  # ceil(1900/300)=7; ref todo_o_nada=2000
+        (2100, 7, 2000),  # ceil(2100/300)=7 (ya no busca amount≥valor → 8)
         (3950, 14, 4000),
-        (5000, 17, 5100),  # 16×300=4800 < 5000 → ceil a 17
+        (5000, 17, 5100),  # ceil(5000/300)=17
+        (8000, 27, 8100),  # ceil(8000/300)=27
         (9950, 34, 10200),
     ],
 )
 def test_quantity_from_value_redondeo_ceil(
-    valor: int, cantidad: int, subtotal: int
+    valor: int, cantidad: int, subtotal_ref: int
 ) -> None:
-    assert quantity_from_value(valor) == (cantidad, subtotal)
+    assert quantity_from_value(valor) == (cantidad, subtotal_ref)
 
 
 # --- §20 transiciones +/- (cantidad → subtotal) ---
@@ -154,12 +155,19 @@ def test_quantity_from_value_rejects_invalid() -> None:
         quantity_from_value(1000.0)  # type: ignore[arg-type]
 
 
-def test_quantity_from_value_never_rounds_down() -> None:
-    cantidad, subtotal = quantity_from_value(1900)
-    assert subtotal >= 1900
-    assert subtotal == subtotal_for_quantity(cantidad)
-    cantidad2, subtotal2 = quantity_from_value(9950)
-    assert subtotal2 >= 9950
-    assert (cantidad2, subtotal2) == (34, 10200)
-    # Minimiza cantidad, no subtotal: 34@10200 gana a 35@10000.
+def test_quantity_from_value_is_ceil_precio_base() -> None:
+    """Qty = ceil(valor/300); el 2.º valor es ref. todo_o_nada (puede ser < tipado)."""
+    assert quantity_from_value(1900) == (7, 2000)
+    assert quantity_from_value(2100) == (7, 2000)
+    assert quantity_from_value(5000) == (17, 5100)
+    assert quantity_from_value(8000) == (27, 8100)
+    # 34 panes, no 35 packs exactos; ref cobro 10200 ≠ tipado 10000.
     assert quantity_from_value(10000) == (34, 10200)
+    assert quantity_from_value(9950) == (34, 10200)
+    for valor, cantidad, _ref in (
+        (1900, 7, 2000),
+        (2100, 7, 2000),
+        (10000, 34, 10200),
+    ):
+        assert cantidad == (valor + 299) // 300
+        assert quantity_from_value(valor)[1] == subtotal_for_quantity(cantidad)

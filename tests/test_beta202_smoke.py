@@ -74,15 +74,13 @@ def test_smoke_menu_products_prefix_pan_pequeno_checkout(qtbot) -> None:
     assert _find(window, "catalog_sections_divider") is not None
     assert _find(window, "selected_product_panel") is not None
 
-    # Prefijo sin selección (Todos): 3 → Café y Pan rollo
+    # Catálogo completo sin prefijo de precio (pad eliminado en 2.0.6)
     _click(qtbot, _find(window, "sale_category_todos"))
-    for digit in "3":
-        _click(qtbot, _find(window, f"digit_{digit}"))
+    assert _find(window, "sale_product_1") is not None
     assert _find(window, "sale_product_2") is not None
     assert _find(window, "sale_product_4") is not None
-    assert window.findChild(QObject, "sale_product_1") is None
 
-    # Prefijo acotado a categoría Bebidas (volver → categoría)
+    # Categoría Bebidas: solo Café
     _click(qtbot, _find(window, "catalog_back_to_categories"))
     _click(qtbot, _find(window, "sale_category_2"))
     assert _find(window, "sale_product_2") is not None

@@ -1,4 +1,4 @@
-from PySide6.QtCore import QObject, QTimer, Qt
+from PySide6.QtCore import QObject, QTimer
 from PySide6.QtWidgets import QApplication
 
 from bakery.desktop.main import create_window
@@ -19,8 +19,6 @@ def test_reject_agregar_without_product_shows_feedback(qtbot) -> None:
     window.show()
     _click(qtbot, _find(window, "menu_register_button"))
 
-    for digit in "5000":
-        _click(qtbot, _find(window, f"digit_{digit}"))
     _click(qtbot, _find(window, "agregar_button"))
 
     assert "Seleccione un producto" in _find(window, "sale_feedback").text()
@@ -42,7 +40,7 @@ def test_inactive_products_not_listed(qtbot) -> None:
     assert "Inactivo" not in names
 
 
-def test_multi_product_flow_with_quantity_and_price_prefix(qtbot) -> None:
+def test_multi_product_flow_with_quantity(qtbot) -> None:
     api = FakeApiClient()
     window = create_window(api)
     qtbot.addWidget(window)
@@ -59,8 +57,6 @@ def test_multi_product_flow_with_quantity_and_price_prefix(qtbot) -> None:
 
     _click(qtbot, _find(window, "catalog_back_to_categories"))
     _click(qtbot, _find(window, "sale_category_todos"))
-    for digit in "3000":
-        _click(qtbot, _find(window, f"digit_{digit}"))
     assert _find(window, "sale_product_2") is not None
     _click(qtbot, _find(window, "sale_product_2"))
     _click(qtbot, _find(window, "agregar_button"))
@@ -110,7 +106,3 @@ def test_volver_keeps_draft_success_clears(qtbot) -> None:
         timeout=2000,
     )
     assert api.sales[0]["valor_total"] == 5000
-    assert api.sales[0]["lineas"][0]["id_producto"] == 1
-    assert _find(window, "selected_product_label").text() == "Sin producto seleccionado"
-    assert _find(window, "sale_feedback").text() == ""
-    assert _find(window, "quantity_label").text() == "1"

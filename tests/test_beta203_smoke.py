@@ -76,10 +76,6 @@ def test_smoke_vista_a_b_volver_todos_checkout(qtbot) -> None:
     QApplication.processEvents()
     assert window.findChild(QObject, "sale_product_1") is not None
     assert window.findChild(QObject, "sale_product_2") is not None
-    for digit in "3000":
-        _click(qtbot, _find(window, f"digit_{digit}"))
-    assert window.findChild(QObject, "sale_product_2") is not None
-    assert window.findChild(QObject, "sale_product_1") is None
     _click(qtbot, _find(window, "sale_product_2"))
     _click(qtbot, _find(window, "agregar_button"))
     assert _find(window, "purchase_total").text() == f"Total: {format_cop(8000)}"

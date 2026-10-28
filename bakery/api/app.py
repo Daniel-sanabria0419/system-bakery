@@ -26,15 +26,13 @@ API_PORT = 8765
 
 
 class SaleLineCreate(BaseModel):
-    """Línea de venta. ``subtotal`` opcional = cobro tipado del pad (no recalcular)."""
+    """Línea de venta. El subtotal lo recalcula el backend; no se acepta del cliente."""
 
     model_config = ConfigDict(extra="forbid")
 
     id_producto: int
     cantidad: int
     precio_aplicado: int
-    # Cobro tipado desde el pad (valor→qty); si viene, el backend no lo recalcula.
-    subtotal: Optional[int] = None
 
 
 class SaleCreate(BaseModel):
@@ -173,8 +171,7 @@ def create_app(db_path: Path = DEFAULT_DB_PATH) -> FastAPI:
         precio: Optional[int] = Query(
             default=None,
             description=(
-                "Legado: filtro por precio exacto. El desktop de cobro "
-                "(2.0.2+) usa prefijo local; no eliminar sin decisión."
+                "Legado: filtro por precio exacto. El desktop de cobro no lo usa."
             ),
         ),
     ) -> List[dict]:

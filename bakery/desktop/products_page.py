@@ -1,7 +1,7 @@
 """Página Productos (listado / CRUD UI)."""
 
 from pathlib import Path
-from typing import List, Mapping, Optional
+from typing import List, Mapping
 
 import httpx
 from PySide6.QtWidgets import (

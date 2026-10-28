@@ -1,4 +1,4 @@
-"""Beta 2.0.5: motor híbrido exacto por SKU + pool todo_o_nada."""
+"""Cobro cantidad_por_monto por línea (cada cantidad se cobra sola)."""
 
 from __future__ import annotations
 
@@ -6,8 +6,7 @@ import json
 
 import pytest
 
-from bakery.app import promotions as promotions_mod
-from bakery.app.promotions import amount_for_cart_group, compute_cart_line_subtotals
+from bakery.app.promotions import amount_for_quantity, compute_cart_line_subtotals
 from bakery.app.purchase import SaleDraft
 from bakery.persistence.schema import (
     ESTADO_ACTIVO,
@@ -18,10 +17,8 @@ from bakery.persistence.schema import (
 CANONICAL = PROMOCION_PAN_PEQUENO_CONFIG
 
 
-@pytest.fixture(autouse=True)
-def _flag_on(monkeypatch):
-    monkeypatch.delenv("BAKERY_USE_PROMOCIONES_TABLE", raising=False)
-    monkeypatch.setattr(promotions_mod, "USE_PROMOCIONES_TABLE", True)
+def _line_amounts(lines) -> int:
+    return sum(amount_for_quantity(line["cantidad"], CANONICAL) for line in lines)
 
 
 def _promo() -> dict:
@@ -91,18 +88,17 @@ def _pan(id_producto: int, nombre: str) -> dict:
     ],
 )
 def test_ceil_scale_amount_cases(lines, expected) -> None:
-    assert amount_for_cart_group(lines, CANONICAL) == expected
+    assert _line_amounts(lines) == expected
 
 
 def test_same_sku_two_lines_stay_separate() -> None:
     """4 y 3 del mismo id_producto no se juntan: 1000 + 900."""
     assert (
-        amount_for_cart_group(
+        _line_amounts(
             [
                 {"id_producto": 1, "cantidad": 4},
                 {"id_producto": 1, "cantidad": 3},
-            ],
-            CANONICAL,
+            ]
         )
         == 1900
     )
@@ -183,7 +179,7 @@ def test_preview_selection_unchanged_before_add() -> None:
     assert draft.total() == 1900
 
 
-def test_compute_subtotals_sum_matches_hybrid() -> None:
+def test_compute_subtotals_17_plus_5() -> None:
     lines = [
         {
             "id_producto": 1,

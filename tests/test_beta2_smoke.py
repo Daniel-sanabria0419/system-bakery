@@ -54,8 +54,6 @@ def test_smoke_menu_products_sale_checkout(qtbot) -> None:
 
     _click(qtbot, _find(window, "catalog_back_to_categories"))
     _click(qtbot, _find(window, "sale_category_todos"))
-    for digit in "3000":
-        _click(qtbot, _find(window, f"digit_{digit}"))
     _click(qtbot, _find(window, "sale_product_2"))
     _click(qtbot, _find(window, "agregar_button"))
     assert _find(window, "purchase_total").text() == "Total: $ 13.000"

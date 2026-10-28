@@ -1,4 +1,4 @@
-"""Página Registrar venta."""
+"""Página Registrar venta (Beta 2.0.6: sin pad; dos columnas)."""
 
 from typing import List, Mapping, Optional
 
@@ -8,7 +8,6 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QDialog,
     QFrame,
-    QGridLayout,
     QHBoxLayout,
     QLabel,
     QLayout,
@@ -20,13 +19,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from bakery.app.calculator import Calculator
 from bakery.app.money import format_cop
 from bakery.app.product_images import (
     category_image_path,
     resolve_relative_image,
 )
-from bakery.app.purchase import SaleDraft, candidates_by_price_prefix
+from bakery.app.purchase import SaleDraft
 from bakery.desktop import style
 from bakery.desktop.client import ApiClient
 from bakery.desktop.dialogs import (
@@ -40,18 +38,16 @@ from bakery.desktop.ui_helpers import (
     _BACK_BUTTON_ARROW,
     _PAYMENT_BUTTON_PLACEHOLDER,
     _apply_catalog_chip_icon,
-    _apply_pad_button_size,
     _apply_page_layout,
     _make_separator,
 )
+
 
 class RegisterSalePage(QWidget):
     def __init__(self, api_client: ApiClient, on_back=None) -> None:
         super().__init__()
         self._api = api_client
         self._draft = SaleDraft()
-        # Pad local (prefijo de precio) hasta Etapa 2; cobro es solo −/+ en el draft.
-        self._entry = Calculator()
         self._payment_methods: List[Mapping] = []
         self._selected_payment_id: Optional[int] = None
         self._selected_payment_name: Optional[str] = None
@@ -77,7 +73,6 @@ class RegisterSalePage(QWidget):
             back.clicked.connect(on_back)
         top_bar.addWidget(back)
         top_bar.addStretch(1)
-
         root.addLayout(top_bar)
 
         columns = QHBoxLayout()
@@ -95,17 +90,9 @@ class RegisterSalePage(QWidget):
         panel_layout.setContentsMargins(12, 12, 12, 12)
         panel_layout.setSpacing(8)
 
-        self._display = QLabel("")
-        self._display.setObjectName("sale_display")
-        self._display.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        style.apply_class(self._display, "money-text")
-        panel_layout.addWidget(self._display)
-
-        panel_layout.addWidget(_make_separator("entry_separator"))
-
         self._purchase_list = QLabel("")
         self._purchase_list.setObjectName("purchase_list")
-        self._purchase_list.setAlignment(Qt.AlignRight | Qt.AlignTop)
+        self._purchase_list.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         self._purchase_list.setWordWrap(False)
         self._purchase_list.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
         style.apply_class(self._purchase_list, "money-text")
@@ -113,7 +100,7 @@ class RegisterSalePage(QWidget):
         self._purchase_list_scroll = QScrollArea()
         self._purchase_list_scroll.setObjectName("purchase_list_scroll")
         self._purchase_list_scroll.setWidgetResizable(False)
-        self._purchase_list_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self._purchase_list_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self._purchase_list_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self._purchase_list_scroll.setFrameShape(QFrame.NoFrame)
         self._purchase_list_scroll.setWidget(self._purchase_list)
@@ -121,82 +108,21 @@ class RegisterSalePage(QWidget):
 
         panel_layout.addWidget(_make_separator("total_separator"))
 
-        footer = QHBoxLayout()
-        self._payment_button = QPushButton(_PAYMENT_BUTTON_PLACEHOLDER)
-        self._payment_button.setObjectName("payment_button")
-        style.apply_class(self._payment_button, "payment-button")
-        self._payment_button.clicked.connect(self._open_payment_dialog)
-        footer.addWidget(self._payment_button, stretch=1)
-
         self._purchase_total = QLabel("")
         self._purchase_total.setObjectName("purchase_total")
         self._purchase_total.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         style.apply_class(self._purchase_total, "money-text")
-        footer.addWidget(self._purchase_total)
-        panel_layout.addLayout(footer)
+        panel_layout.addWidget(self._purchase_total)
 
-        left_layout.addWidget(purchase_panel, style.PURCHASE_PANEL_STRETCH)
-
-        pad_panel = QWidget()
-        pad_panel.setObjectName("pad_panel")
-        pad = QGridLayout(pad_panel)
-        pad.setContentsMargins(0, 0, 0, 0)
-        pad.setSpacing(style.PAD_SPACING)
-        pad_buttons = [
-            ("1", 0, 0, 1, 1, "digit"),
-            ("2", 0, 1, 1, 1, "digit"),
-            ("3", 0, 2, 1, 1, "digit"),
-            ("Borrar", 0, 3, 1, 1, "borrar"),
-            ("4", 1, 0, 1, 1, "digit"),
-            ("5", 1, 1, 1, 1, "digit"),
-            ("6", 1, 2, 1, 1, "digit"),
-            ("C", 1, 3, 1, 1, "clear"),
-            ("7", 2, 0, 1, 1, "digit"),
-            ("8", 2, 1, 1, 1, "digit"),
-            ("9", 2, 2, 1, 1, "digit"),
-            ("Pago", 2, 3, 2, 1, "pago"),
-            ("0", 3, 0, 1, 1, "digit"),
-            ("00", 3, 1, 1, 1, "zeros"),
-            ("Agregar", 3, 2, 1, 1, "agregar"),
-        ]
-        for text, row, column, row_span, col_span, kind in pad_buttons:
-            button = QPushButton(text)
-            button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
-            _apply_pad_button_size(button)
-            style.apply_class(button, "pad-button")
-            if kind == "digit":
-                button.setObjectName(f"digit_{text}")
-                button.clicked.connect(lambda checked=False, d=text: self._digit(d))
-            elif kind == "zeros":
-                button.setObjectName("digit_00")
-                button.clicked.connect(lambda: self._action("zeros"))
-            elif kind == "agregar":
-                button.setObjectName("agregar_button")
-                button.clicked.connect(lambda: self._action("agregar"))
-            elif kind == "clear":
-                button.setObjectName("clear_button")
-                button.clicked.connect(lambda: self._action("clear"))
-            elif kind == "borrar":
-                button.setObjectName("borrar_button")
-                button.clicked.connect(lambda: self._action("borrar"))
-            elif kind == "pago":
-                button.setObjectName("submit_sale_button")
-                button.clicked.connect(self._on_submit)
-                self._submit = button
-            pad.addWidget(button, row, column, row_span, col_span)
-
-        left_layout.addWidget(pad_panel, style.PAD_PANEL_STRETCH)
-
-        catalog = QWidget()
-        catalog.setObjectName("future_panel")
-        catalog.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        catalog_layout = QVBoxLayout(catalog)
-        catalog_layout.setContentsMargins(8, 8, 8, 8)
-        catalog_layout.setSpacing(style.PAGE_SPACING)
+        left_layout.addWidget(purchase_panel, stretch=1)
 
         selection_panel = QWidget()
         selection_panel.setObjectName("selected_product_panel")
-        selection_row = QHBoxLayout(selection_panel)
+        selection_outer = QVBoxLayout(selection_panel)
+        selection_outer.setContentsMargins(12, 12, 12, 12)
+        selection_outer.setSpacing(style.PAGE_SPACING)
+
+        selection_row = QHBoxLayout()
         selection_row.setContentsMargins(0, 0, 0, 0)
         selection_row.setSpacing(style.PAGE_SPACING)
 
@@ -223,6 +149,10 @@ class RegisterSalePage(QWidget):
         self._quantity_value_label = QLabel("")
         self._quantity_value_label.setObjectName("quantity_value_label")
         info_column.addWidget(self._quantity_value_label)
+        self._value_preview_label = QLabel("")
+        self._value_preview_label.setObjectName("sale_value_preview")
+        self._value_preview_label.setWordWrap(True)
+        info_column.addWidget(self._value_preview_label)
         info_column.addStretch(1)
         selection_row.addLayout(info_column, stretch=1)
 
@@ -233,7 +163,6 @@ class RegisterSalePage(QWidget):
         qty_section_layout.setSpacing(style.PAGE_SPACING)
         qty_row = QHBoxLayout()
         qty_row.setSpacing(style.PAGE_SPACING)
-        # Orden scope: cantidad (número) luego −/+.
         self._quantity_label = QLabel("1")
         self._quantity_label.setObjectName("quantity_label")
         self._quantity_label.setAlignment(Qt.AlignCenter)
@@ -249,19 +178,30 @@ class RegisterSalePage(QWidget):
         plus.clicked.connect(self._quantity_plus)
         qty_row.addWidget(plus)
         qty_section_layout.addLayout(qty_row)
+
+        agregar = QPushButton("Agregar")
+        agregar.setObjectName("agregar_button")
+        style.apply_class(agregar, "payment-button")
+        agregar.clicked.connect(self._on_agregar)
+        qty_section_layout.addWidget(agregar)
         qty_section_layout.addStretch(1)
         selection_row.addWidget(qty_section)
-        catalog_layout.addWidget(selection_panel)
 
-        self._value_preview_label = QLabel("")
-        self._value_preview_label.setObjectName("sale_value_preview")
-        self._value_preview_label.setWordWrap(True)
-        catalog_layout.addWidget(self._value_preview_label)
+        selection_outer.addLayout(selection_row)
 
         self._feedback = QLabel("")
         self._feedback.setObjectName("sale_feedback")
         self._feedback.setWordWrap(True)
-        catalog_layout.addWidget(self._feedback)
+        selection_outer.addWidget(self._feedback)
+
+        left_layout.addWidget(selection_panel)
+
+        right = QWidget()
+        right.setObjectName("future_panel")
+        right.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        right_layout = QVBoxLayout(right)
+        right_layout.setContentsMargins(8, 8, 8, 8)
+        right_layout.setSpacing(style.PAGE_SPACING)
 
         self._categories_section = QWidget()
         self._categories_section.setObjectName("catalog_categories_section")
@@ -280,10 +220,10 @@ class RegisterSalePage(QWidget):
         categories_scroll.setFrameShape(QFrame.NoFrame)
         categories_scroll.setWidget(self._categories_host)
         categories_section_layout.addWidget(categories_scroll, stretch=1)
-        catalog_layout.addWidget(self._categories_section, stretch=1)
+        right_layout.addWidget(self._categories_section, stretch=1)
 
         self._catalog_sections_divider = _make_separator("catalog_sections_divider")
-        catalog_layout.addWidget(self._catalog_sections_divider)
+        right_layout.addWidget(self._catalog_sections_divider)
 
         self._products_section = QWidget()
         self._products_section.setObjectName("catalog_products_section")
@@ -302,11 +242,40 @@ class RegisterSalePage(QWidget):
         products_scroll.setFrameShape(QFrame.NoFrame)
         products_scroll.setWidget(self._products_host)
         products_section_layout.addWidget(products_scroll, stretch=1)
-        catalog_layout.addWidget(self._products_section, stretch=2)
-        self._catalog_layout = catalog_layout
+        right_layout.addWidget(self._products_section, stretch=2)
+        self._catalog_layout = right_layout
+
+        actions = QWidget()
+        actions.setObjectName("sale_actions_panel")
+        actions_layout = QVBoxLayout(actions)
+        actions_layout.setContentsMargins(0, 0, 0, 0)
+        actions_layout.setSpacing(style.PAGE_SPACING)
+
+        actions_row = QHBoxLayout()
+        actions_row.setSpacing(style.PAGE_SPACING)
+        self._payment_button = QPushButton(_PAYMENT_BUTTON_PLACEHOLDER)
+        self._payment_button.setObjectName("payment_button")
+        style.apply_class(self._payment_button, "payment-button")
+        self._payment_button.clicked.connect(self._open_payment_dialog)
+        actions_row.addWidget(self._payment_button, stretch=1)
+
+        clear_cart = QPushButton("Borrar todo")
+        clear_cart.setObjectName("borrar_todo_button")
+        style.apply_class(clear_cart, "payment-method-button")
+        clear_cart.clicked.connect(self._on_borrar_todo)
+        actions_row.addWidget(clear_cart)
+        actions_layout.addLayout(actions_row)
+
+        self._submit = QPushButton("Pagar")
+        self._submit.setObjectName("submit_sale_button")
+        style.apply_class(self._submit, "payment-button")
+        self._submit.clicked.connect(self._on_submit)
+        actions_layout.addWidget(self._submit)
+
+        right_layout.addWidget(actions)
 
         columns.addWidget(left, style.LEFT_COLUMN_STRETCH)
-        columns.addWidget(catalog, style.RIGHT_COLUMN_STRETCH)
+        columns.addWidget(right, style.RIGHT_COLUMN_STRETCH)
         root.addLayout(columns, stretch=1)
 
         self._apply_catalog_view()
@@ -348,7 +317,6 @@ class RegisterSalePage(QWidget):
 
     def reset_form(self) -> None:
         self._draft.clear_purchase()
-        self._entry.clear_entry()
         self._clear_payment_selection()
         self._selected_category_id = None
         self._catalog_view = "categories"
@@ -387,76 +355,32 @@ class RegisterSalePage(QWidget):
         else:
             self._payment_button.setText(_PAYMENT_BUTTON_PLACEHOLDER)
 
-    def _digits_blocked_for_quantity_only(self) -> bool:
-        """Con producto seleccionado: cantidad solo con −/+ (Beta 2.0.6 Etapa 1)."""
-        return self._draft.selected_product() is not None
-
-    def _digit(self, digit: str) -> None:
-        if self._digits_blocked_for_quantity_only():
-            self._feedback.setText("Use −/+ para la cantidad")
-            return
-        self._entry.press_digit(digit)
-        self._feedback.setText("")
-        self._on_entry_changed()
-        self._refresh_display()
-        self._refresh_submit()
-
-    def _action(self, name: str) -> None:
-        if name == "agregar":
-            if self._draft.selected_product() is None:
-                self._feedback.setText(
-                    "Seleccione un producto antes de agregar."
-                )
-            elif not self._draft.add_to_purchase():
-                self._feedback.setText("No se pudo agregar la línea.")
-            else:
-                self._feedback.setText("")
-                self._entry.clear_entry()
-                self._refresh_selection_ui()
-                self._sync_quantity_section()
-                self._refresh_mode_ui()
-                self._rebuild_products()
-        elif name == "clear":
-            self._draft.clear_purchase()
-            self._entry.clear_entry()
-            self._selected_category_id = None
-            self._catalog_view = "categories"
+    def _on_agregar(self) -> None:
+        if self._draft.selected_product() is None:
+            self._feedback.setText("Seleccione un producto antes de agregar.")
+        elif not self._draft.add_to_purchase():
+            self._feedback.setText("No se pudo agregar la línea.")
+        else:
             self._feedback.setText("")
-            self._rebuild_categories()
-            self._rebuild_products()
-            self._apply_catalog_view()
             self._refresh_selection_ui()
             self._sync_quantity_section()
             self._refresh_mode_ui()
-        elif name == "borrar":
-            if self._digits_blocked_for_quantity_only():
-                self._feedback.setText("Use −/+ para la cantidad")
-            else:
-                self._entry.backspace()
-                self._feedback.setText("")
-                self._on_entry_changed()
-        elif name == "zeros":
-            if self._digits_blocked_for_quantity_only():
-                self._feedback.setText("Use −/+ para la cantidad")
-            else:
-                self._entry.press_zeros()
-                self._feedback.setText("")
-                self._on_entry_changed()
+            self._rebuild_products()
         self._refresh_display()
         self._refresh_submit()
 
-    def _on_entry_changed(self) -> None:
-        """Tras dígitos sin selección: filtro por prefijo de precio (pad temporal)."""
-        if self._draft.selected_product() is not None:
-            return
-        self._rebuild_products()
+    def _on_borrar_todo(self) -> None:
+        """Vacía solo el carrito; conserva selección, cantidad, vista y medio."""
+        self._draft.clear_cart()
+        self._feedback.setText("")
+        self._refresh_display()
+        self._refresh_submit()
 
     def _quantity_minus(self) -> None:
         current = self._draft.quantity()
         if current <= 1:
             return
         self._draft.set_quantity(current - 1)
-        self._entry.clear_entry()
         self._feedback.setText("")
         self._sync_quantity_section()
         self._refresh_mode_ui()
@@ -464,7 +388,6 @@ class RegisterSalePage(QWidget):
 
     def _quantity_plus(self) -> None:
         self._draft.set_quantity(self._draft.quantity() + 1)
-        self._entry.clear_entry()
         self._feedback.setText("")
         self._sync_quantity_section()
         self._refresh_mode_ui()
@@ -504,7 +427,6 @@ class RegisterSalePage(QWidget):
         show_categories = self._catalog_view == "categories"
         self._categories_section.setVisible(show_categories)
         self._products_section.setVisible(not show_categories)
-        # Nunca ambas a la vez: el divisor no aporta en A ni en B.
         self._catalog_sections_divider.setVisible(False)
         if show_categories:
             self._catalog_layout.setStretch(
@@ -550,7 +472,6 @@ class RegisterSalePage(QWidget):
     def _select_product(self, product: Mapping) -> None:
         enriched = self._product_for_draft(product)
         self._draft.select_product(enriched)
-        self._entry.clear_entry()
         self._draft.set_quantity(1)
         self._feedback.setText("")
         self._refresh_selection_ui()
@@ -587,7 +508,7 @@ class RegisterSalePage(QWidget):
         )
 
     def _refresh_mode_ui(self) -> None:
-        """Preview informativo de promo por cantidad (sin tipado)."""
+        """Preview informativo de promo por cantidad."""
         if not self._draft.selected_is_pan_pequeno():
             self._value_preview_label.setText("")
             return
@@ -618,7 +539,6 @@ class RegisterSalePage(QWidget):
         todos.setObjectName("sale_category_todos")
         todos.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
         todos.setFixedSize(style.CATEGORY_CHIP_WIDTH, style.CATEGORY_CHIP_HEIGHT)
-        # Vista A: ningún chip seleccionado (Todos tampoco).
         style.apply_class(todos, "category-chip")
         todos.clicked.connect(self._select_all_categories)
         self._categories_layout.addWidget(todos)
@@ -632,8 +552,6 @@ class RegisterSalePage(QWidget):
             _apply_catalog_chip_icon(
                 button, category_image_path(int(category["id_categoria"]))
             )
-            # Solo marcar categoría si aún estamos en Vista B (sección oculta);
-            # en Vista A `_selected_category_id` es None → ninguna seleccionada.
             selected = (
                 self._catalog_view == "products"
                 and category["id_categoria"] == self._selected_category_id
@@ -650,7 +568,6 @@ class RegisterSalePage(QWidget):
 
     def _rebuild_products(self) -> None:
         self._clear_layout(self._products_layout)
-        # Volver = chip en la misma grilla/wrap que los productos (no barra aparte).
         catalog_back = CatalogChipButton()
         catalog_back.setText("Volver")
         catalog_back.setObjectName("catalog_back_to_categories")
@@ -668,11 +585,6 @@ class RegisterSalePage(QWidget):
                 for product in products
                 if product["id_categoria"] == self._selected_category_id
             ]
-        # Prefijo solo sin producto seleccionado (categoría ∩ prefijo).
-        if self._draft.selected_product() is None:
-            prefix = self._entry.digits()
-            if prefix:
-                products = candidates_by_price_prefix(products, prefix)
         selected = self._draft.selected_product()
         selected_id = selected["id_producto"] if selected is not None else None
         for product in products:
@@ -696,14 +608,7 @@ class RegisterSalePage(QWidget):
             self._products_layout.addWidget(button)
 
     def _refresh_display(self) -> None:
-        """Pad (entrada/prefijo o preview qty) + lista de compra + total."""
-        selected = self._draft.selected_product()
-        if selected is None:
-            amount = self._entry.current_amount()
-            self._display.setText(format_cop(0 if amount is None else amount))
-        else:
-            subtotal = self._draft.current_subtotal()
-            self._display.setText(format_cop(0 if subtotal is None else subtotal))
+        """Lista de compra + total (tabla/footer Subtotal·Descuento → Etapa 3)."""
         items = self._draft.purchase.items()
         self._purchase_list.setText(
             "\n".join(
@@ -747,4 +652,3 @@ class RegisterSalePage(QWidget):
             return
         SaleSavedDialog(self).exec()
         self.reset_form()
-

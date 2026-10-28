@@ -355,7 +355,7 @@ def test_menu_opens_register_and_loads_payment_methods(qtbot) -> None:
     assert payment_button.text() == "Medio de pago: Efectivo"
 
 
-def test_plus_minus_buttons_absent(qtbot) -> None:
+def test_plus_minus_and_action_buttons_present(qtbot) -> None:
     api = FakeApiClient()
     window = create_window(api)
     qtbot.addWidget(window)
@@ -364,11 +364,18 @@ def test_plus_minus_buttons_absent(qtbot) -> None:
 
     assert window.findChild(QObject, "add_button") is None
     assert window.findChild(QObject, "subtract_button") is None
+    assert window.findChild(QObject, "pad_panel") is None
+    assert window.findChild(QObject, "digit_1") is None
+    assert window.findChild(QObject, "borrar_button") is None
     assert _find(window, "agregar_button") is not None
-    assert _find(window, "borrar_button") is not None
+    assert _find(window, "quantity_minus_button") is not None
+    assert _find(window, "quantity_plus_button") is not None
+    assert _find(window, "borrar_todo_button") is not None
+    assert _find(window, "payment_button") is not None
+    assert _find(window, "submit_sale_button").text() == "Pagar"
 
 
-def test_register_layout_has_panel_pad_and_future_space(qtbot) -> None:
+def test_register_layout_two_columns_without_pad(qtbot) -> None:
     api = FakeApiClient()
     window = create_window(api)
     qtbot.addWidget(window)
@@ -376,15 +383,17 @@ def test_register_layout_has_panel_pad_and_future_space(qtbot) -> None:
     _click(qtbot, _find(window, "menu_register_button"))
 
     assert _find(window, "purchase_panel") is not None
-    assert _find(window, "entry_separator") is not None
     assert _find(window, "total_separator") is not None
     assert _find(window, "future_panel") is not None
-    assert _find(window, "digit_00") is not None
+    assert _find(window, "selected_product_panel") is not None
+    assert _find(window, "sale_actions_panel") is not None
+    assert window.findChild(QObject, "pad_panel") is None
+    assert window.findChild(QObject, "sale_display") is None
     submit = _find(window, "submit_sale_button")
-    assert submit.text() == "Pago"
+    assert submit.text() == "Pagar"
 
 
-def test_register_layout_detail_scroll_and_pad_stretch(qtbot) -> None:
+def test_register_layout_purchase_scroll_and_many_lines(qtbot) -> None:
     api = FakeApiClient()
     window = create_window(api)
     qtbot.addWidget(window)
@@ -392,14 +401,9 @@ def test_register_layout_detail_scroll_and_pad_stretch(qtbot) -> None:
     _click(qtbot, _find(window, "menu_register_button"))
 
     assert _find(window, "purchase_list_scroll") is not None
-    assert _find(window, "pad_panel") is not None
+    assert window.findChild(QObject, "pad_panel") is None
     assert _find(window, "purchase_list") is not None
-
-    left = _find(window, "left_column")
-    left_layout = left.layout()
-    assert left_layout.stretch(0) == style.PURCHASE_PANEL_STRETCH
-    assert left_layout.stretch(1) == style.PAD_PANEL_STRETCH
-    assert style.PAD_PANEL_STRETCH == 2 * style.PURCHASE_PANEL_STRETCH
+    assert _find(window, "left_column") is not None
 
     for amount in ("1000", "2000", "3000", "4000", "5000", "6000", "7000", "8000"):
         _enter_amount_and_agregar(qtbot, window, amount)
@@ -407,18 +411,13 @@ def test_register_layout_detail_scroll_and_pad_stretch(qtbot) -> None:
     assert _find(window, "purchase_total").text() == "Total: $ 36.000"
 
 
-def test_digit_00_appends_without_http(qtbot) -> None:
+def test_agregar_without_http_local_draft(qtbot) -> None:
     api = FakeApiClient()
     window = create_window(api)
     qtbot.addWidget(window)
     window.show()
     _click(qtbot, _find(window, "menu_register_button"))
     after_load = api.request_count
-
-    _click(qtbot, _find(window, "digit_5"))
-    _click(qtbot, _find(window, "digit_00"))
-    assert _find(window, "sale_display").text() == "$ 500"
-    assert api.request_count == after_load
 
     _select_draft_product(window, precio=500, nombre="Producto")
     _click(qtbot, _find(window, "agregar_button"))
@@ -445,7 +444,6 @@ def test_back_button_returns_to_menu_without_pending_purchase(qtbot) -> None:
 
     _click(qtbot, back)
     assert window.centralWidget().currentWidget() is window._menu
-    assert _find(window, "sale_display").text() == "$ 0"
     assert _find(window, "purchase_list").text() == ""
 
 
@@ -457,8 +455,6 @@ def test_back_preserves_pending_purchase_and_payment(qtbot) -> None:
 
     _click(qtbot, _find(window, "menu_register_button"))
     _enter_amount_and_agregar(qtbot, window, "5000")
-    for digit in "300":
-        _click(qtbot, _find(window, f"digit_{digit}"))
     _select_payment(qtbot, window, 1)
 
     _click(qtbot, _find(window, "back_button"))
@@ -471,12 +467,11 @@ def test_back_preserves_pending_purchase_and_payment(qtbot) -> None:
 
     assert _find(window, "purchase_list").text() == _line_text("Producto", 5000)
     assert _find(window, "purchase_total").text() == "Total: $ 5.000"
-    assert _find(window, "sale_display").text() == "$ 300"
     assert _find(window, "payment_button").text() == "Medio de pago: Efectivo"
     assert _find(window, "submit_sale_button").isEnabled()
 
 
-def test_calculator_keys_do_not_call_api(qtbot) -> None:
+def test_agregar_does_not_call_api(qtbot) -> None:
     api = FakeApiClient()
     window = create_window(api)
     qtbot.addWidget(window)
@@ -488,35 +483,13 @@ def test_calculator_keys_do_not_call_api(qtbot) -> None:
     _enter_amount_and_agregar(qtbot, window, "2000")
 
     assert api.request_count == after_load
-    assert _find(window, "sale_display").text() == "$ 0"
     assert _find(window, "purchase_list").text() == (
         f"{_line_text('Producto', 5000)}\n{_line_text('Producto', 2000)}"
     )
     assert _find(window, "purchase_total").text() == "Total: $ 7.000"
 
 
-def test_realtime_money_format_while_typing(qtbot) -> None:
-    api = FakeApiClient()
-    window = create_window(api)
-    qtbot.addWidget(window)
-    window.show()
-    _click(qtbot, _find(window, "menu_register_button"))
-    after_load = api.request_count
-
-    for digit, expected in [
-        ("1", "$ 1"),
-        ("2", "$ 12"),
-        ("5", "$ 125"),
-        ("0", "$ 1.250"),
-        ("0", "$ 12.500"),
-    ]:
-        _click(qtbot, _find(window, f"digit_{digit}"))
-        assert _find(window, "sale_display").text() == expected
-
-    assert api.request_count == after_load
-
-
-def test_borrar_removes_digit_not_purchase_items(qtbot) -> None:
+def test_borrar_todo_clears_cart_keeps_selection(qtbot) -> None:
     api = FakeApiClient()
     window = create_window(api)
     qtbot.addWidget(window)
@@ -525,35 +498,17 @@ def test_borrar_removes_digit_not_purchase_items(qtbot) -> None:
     after_load = api.request_count
 
     _enter_amount_and_agregar(qtbot, window, "5000")
-    for digit in "3000":
-        _click(qtbot, _find(window, f"digit_{digit}"))
-    assert _find(window, "sale_display").text() == "$ 3.000"
+    _click(qtbot, _find(window, "sale_category_todos"))
+    _click(qtbot, _find(window, "sale_product_1"))
+    assert _find(window, "selected_product_label").text() == "Pan"
+    assert _find(window, "quantity_label").text() == "1"
 
-    _click(qtbot, _find(window, "borrar_button"))
-    assert _find(window, "sale_display").text() == "$ 300"
-    assert _find(window, "purchase_list").text() == _line_text("Producto", 5000)
-    assert _find(window, "purchase_total").text() == "Total: $ 5.000"
-    assert api.request_count == after_load
+    _click(qtbot, _find(window, "borrar_todo_button"))
 
-
-def test_clear_resets_entire_purchase(qtbot) -> None:
-    api = FakeApiClient()
-    window = create_window(api)
-    qtbot.addWidget(window)
-    window.show()
-    _click(qtbot, _find(window, "menu_register_button"))
-    after_load = api.request_count
-
-    _enter_amount_and_agregar(qtbot, window, "5000")
-    _enter_amount_and_agregar(qtbot, window, "3000")
-    for digit in "100":
-        _click(qtbot, _find(window, f"digit_{digit}"))
-
-    _click(qtbot, _find(window, "clear_button"))
-
-    assert _find(window, "sale_display").text() == "$ 0"
     assert _find(window, "purchase_list").text() == ""
     assert _find(window, "purchase_total").text() == "Total: $ 0"
+    assert _find(window, "selected_product_label").text() == "Pan"
+    assert _find(window, "quantity_label").text() == "1"
     assert api.request_count == after_load
 
 
@@ -565,10 +520,6 @@ def test_submit_disabled_without_value_or_payment(qtbot) -> None:
     _click(qtbot, _find(window, "menu_register_button"))
 
     submit = _find(window, "submit_sale_button")
-    assert not submit.isEnabled()
-
-    for digit in "5000":
-        _click(qtbot, _find(window, f"digit_{digit}"))
     assert not submit.isEnabled()
 
     _click(qtbot, _find(window, "agregar_button"))
@@ -688,7 +639,6 @@ def test_cancel_confirmation_does_not_save(qtbot) -> None:
         and _find(window, "purchase_total").text() == "Total: $ 5.000"
     )
     assert api.sales == []
-    assert _find(window, "sale_display").text() == "$ 0"
     assert window.findChild(QObject, "sale_saved_dialog") is None
 
 
@@ -762,7 +712,6 @@ def test_confirm_sale_posts_and_resets_form(qtbot) -> None:
 
     assert api.sales[0]["valor_total"] == 25000
     assert api.sales[0]["id_medio_pago"] == 1
-    assert _find(window, "sale_display").text() == "$ 0"
     assert _find(window, "purchase_list").text() == ""
     assert _find(window, "purchase_total").text() == "Total: $ 0"
     assert _find(window, "payment_button").text() == "Seleccionar medio de pago"

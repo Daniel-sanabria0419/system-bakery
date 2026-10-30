@@ -1,7 +1,7 @@
 import sqlite3
 import uuid
 from datetime import datetime
-from typing import Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 from bakery.app.promotions import (
     compute_cart_line_subtotals,
@@ -12,9 +12,12 @@ from bakery.persistence.repositories import (
     get_producto,
     get_promocion,
     get_sale,
+    get_sale_detail as load_sale_detail,
     insert_sale,
     insert_venta_linea,
     list_active_payment_methods,
+    list_ventas,
+    sale_is_editable,
 )
 from bakery.persistence.schema import ESTADO_ACTIVO
 
@@ -24,6 +27,37 @@ TENDERO = 1
 
 class SaleValidationError(Exception):
     pass
+
+
+def list_sales(
+    connection: sqlite3.Connection,
+    *,
+    now: Optional[Union[datetime, str]] = None,
+) -> List[Mapping]:
+    """Listado de ventas (más recientes primero) con flag ``editable`` del servidor."""
+    rows: List[Mapping] = []
+    for row in list_ventas(connection):
+        item = dict(row)
+        item["editable"] = sale_is_editable(item["fecha_venta"], now=now)
+        item["es_legado"] = int(item["cantidad_lineas"]) == 0
+        rows.append(item)
+    return rows
+
+
+def get_sale_detail(
+    connection: sqlite3.Connection,
+    id_venta: str,
+    *,
+    now: Optional[Union[datetime, str]] = None,
+) -> Optional[Mapping]:
+    """Detalle de venta (cabecera, líneas, observaciones) + ``editable``."""
+    detail = load_sale_detail(connection, id_venta)
+    if detail is None:
+        return None
+    result = dict(detail)
+    result["editable"] = sale_is_editable(result["fecha_venta"], now=now)
+    result["es_legado"] = len(result["lineas"]) == 0
+    return result
 
 
 def register_sale(

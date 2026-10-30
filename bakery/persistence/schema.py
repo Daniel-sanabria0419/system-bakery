@@ -96,6 +96,36 @@ CREATE TABLE IF NOT EXISTS venta_lineas (
 )
 """
 
+# Beta 2.1 Etapa 1: auditoría primero (obs puede apuntar a un cambio).
+_CREATE_VENTA_CAMBIOS = """
+CREATE TABLE IF NOT EXISTS venta_cambios (
+    id_cambio INTEGER PRIMARY KEY,
+    id_venta TEXT NOT NULL REFERENCES ventas(id_venta),
+    fecha_cambio TEXT NOT NULL,
+    tipo TEXT NOT NULL CHECK (
+        tipo IN (
+            'creacion',
+            'edicion',
+            'observacion_posterior',
+            'observacion_correccion'
+        )
+    ),
+    antes_json TEXT,
+    despues_json TEXT NOT NULL
+)
+"""
+
+_CREATE_VENTA_OBSERVACIONES = """
+CREATE TABLE IF NOT EXISTS venta_observaciones (
+    id_observacion INTEGER PRIMARY KEY,
+    id_venta TEXT NOT NULL REFERENCES ventas(id_venta),
+    texto TEXT NOT NULL CHECK (length(trim(texto)) > 0),
+    origen TEXT NOT NULL CHECK (origen IN ('durante_venta', 'posterior')),
+    fecha_creacion TEXT NOT NULL,
+    id_cambio INTEGER REFERENCES venta_cambios(id_cambio)
+)
+"""
+
 _CREATE_SCHEMA_VERSION = """
 CREATE TABLE IF NOT EXISTS schema_version (
     id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -115,6 +145,8 @@ def create_schema(connection: sqlite3.Connection) -> None:
     connection.execute(_CREATE_PROMOCIONES)
     connection.execute(_CREATE_PRODUCTOS)
     connection.execute(_CREATE_VENTA_LINEAS)
+    connection.execute(_CREATE_VENTA_CAMBIOS)
+    connection.execute(_CREATE_VENTA_OBSERVACIONES)
     create_schema_version_table(connection)
 
 
@@ -246,6 +278,24 @@ def migrate_productos_ruta_imagen(connection: sqlite3.Connection) -> None:
 def ensure_promociones_table(connection: sqlite3.Connection) -> None:
     """Crea la tabla promociones si falta (idempotente)."""
     connection.execute(_CREATE_PROMOCIONES)
+
+
+def ensure_venta_cambios_table(connection: sqlite3.Connection) -> None:
+    """Crea la tabla venta_cambios si falta (idempotente)."""
+    connection.execute(_CREATE_VENTA_CAMBIOS)
+
+
+def ensure_venta_observaciones_table(connection: sqlite3.Connection) -> None:
+    """Crea la tabla venta_observaciones si falta (idempotente)."""
+    connection.execute(_CREATE_VENTA_OBSERVACIONES)
+
+
+def migrate_venta_observaciones_y_cambios(
+    connection: sqlite3.Connection,
+) -> None:
+    """Beta 2.1 Etapa 1: tablas de observaciones y auditoría (idempotente)."""
+    ensure_venta_cambios_table(connection)
+    ensure_venta_observaciones_table(connection)
 
 
 def migrate_productos_promocion_id(connection: sqlite3.Connection) -> None:

@@ -31,8 +31,8 @@ def test_new_db_total_column_is_required(tmp_path: Path) -> None:
     initialize(path)
     connection = connect(path)
     try:
-        assert CURRENT_SCHEMA_VERSION == 5
-        assert get_schema_version(connection) == 5
+        assert CURRENT_SCHEMA_VERSION >= 5
+        assert get_schema_version(connection) == CURRENT_SCHEMA_VERSION
         info = {
             row[1]: row
             for row in connection.execute("PRAGMA table_info(venta_lineas)").fetchall()
@@ -141,7 +141,7 @@ def test_migration_copies_old_subtotal_without_recomputing(tmp_path: Path) -> No
     initialize(path)
     connection = connect(path)
     try:
-        assert get_schema_version(connection) == 5
+        assert get_schema_version(connection) == CURRENT_SCHEMA_VERSION
         row = connection.execute(
             """
             SELECT cantidad, precio_aplicado, subtotal, total

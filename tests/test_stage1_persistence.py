@@ -124,6 +124,8 @@ def test_new_db_creates_catalog_and_line_tables(tmp_path: Path) -> None:
             "productos",
             "promociones",
             "venta_lineas",
+            "venta_cambios",
+            "venta_observaciones",
             "medios_pago",
             "ventas",
             "schema_version",

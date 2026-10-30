@@ -2,7 +2,7 @@
 
 Documento de etapas de **Beta 2.1** (historial, detalle, observaciones, edición ≤ 1 h, auditoría). Plan autoritativo: Context `docs/beta-2.1-plan.md`.
 
-**Estado:** en curso. **Etapa 0 hecha** (alcance en PRD / AGENTS / architecture / database / sync). Etapas 1+ pendientes — sin schema, API, UI ni tests de código hasta su PR.
+**Estado:** en curso. **Etapas 0–1 hechas** (alcance docs; schema v6 `venta_observaciones` + `venta_cambios`). Etapas 2+ pendientes — sin API/UI de historial/edición hasta su PR.
 
 Preservar Beta 2.0.x. Comando canónico de pruebas (cuando haya código):  
 `QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest`
@@ -23,7 +23,7 @@ Preservar Beta 2.0.x. Comando canónico de pruebas (cuando haya código):
 | Etapa | Nombre | Estado | Notas |
 |---|---|---|---|
 | 0 | Alcance documentado | Hecha | PRD, AGENTS, architecture, database, sync; este `stages.md` |
-| 1 | Schema observaciones + auditoría | Pendiente | `schema_version` v6+; sin cambiar comportamiento de `POST` aún |
+| 1 | Schema observaciones + auditoría | Hecha | `schema_version` v6; tablas + FKs/CHECKs; `POST /ventas` intacto |
 | 2 | Persistencia list/detail/tiempo | Pendiente | Helpers; reloj inyectable en tests |
 | 3 | API lectura GET | Pendiente | Listado + detalle + `editable` |
 | 4 | Desktop historial + detalle (lectura) | Pendiente | Menú Historial; sin edición |

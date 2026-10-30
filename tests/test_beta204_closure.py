@@ -29,8 +29,8 @@ def test_schema_version_is_3_with_venta_lineas_snapshot(tmp_path: Path) -> None:
     initialize(path)
     connection = connect(path)
     try:
-        assert CURRENT_SCHEMA_VERSION == 5
-        assert get_schema_version(connection) == 5
+        assert CURRENT_SCHEMA_VERSION >= 5
+        assert get_schema_version(connection) == CURRENT_SCHEMA_VERSION
         columns = {
             row[1]
             for row in connection.execute(
@@ -216,7 +216,7 @@ def test_migrate_v2_to_v3_adds_snapshot_columns(tmp_path: Path) -> None:
     initialize(path)
     connection = connect(path)
     try:
-        assert get_schema_version(connection) == 5
+        assert get_schema_version(connection) == CURRENT_SCHEMA_VERSION
         columns = {
             row[1]
             for row in connection.execute(

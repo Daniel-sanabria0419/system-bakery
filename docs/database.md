@@ -8,7 +8,7 @@ SQLite
 
 La base de datos es local y debe funcionar sin Internet.
 
-## Esquema vigente (Beta 2.0 … schema v5)
+## Esquema vigente (Beta 2.0 … schema v6)
 
 Las tablas de catálogo y líneas (`categorias`, `productos`, `venta_lineas`) se introdujeron en **Beta 2.0 Etapa 1**.
 
@@ -20,7 +20,7 @@ Las tablas de catálogo y líneas (`categorias`, `productos`, `venta_lineas`) se
 - **Beta 2.0.4 Etapa 2:** seed de promo canónica Pan pequeño + backfill de `promocion_id` en productos de esa categoría.
 - **Beta 2.0.4 cutover + cierre:** cobro por FK/grupo; `venta_lineas.id_promocion` / `nombre_promocion` (snapshot, schema v3).
 - **Meta:** tabla `schema_version` para migraciones ordenadas (ver sección Versión de esquema).
-- **Beta 2.1 (previsto, no aplicado en Etapa 0):** tablas `venta_observaciones` y `venta_cambios` (schema v6+ en Etapa 1). Sin columnas nuevas en `ventas`/`venta_lineas` en el alcance documentado de Etapa 0.
+- **Beta 2.1 Etapa 1:** tablas `venta_observaciones` y `venta_cambios` (schema v6). Sin columnas nuevas en `ventas`/`venta_lineas`. Sin API/UI en esta etapa.
 
 ## Tabla: medios_pago
 
@@ -135,6 +135,9 @@ tendero = 1
 - `productos.promocion_id` → `promociones.id` (nullable)
 - `venta_lineas.id_venta` → `ventas.id_venta`
 - `venta_lineas.id_producto` → `productos.id_producto`
+- `venta_cambios.id_venta` → `ventas.id_venta`
+- `venta_observaciones.id_venta` → `ventas.id_venta`
+- `venta_observaciones.id_cambio` → `venta_cambios.id_cambio` (nullable)
 
 ## Valor monetario
 
@@ -209,42 +212,42 @@ Versión vigente:
 | 3 | Beta 2.0.4 cierre: `venta_lineas.id_promocion` + `nombre_promocion` |
 | 4 | Config de promo canónica: JSON solo `precio_base` + `modo` |
 | 5 | `venta_lineas.total` NOT NULL CHECK (> 0). Filas existentes: `total = subtotal`, sin recalcular `subtotal` |
-| 6+ (previsto Beta 2.1 Etapa 1) | `venta_observaciones` + `venta_cambios` — ver sección prevista abajo; **aún no en código** |
+| 6 | Beta 2.1 Etapa 1: `venta_observaciones` + `venta_cambios` (FKs/CHECKs; sin API/UI) |
 
-## Previsto Beta 2.1 (documentación; sin migración en Etapa 0)
+## Tablas Beta 2.1 Etapa 1: observaciones y auditoría
 
-Plan: Context `docs/beta-2.1-plan.md`. Nombres finales y CHECKs se fijan en Etapa 1.
+Plan: Context `docs/beta-2.1-plan.md`. Persistencia/API de escritura llega en etapas posteriores; aquí solo el schema.
 
-### Tabla prevista: `venta_observaciones` (append-only)
-
-| Campo | Rol |
-|---|---|
-| id_observacion | PK |
-| id_venta | FK → `ventas` |
-| texto | Contenido (trim; no vacío) |
-| origen | `durante_venta` \| `posterior` |
-| fecha_creacion | Servidor ISO (mismo estilo que `fecha_venta`) |
-| id_cambio | FK nullable → fila de auditoría que la originó |
-
-### Tabla prevista: `venta_cambios` (auditoría)
+### Tabla: `venta_cambios` (auditoría)
 
 | Campo | Rol |
 |---|---|
-| id_cambio | PK |
+| id_cambio | PK INTEGER |
 | id_venta | FK → `ventas` |
-| fecha_cambio | Servidor |
-| tipo | `creacion` \| `edicion` \| `observacion_posterior` \| (opcional) `observacion_correccion` |
+| fecha_cambio | Servidor ISO |
+| tipo | CHECK: `creacion` \| `edicion` \| `observacion_posterior` \| `observacion_correccion` |
 | antes_json | TEXT JSON nullable (`null` en creación) |
-| despues_json | TEXT JSON (estado tras el evento) |
+| despues_json | TEXT JSON NOT NULL (estado tras el evento) |
 
-El JSON de auditoría incluye al menos medio, `valor_total`, líneas snapshot y observaciones relevantes. En creación se guarda `tipo=creacion` con el estado inicial. **No** se muta `fecha_venta` en ediciones. Ventas legado value-only no reciben líneas inventadas.
+### Tabla: `venta_observaciones` (append-only)
+
+| Campo | Rol |
+|---|---|
+| id_observacion | PK INTEGER |
+| id_venta | FK → `ventas` |
+| texto | NOT NULL; CHECK `length(trim(texto)) > 0` |
+| origen | CHECK: `durante_venta` \| `posterior` |
+| fecha_creacion | Servidor ISO (mismo estilo que `fecha_venta`) |
+| id_cambio | FK nullable → `venta_cambios(id_cambio)` |
+
+El JSON de auditoría (cuando se escriba en etapas posteriores) incluye al menos medio, `valor_total`, líneas snapshot y observaciones relevantes. En creación se guardará `tipo=creacion` con el estado inicial. **No** se muta `fecha_venta` en ediciones. Ventas legado value-only no reciben líneas inventadas.
 
 ## Migración
 
 Al llamar `initialize`, se ejecuta:
 
-1. `CREATE TABLE IF NOT EXISTS` para todas las tablas de negocio (incl. `promociones` y `schema_version`);
-2. migraciones ordenadas hasta `CURRENT_SCHEMA_VERSION` (hoy: v5 = `venta_lineas.total`);
+1. `CREATE TABLE IF NOT EXISTS` para todas las tablas de negocio (incl. `promociones`, `venta_cambios`, `venta_observaciones` y `schema_version`);
+2. migraciones ordenadas hasta `CURRENT_SCHEMA_VERSION` (hoy: v6 = obs + auditoría);
 3. semilla de medios (si la tabla está vacía);
 4. semilla de categorías Beta 2.0 (si la tabla está vacía);
 5. ensure de «Pan pequeño» por nombre;
@@ -256,5 +259,6 @@ Es idempotente:
 - en una base nueva: esquema completo, `schema_version = CURRENT`, semillas, Pan pequeño y promo canónica;
 - en una base con las cinco categorías de Beta 2.0: se añade Pan pequeño, `ruta_imagen` y `promocion_id`, promo + backfill, y se marca `schema_version`;
 - en una base en v1: se crea `promociones` y se añade `promocion_id` sin tocar datos de venta; luego seed/backfill;
+- en una base en v5: se crean `venta_cambios` y `venta_observaciones` sin alterar ventas/líneas;
 - en una base solo-`medios_pago` / `ventas`: agrega tablas faltantes sin alterar ventas existentes;
 - re-ejecutar `initialize` no duplica datos ni re-aplica migraciones ya aplicadas.

@@ -239,8 +239,9 @@ def test_historial_shows_sale_created_via_api_and_detail(qtbot) -> None:
     obs = _find(window, "historial_detail_obs_0")
     assert "Durante la venta" in obs.text()
     assert "Cliente habitual" in obs.text()
-    assert window.findChild(QObject, "historial_edit_button") is None
-    assert window.findChild(QObject, "historial_add_obs_button") is None
+    # Etapa 8: editable=true muestra Editar; obs posterior sigue disponible.
+    assert window.findChild(QObject, "historial_edit_button") is not None
+    assert window.findChild(QObject, "historial_add_observacion_button") is not None
 
     _click(qtbot, _find(window, "historial_detail_back_button"))
     assert window._historial._stack.currentWidget() is window._historial._list_page

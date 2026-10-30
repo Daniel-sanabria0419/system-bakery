@@ -190,6 +190,104 @@ class AddObservacionDialog(QDialog):
         return value or None
 
 
+class SelectProductDialog(QDialog):
+    """Elegir un producto activo para agregar en edición (sin pad de montos)."""
+
+    def __init__(self, products: List[Mapping], parent: QWidget = None) -> None:
+        super().__init__(parent)
+        self.setObjectName("select_product_dialog")
+        self.setWindowTitle("Agregar producto")
+        self.setModal(True)
+        self._selected: Optional[Mapping] = None
+
+        layout = QVBoxLayout(self)
+        _apply_touch_dialog_layout(self, layout)
+
+        prompt = QLabel("Producto")
+        prompt.setObjectName("select_product_label")
+        style.apply_class(prompt, "dialog-text")
+        layout.addWidget(prompt)
+
+        grid = QGridLayout()
+        grid.setSpacing(style.PAGE_SPACING)
+        for index, product in enumerate(products):
+            row, column = divmod(index, _PAYMENT_METHODS_PER_ROW)
+            nombre = str(product.get("nombre") or "")
+            precio = int(product.get("precio") or 0)
+            button = QPushButton(f"{nombre} · {format_cop(precio)}")
+            button.setObjectName(f"edit_add_product_{product['id_producto']}")
+            style.apply_class(button, "payment-method-button")
+            button.setMinimumHeight(style.PAYMENT_METHOD_BUTTON_MIN_HEIGHT)
+            button.clicked.connect(
+                lambda checked=False, p=product: self._choose(p)
+            )
+            grid.addWidget(button, row, column)
+        layout.addLayout(grid)
+
+        cancel = QPushButton("Cancelar")
+        cancel.setObjectName("select_product_cancel_button")
+        style.apply_class(cancel, "dialog-action-button")
+        _apply_dialog_action_button_size(cancel)
+        cancel.clicked.connect(self.reject)
+        layout.addWidget(cancel)
+
+    def selected_product(self) -> Optional[Mapping]:
+        return self._selected
+
+    def _choose(self, product: Mapping) -> None:
+        self._selected = product
+        self.accept()
+
+
+class ConfirmEditDialog(QDialog):
+    """Confirmación antes de PUT (totales definitivos los calcula el backend)."""
+
+    def __init__(
+        self,
+        *,
+        payment_name: str,
+        line_summary: str,
+        parent: QWidget = None,
+    ) -> None:
+        super().__init__(parent)
+        self.setObjectName("confirm_edit_dialog")
+        self.setWindowTitle("Confirmar edición")
+
+        layout = QVBoxLayout(self)
+        _apply_touch_dialog_layout(self, layout)
+
+        payment_label = QLabel(f"Medio de pago: {payment_name}")
+        payment_label.setObjectName("confirm_edit_payment_label")
+        style.apply_class(payment_label, "dialog-text")
+        layout.addWidget(payment_label)
+
+        lines_label = QLabel(line_summary)
+        lines_label.setObjectName("confirm_edit_lines_label")
+        lines_label.setWordWrap(True)
+        style.apply_class(lines_label, "dialog-text")
+        layout.addWidget(lines_label)
+
+        note = QLabel("El total lo recalcula el servidor con el catálogo vigente.")
+        note.setObjectName("confirm_edit_note_label")
+        note.setWordWrap(True)
+        style.apply_class(note, "dialog-text")
+        layout.addWidget(note)
+
+        buttons = QDialogButtonBox()
+        buttons.setCenterButtons(True)
+        confirm = buttons.addButton("Guardar", QDialogButtonBox.AcceptRole)
+        confirm.setObjectName("confirm_edit_button")
+        style.apply_class(confirm, "dialog-action-button")
+        _apply_dialog_action_button_size(confirm)
+        cancel = buttons.addButton("Cancelar", QDialogButtonBox.RejectRole)
+        cancel.setObjectName("confirm_edit_cancel_button")
+        style.apply_class(cancel, "dialog-action-button")
+        _apply_dialog_action_button_size(cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+
 class ProductFormDialog(QDialog):
     """Crear o editar producto. La validación de negocio la hace la API."""
 

@@ -1,3 +1,4 @@
+import json
 import sqlite3
 import uuid
 from datetime import datetime
@@ -9,12 +10,18 @@ from bakery.app.promotions import (
     parse_cantidad_por_monto_config,
 )
 from bakery.persistence.repositories import (
+    ORIGEN_OBSERVACION_DURANTE_VENTA,
+    ORIGEN_OBSERVACION_POSTERIOR,
+    TIPO_CAMBIO_CREACION,
+    TIPO_CAMBIO_OBSERVACION_POSTERIOR,
     get_producto,
     get_promocion,
     get_sale,
     get_sale_detail as load_sale_detail,
     insert_sale,
+    insert_venta_cambio,
     insert_venta_linea,
+    insert_venta_observacion,
     list_active_payment_methods,
     list_ventas,
     sale_is_editable,
@@ -26,6 +33,10 @@ TENDERO = 1
 
 
 class SaleValidationError(Exception):
+    pass
+
+
+class SaleNotFoundError(Exception):
     pass
 
 
@@ -67,6 +78,7 @@ def register_sale(
     *,
     id_venta: str,
     fecha_venta: str = None,
+    observacion: Optional[str] = None,
 ) -> Mapping:
     sale_id = _validate_id_venta(id_venta)
     existing = get_sale(connection, sale_id)
@@ -76,14 +88,15 @@ def register_sale(
     if isinstance(id_medio_pago, bool) or not isinstance(id_medio_pago, int):
         raise SaleValidationError("Debe seleccionar un medio de pago activo.")
 
-    active_ids = {
-        method["id_medio_pago"] for method in list_active_payment_methods(connection)
-    }
-    if id_medio_pago not in active_ids:
+    active_methods = list_active_payment_methods(connection)
+    active_by_id = {method["id_medio_pago"]: method for method in active_methods}
+    if id_medio_pago not in active_by_id:
         raise SaleValidationError("Debe seleccionar un medio de pago activo.")
 
     if not isinstance(lineas, (list, tuple)) or len(lineas) < 1:
         raise SaleValidationError("Debe enviar al menos una línea de producto.")
+
+    texto_obs = _normalize_optional_observacion(observacion)
 
     resolved = _resolve_lines_with_promociones(connection, lineas)
 
@@ -114,6 +127,53 @@ def register_sale(
                 id_promocion=line.get("id_promocion"),
                 nombre_promocion=line.get("nombre_promocion"),
             )
+        observaciones_audit: List[Mapping] = []
+        if texto_obs is not None:
+            observaciones_audit.append(
+                {
+                    "texto": texto_obs,
+                    "origen": ORIGEN_OBSERVACION_DURANTE_VENTA,
+                }
+            )
+        despues_json = json.dumps(
+            {
+                "id_medio_pago": id_medio_pago,
+                "nombre_medio": active_by_id[id_medio_pago]["nombre"],
+                "valor_total": valor_total,
+                "lineas": [
+                    {
+                        "id_producto": line["id_producto"],
+                        "nombre_producto": line["nombre_producto"],
+                        "cantidad": line["cantidad"],
+                        "precio_aplicado": line["precio_aplicado"],
+                        "subtotal": line["subtotal"],
+                        "total": line["total"],
+                        "id_promocion": line.get("id_promocion"),
+                        "nombre_promocion": line.get("nombre_promocion"),
+                    }
+                    for line in resolved
+                ],
+                "observaciones": observaciones_audit,
+            },
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        id_cambio = insert_venta_cambio(
+            connection,
+            id_venta=sale["id_venta"],
+            fecha_cambio=sale["fecha_venta"],
+            tipo=TIPO_CAMBIO_CREACION,
+            despues_json=despues_json,
+        )
+        if texto_obs is not None:
+            insert_venta_observacion(
+                connection,
+                id_venta=sale["id_venta"],
+                texto=texto_obs,
+                origen=ORIGEN_OBSERVACION_DURANTE_VENTA,
+                fecha_creacion=sale["fecha_venta"],
+                id_cambio=id_cambio,
+            )
         connection.commit()
     except sqlite3.IntegrityError:
         # Carrera: otro POST con el mismo id ya hizo commit.
@@ -126,6 +186,74 @@ def register_sale(
         connection.rollback()
         raise
     return sale
+
+
+def add_sale_observacion(
+    connection: sqlite3.Connection,
+    id_venta: str,
+    texto: str,
+    *,
+    fecha_creacion: Optional[str] = None,
+) -> Mapping:
+    """Agrega observación posterior (siempre permitida). Append-only + auditoría mínima."""
+    sale = get_sale(connection, id_venta)
+    if sale is None:
+        raise SaleNotFoundError("Venta no encontrada.")
+
+    if not isinstance(texto, str):
+        raise SaleValidationError("La observación no puede estar vacía.")
+    texto_limpio = texto.strip()
+    if not texto_limpio:
+        raise SaleValidationError("La observación no puede estar vacía.")
+
+    when = fecha_creacion or _now()
+    despues_json = json.dumps(
+        {
+            "texto": texto_limpio,
+            "origen": ORIGEN_OBSERVACION_POSTERIOR,
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    try:
+        id_cambio = insert_venta_cambio(
+            connection,
+            id_venta=id_venta,
+            fecha_cambio=when,
+            tipo=TIPO_CAMBIO_OBSERVACION_POSTERIOR,
+            despues_json=despues_json,
+        )
+        id_observacion = insert_venta_observacion(
+            connection,
+            id_venta=id_venta,
+            texto=texto_limpio,
+            origen=ORIGEN_OBSERVACION_POSTERIOR,
+            fecha_creacion=when,
+            id_cambio=id_cambio,
+        )
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    return {
+        "id_observacion": id_observacion,
+        "id_venta": id_venta,
+        "texto": texto_limpio,
+        "origen": ORIGEN_OBSERVACION_POSTERIOR,
+        "fecha_creacion": when,
+        "id_cambio": id_cambio,
+    }
+
+
+def _normalize_optional_observacion(observacion: object) -> Optional[str]:
+    if observacion is None:
+        return None
+    if not isinstance(observacion, str):
+        raise SaleValidationError("La observación debe ser texto.")
+    texto = observacion.strip()
+    if not texto:
+        return None
+    return texto
 
 
 def _validate_id_venta(id_venta: object) -> str:

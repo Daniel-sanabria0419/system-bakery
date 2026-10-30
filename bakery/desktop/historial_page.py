@@ -1,9 +1,10 @@
-"""Página Historial de ventas (Beta 2.1 Etapa 4: solo lectura)."""
+"""Página Historial de ventas (Beta 2.1: lectura + observación posterior)."""
 
 from typing import List, Mapping, Optional
 
 import httpx
 from PySide6.QtWidgets import (
+    QDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -18,6 +19,7 @@ from PySide6.QtWidgets import (
 from bakery.app.money import format_cop
 from bakery.desktop import style
 from bakery.desktop.client import ApiClient
+from bakery.desktop.dialogs import AddObservacionDialog
 from bakery.desktop.ui_helpers import _BACK_BUTTON_ARROW, _apply_page_layout
 
 _LEGADO_SIN_LINEAS = "Sin detalle de productos (venta antigua)"
@@ -53,6 +55,7 @@ class HistorialPage(QWidget):
         self._api = api_client
         self._on_back = on_back
         self._sales: List[Mapping] = []
+        self._current_detail_id: Optional[str] = None
 
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -210,6 +213,7 @@ class HistorialPage(QWidget):
                 f"No se pudo cargar el detalle.\n{exc}",
             )
             return
+        self._current_detail_id = id_venta
         self._render_detail(detail)
         self._stack.setCurrentWidget(self._detail_page)
 
@@ -316,4 +320,37 @@ class HistorialPage(QWidget):
                     + (f" ({fecha_obs})" if fecha_obs else ""),
                 )
 
+        add_obs = QPushButton("Agregar observación")
+        add_obs.setObjectName("historial_add_observacion_button")
+        style.apply_class(add_obs, "dialog-action-button")
+        add_obs.setMinimumHeight(style.DIALOG_ACTION_BUTTON_MIN_HEIGHT)
+        add_obs.clicked.connect(self._on_add_observacion)
+        self._detail_layout.addWidget(add_obs)
+
         self._detail_layout.addStretch(1)
+
+    def _on_add_observacion(self) -> None:
+        id_venta = self._current_detail_id
+        if not id_venta:
+            return
+        dialog = AddObservacionDialog(self)
+        if dialog.exec() != QDialog.Accepted:
+            return
+        texto = dialog.texto()
+        if not texto:
+            QMessageBox.warning(
+                self,
+                "Observación",
+                "La observación no puede estar vacía.",
+            )
+            return
+        try:
+            self._api.add_sale_observacion(id_venta, texto)
+        except httpx.HTTPError as exc:
+            QMessageBox.warning(
+                self,
+                "Error",
+                f"No se pudo guardar la observación.\n{exc}",
+            )
+            return
+        self._open_detail(id_venta)

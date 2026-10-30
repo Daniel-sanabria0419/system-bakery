@@ -5,6 +5,7 @@ los imports históricos (`from bakery.desktop.ui import ...`).
 """
 
 from bakery.desktop.dialogs import (
+    AddObservacionDialog,
     ConfirmSaleDialog,
     ProductFormDialog,
     SaleSavedDialog,
@@ -17,6 +18,7 @@ from bakery.desktop.products_page import ProductsPage
 from bakery.desktop.register_sale_page import RegisterSalePage
 
 __all__ = [
+    "AddObservacionDialog",
     "ConfirmSaleDialog",
     "HistorialPage",
     "MainWindow",

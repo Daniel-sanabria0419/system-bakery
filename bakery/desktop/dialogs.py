@@ -93,6 +93,16 @@ class ConfirmSaleDialog(QDialog):
         layout.addWidget(value_label)
         layout.addWidget(payment_label)
 
+        obs_label = QLabel("Observación (opcional)")
+        obs_label.setObjectName("confirm_observacion_label")
+        style.apply_class(obs_label, "dialog-text")
+        layout.addWidget(obs_label)
+        self._observacion = QLineEdit()
+        self._observacion.setObjectName("confirm_observacion_input")
+        self._observacion.setPlaceholderText("Observación de la venta")
+        style.apply_class(self._observacion, style.PRODUCT_FORM_FIELD_CLASS)
+        layout.addWidget(self._observacion)
+
         buttons = QDialogButtonBox()
         buttons.setCenterButtons(True)
 
@@ -107,6 +117,10 @@ class ConfirmSaleDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+
+    def observacion(self) -> Optional[str]:
+        texto = self._observacion.text().strip()
+        return texto or None
 
 
 class SaleSavedDialog(QDialog):
@@ -132,6 +146,48 @@ class SaleSavedDialog(QDialog):
         _apply_dialog_action_button_size(ok)
         buttons.accepted.connect(self.accept)
         layout.addWidget(buttons)
+
+
+class AddObservacionDialog(QDialog):
+    """Observación posterior desde el detalle del historial."""
+
+    def __init__(self, parent: QWidget = None) -> None:
+        super().__init__(parent)
+        self.setObjectName("add_observacion_dialog")
+        self.setWindowTitle("Agregar observación")
+        self.setModal(True)
+
+        layout = QVBoxLayout(self)
+        _apply_touch_dialog_layout(self, layout)
+
+        prompt = QLabel("Observación")
+        prompt.setObjectName("add_observacion_label")
+        style.apply_class(prompt, "dialog-text")
+        layout.addWidget(prompt)
+
+        self._texto = QLineEdit()
+        self._texto.setObjectName("add_observacion_input")
+        self._texto.setPlaceholderText("Texto de la observación")
+        style.apply_class(self._texto, style.PRODUCT_FORM_FIELD_CLASS)
+        layout.addWidget(self._texto)
+
+        buttons = QDialogButtonBox()
+        buttons.setCenterButtons(True)
+        save = buttons.addButton("Guardar", QDialogButtonBox.AcceptRole)
+        save.setObjectName("add_observacion_save_button")
+        style.apply_class(save, "dialog-action-button")
+        _apply_dialog_action_button_size(save)
+        cancel = buttons.addButton("Cancelar", QDialogButtonBox.RejectRole)
+        cancel.setObjectName("add_observacion_cancel_button")
+        style.apply_class(cancel, "dialog-action-button")
+        _apply_dialog_action_button_size(cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def texto(self) -> Optional[str]:
+        value = self._texto.text().strip()
+        return value or None
 
 
 class ProductFormDialog(QDialog):

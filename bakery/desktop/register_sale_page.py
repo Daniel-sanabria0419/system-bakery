@@ -399,7 +399,9 @@ class RegisterSalePage(QWidget):
         if self._draft.selected_product() is None:
             self._feedback.setText("Seleccione un producto antes de agregar.")
         elif not self._draft.add_to_purchase():
-            self._feedback.setText("No se pudo agregar la línea.")
+            self._feedback.setText(
+                self._draft.add_error() or "No se pudo agregar la línea."
+            )
         else:
             self._feedback.setText("")
             self._refresh_selection_ui()

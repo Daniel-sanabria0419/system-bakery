@@ -108,7 +108,7 @@ Campos:
 | id_venta | Venta a la que pertenece la línea |
 | id_producto | Referencia al producto del catálogo |
 | nombre_producto | Snapshot del nombre al momento de la venta |
-| precio_aplicado | Snapshot del precio aplicado (entero > 0) |
+| precio_aplicado | Snapshot del precio de lista del catálogo al momento de la venta (entero > 0). No se sustituye por `precio_base` de la promo. |
 | cantidad | Cantidad vendida (entero > 0) |
 | subtotal | En ventas nuevas: `cantidad × precio_aplicado` (entero > 0), antes de promo. En filas viejas: el valor ya guardado, sin recalcular. |
 | total | Monto cobrado de la línea (entero > 0). En filas viejas es una copia del `subtotal` de entonces. En ventas nuevas lo calcula el backend (promo por línea o `cantidad × precio_aplicado`). |

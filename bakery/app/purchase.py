@@ -138,6 +138,7 @@ class SaleDraft:
         self._selected_product: Optional[Mapping] = None
         self._quantity = 1
         self._promo_by_id: Dict[int, Mapping] = {}
+        self._add_error: Optional[str] = None
 
     def select_product(self, product: Mapping) -> bool:
         if not isinstance(product, Mapping):
@@ -223,23 +224,37 @@ class SaleDraft:
             return amount_for_quantity(self._quantity, config)
         return product["precio"] * self._quantity
 
+    def add_error(self) -> Optional[str]:
+        """Motivo del último ``add_to_purchase`` fallido, o None."""
+        return self._add_error
+
     def add_to_purchase(self) -> bool:
         """Agrega línea del producto seleccionado. Rechaza sin producto.
 
         Cantidad solo vía ``quantity()`` (−/+). Tras agregar, cada línea
         conserva el cobro de su propia cantidad.
+
+        ``precio_aplicado`` es siempre el precio de lista del catálogo.
+        Si hay promo ``cantidad_por_monto`` y la lista ≠ ``precio_base``,
+        no agrega y deja el motivo en ``add_error()``.
         """
+        self._add_error = None
         product = self._selected_product
         if product is None:
             return False
         config = self._selected_promo_config()
+        precio_aplicado = int(product["precio"])
         if config is not None:
+            if precio_aplicado != int(config["precio_base"]):
+                self._add_error = (
+                    "El precio de lista no coincide con precio_base "
+                    "de la promoción."
+                )
+                return False
             promocion_id = int(product["promocion_id"])
-            precio_aplicado = int(config["precio_base"])
             subtotal = amount_for_quantity(self._quantity, config)
         else:
             promocion_id = None
-            precio_aplicado = product["precio"]
             subtotal = precio_aplicado * self._quantity
         if not self.purchase.add(
             id_producto=product["id_producto"],

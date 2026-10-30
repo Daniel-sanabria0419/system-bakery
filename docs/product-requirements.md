@@ -127,7 +127,7 @@ Detalle de etapas: `docs/beta-2.0.1/stages.md`. Regresión: `docs/beta-2.0.1/reg
 - Cantidades siempre enteras; valores inválidos redondean **hacia arriba** (ceil); el usuario ve el resultado antes de Agregar.
 - `+/-` recalcula cantidad y subtotal (promo solo si queda múltiplo de 7).
 - Otras categorías: por unidades; sin promo Pan pequeño.
-- En `venta_lineas`, `precio_aplicado` = unitario de lista ($300). En ventas nuevas, `subtotal` = `cantidad × precio_aplicado` y `total` es el monto cobrado (puede ser menor si hay promo).
+- En `venta_lineas`, `precio_aplicado` = unitario de lista del catálogo ($300). No se sustituye por `precio_base` de la promo. Si lista ≠ `precio_base`, la caja no agrega la línea y el POST rechaza. En ventas nuevas, `subtotal` = `cantidad × precio_aplicado` y `total` es el monto cobrado (puede ser menor si hay promo).
 
 ## UI catálogo / imágenes / formularios
 

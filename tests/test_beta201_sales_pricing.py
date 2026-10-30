@@ -11,15 +11,20 @@ import json
 from bakery.app.pan_pequeno_pricing import PRECIO_UNITARIO_PAN_PEQUENO
 from bakery.app.products import ProductValidationError, create_product, update_product
 from bakery.app.purchase import Purchase, SaleDraft
-from bakery.app.sales import register_sale
+from bakery.app.sales import SaleValidationError, register_sale
 from bakery.persistence import initialize
 from bakery.persistence.connection import connect
-from bakery.persistence.repositories import get_categoria_by_nombre, list_venta_lineas
+from bakery.persistence.repositories import (
+    get_categoria_by_nombre,
+    list_venta_lineas,
+    set_producto_promocion_id,
+)
 from bakery.persistence.schema import (
     ESTADO_ACTIVO,
     NOMBRE_CATEGORIA_PAN_PEQUENO,
     PROMOCION_PAN_PEQUENO_CONFIG,
     TIPO_PROMOCION_CANTIDAD_POR_MONTO,
+    ensure_promocion_pan_pequeno,
 )
 
 
@@ -86,7 +91,7 @@ def test_draft_pan_pequeno_promo_and_normal_qty() -> None:
     assert draft.add_to_purchase() is True
     line = draft.purchase.items()[0]
     assert line.subtotal == 2000
-    assert line.precio_aplicado == 300
+    assert line.precio_aplicado == 300  # precio de lista del catálogo
     assert line.cantidad == 7
 
     draft.select_product(_pan_pequeno_product(id_producto=2))
@@ -96,6 +101,35 @@ def test_draft_pan_pequeno_promo_and_normal_qty() -> None:
     # 7 y 8 por línea: 2000 + 2400
     assert draft.total() == 4400
     assert [item.subtotal for item in draft.purchase.items()] == [2000, 2400]
+
+
+def test_draft_precio_aplicado_is_catalog_list_price() -> None:
+    """Con promo coincidente, precio_aplicado es la lista del producto."""
+    draft = SaleDraft()
+    product = _pan_pequeno_product(precio=300)
+    assert draft.select_product(product) is True
+    draft.set_quantity(8)
+    assert draft.add_to_purchase() is True
+    line = draft.purchase.items()[0]
+    assert line.precio_aplicado == product["precio"]
+    assert line.precio_aplicado == 300
+    assert line.subtotal == 2400
+    assert draft.add_error() is None
+
+
+def test_draft_rejects_promo_when_list_price_ne_precio_base() -> None:
+    """Lista ≠ precio_base: no agrega y deja mensaje (sin sustituir en silencio)."""
+    draft = SaleDraft()
+    product = _pan_pequeno_product(precio=350)
+    assert draft.select_product(product) is True
+    draft.set_quantity(7)
+    assert draft.add_to_purchase() is False
+    assert draft.purchase.items() == []
+    assert draft.selected_product() is not None
+    error = draft.add_error()
+    assert error is not None
+    assert "precio de lista" in error.lower()
+    assert "precio_base" in error
 
 
 def test_draft_pan_pequeno_quantity_only_preview() -> None:
@@ -210,6 +244,33 @@ def test_torta_quantities_no_promo(tmp_path: Path) -> None:
 
 
 # --- register_sale Pan pequeño ---
+
+
+def test_register_sale_rejects_promo_list_ne_precio_base(tmp_path: Path) -> None:
+    """Producto con promo cantidad_por_monto y lista ≠ precio_base → POST 400."""
+    connection = _db(tmp_path)
+    try:
+        # Pastelería a 500 + promo canónica (precio_base 300): desalineado a propósito.
+        product = create_product(
+            connection, nombre="Torta promo", precio=500, id_categoria=2
+        )
+        promo_id = ensure_promocion_pan_pequeno(connection)
+        set_producto_promocion_id(connection, product["id_producto"], promo_id)
+        connection.commit()
+        with pytest.raises(SaleValidationError, match="precio_base"):
+            register_sale(
+                connection,
+                1,
+                [
+                    {
+                        "id_producto": product["id_producto"],
+                        "cantidad": 7,
+                        "precio_aplicado": 500,
+                    }
+                ],
+            )
+    finally:
+        connection.close()
 
 
 def test_register_sale_pan_pequeno_promo_and_normal(tmp_path: Path) -> None:

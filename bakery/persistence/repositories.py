@@ -1,7 +1,39 @@
 import sqlite3
-from typing import List, Mapping, Optional
+from datetime import datetime
+from typing import List, Mapping, Optional, Union
 
 from bakery.persistence.schema import ESTADO_ACTIVO
+
+# Beta 2.1: ventana de edición (solo reloj del servidor / inyectable en tests).
+EDITABLE_WINDOW_SECONDS = 3600
+
+ORIGEN_OBSERVACION_DURANTE_VENTA = "durante_venta"
+ORIGEN_OBSERVACION_POSTERIOR = "posterior"
+
+TIPO_CAMBIO_CREACION = "creacion"
+TIPO_CAMBIO_EDICION = "edicion"
+TIPO_CAMBIO_OBSERVACION_POSTERIOR = "observacion_posterior"
+TIPO_CAMBIO_OBSERVACION_CORRECCION = "observacion_correccion"
+
+
+def sale_is_editable(
+    fecha_venta: str,
+    now: Optional[Union[datetime, str]] = None,
+) -> bool:
+    """True si elapsed desde fecha_venta es estrictamente menor a 1 hora.
+
+    ``now`` es inyectable para tests (datetime o ISO str). Si se omite, usa
+    ``datetime.now()`` del proceso (reloj del servidor embebido).
+    """
+    fecha_dt = datetime.fromisoformat(fecha_venta)
+    if now is None:
+        now_dt = datetime.now()
+    elif isinstance(now, datetime):
+        now_dt = now
+    else:
+        now_dt = datetime.fromisoformat(now)
+    elapsed = (now_dt - fecha_dt).total_seconds()
+    return elapsed < EDITABLE_WINDOW_SECONDS
 
 
 def list_active_payment_methods(connection: sqlite3.Connection) -> List[Mapping]:
@@ -29,6 +61,59 @@ def get_sale(
         (id_venta,),
     ).fetchone()
     return dict(row) if row is not None else None
+
+
+def list_ventas(connection: sqlite3.Connection) -> List[Mapping]:
+    """Lista ventas más recientes primero; incluye nombre de medio y conteo de líneas."""
+    rows = connection.execute(
+        """
+        SELECT
+            v.id_venta,
+            v.valor_total,
+            v.fecha_venta,
+            v.id_medio_pago,
+            v.caja,
+            v.tendero,
+            m.nombre AS nombre_medio,
+            (
+                SELECT COUNT(*)
+                FROM venta_lineas vl
+                WHERE vl.id_venta = v.id_venta
+            ) AS cantidad_lineas
+        FROM ventas v
+        JOIN medios_pago m ON m.id_medio_pago = v.id_medio_pago
+        ORDER BY v.fecha_venta DESC, v.id_venta DESC
+        """
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def get_sale_detail(
+    connection: sqlite3.Connection, id_venta: str
+) -> Optional[Mapping]:
+    """Cabecera + nombre de medio + líneas + observaciones. None si no existe."""
+    row = connection.execute(
+        """
+        SELECT
+            v.id_venta,
+            v.valor_total,
+            v.fecha_venta,
+            v.id_medio_pago,
+            v.caja,
+            v.tendero,
+            m.nombre AS nombre_medio
+        FROM ventas v
+        JOIN medios_pago m ON m.id_medio_pago = v.id_medio_pago
+        WHERE v.id_venta = ?
+        """,
+        (id_venta,),
+    ).fetchone()
+    if row is None:
+        return None
+    detail = dict(row)
+    detail["lineas"] = list_venta_lineas(connection, id_venta)
+    detail["observaciones"] = list_venta_observaciones(connection, id_venta)
+    return detail
 
 
 def insert_sale(
@@ -98,6 +183,76 @@ def list_venta_lineas(
         FROM venta_lineas
         WHERE id_venta = ?
         ORDER BY id_linea
+        """,
+        (id_venta,),
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def insert_venta_cambio(
+    connection: sqlite3.Connection,
+    *,
+    id_venta: str,
+    fecha_cambio: str,
+    tipo: str,
+    despues_json: str,
+    antes_json: Optional[str] = None,
+) -> int:
+    cursor = connection.execute(
+        """
+        INSERT INTO venta_cambios (
+            id_venta, fecha_cambio, tipo, antes_json, despues_json
+        ) VALUES (?, ?, ?, ?, ?)
+        """,
+        (id_venta, fecha_cambio, tipo, antes_json, despues_json),
+    )
+    return int(cursor.lastrowid)
+
+
+def list_venta_cambios(
+    connection: sqlite3.Connection, id_venta: str
+) -> List[Mapping]:
+    rows = connection.execute(
+        """
+        SELECT id_cambio, id_venta, fecha_cambio, tipo, antes_json, despues_json
+        FROM venta_cambios
+        WHERE id_venta = ?
+        ORDER BY fecha_cambio ASC, id_cambio ASC
+        """,
+        (id_venta,),
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def insert_venta_observacion(
+    connection: sqlite3.Connection,
+    *,
+    id_venta: str,
+    texto: str,
+    origen: str,
+    fecha_creacion: str,
+    id_cambio: Optional[int] = None,
+) -> int:
+    cursor = connection.execute(
+        """
+        INSERT INTO venta_observaciones (
+            id_venta, texto, origen, fecha_creacion, id_cambio
+        ) VALUES (?, ?, ?, ?, ?)
+        """,
+        (id_venta, texto, origen, fecha_creacion, id_cambio),
+    )
+    return int(cursor.lastrowid)
+
+
+def list_venta_observaciones(
+    connection: sqlite3.Connection, id_venta: str
+) -> List[Mapping]:
+    rows = connection.execute(
+        """
+        SELECT id_observacion, id_venta, texto, origen, fecha_creacion, id_cambio
+        FROM venta_observaciones
+        WHERE id_venta = ?
+        ORDER BY fecha_creacion ASC, id_observacion ASC
         """,
         (id_venta,),
     ).fetchall()

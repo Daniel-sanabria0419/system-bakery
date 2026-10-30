@@ -1,6 +1,7 @@
 """Etapa 3: compra/register_sale con Pan pequeño + §21 otras categorías."""
 
 from pathlib import Path
+import uuid
 
 import pytest
 from fastapi.testclient import TestClient
@@ -234,7 +235,8 @@ def test_torta_quantities_no_promo(tmp_path: Path) -> None:
                         "precio_aplicado": 20000,
                     }
                 ],
-            )
+            id_venta=str(uuid.uuid4()),
+        )
             assert sale["valor_total"] == expected
             lines = list_venta_lineas(connection, sale["id_venta"])
             assert lines[0]["subtotal"] == expected
@@ -268,7 +270,8 @@ def test_register_sale_rejects_promo_list_ne_precio_base(tmp_path: Path) -> None
                         "precio_aplicado": 500,
                     }
                 ],
-            )
+            id_venta=str(uuid.uuid4()),
+        )
     finally:
         connection.close()
 
@@ -293,6 +296,7 @@ def test_register_sale_pan_pequeno_promo_and_normal(tmp_path: Path) -> None:
                     "precio_aplicado": 300,
                 }
             ],
+            id_venta=str(uuid.uuid4()),
         )
         assert sale7["valor_total"] == 2000
         lines7 = list_venta_lineas(connection, sale7["id_venta"])
@@ -311,6 +315,7 @@ def test_register_sale_pan_pequeno_promo_and_normal(tmp_path: Path) -> None:
                     "precio_aplicado": 300,
                 }
             ],
+            id_venta=str(uuid.uuid4()),
         )
         assert sale8["valor_total"] == 2400
         lines8 = list_venta_lineas(connection, sale8["id_venta"])
@@ -342,6 +347,7 @@ def test_pan_pequeno_snapshot_stable_after_rename(tmp_path: Path) -> None:
                     "precio_aplicado": 300,
                 }
             ],
+            id_venta=str(uuid.uuid4()),
         )
         update_product(
             connection,
@@ -409,6 +415,7 @@ def test_api_pan_pequeno_sale_and_reject_bad_price(tmp_path: Path) -> None:
         sale = client.post(
             "/ventas",
             json={
+                "id_venta": str(__import__("uuid").uuid4()),
                 "id_medio_pago": 1,
                 "lineas": [
                     {
@@ -426,6 +433,7 @@ def test_api_pan_pequeno_sale_and_reject_bad_price(tmp_path: Path) -> None:
         by_qty = client.post(
             "/ventas",
             json={
+                "id_venta": str(__import__("uuid").uuid4()),
                 "id_medio_pago": 1,
                 "lineas": [
                     {

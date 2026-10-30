@@ -29,6 +29,7 @@ def test_multi_line_sale_total_and_snapshots(tmp_path: Path) -> None:
         response = client.post(
             "/ventas",
             json={
+                "id_venta": str(__import__("uuid").uuid4()),
                 "id_medio_pago": 1,
                 "lineas": [
                     {
@@ -106,6 +107,7 @@ def test_rejects_inactive_product(tmp_path: Path) -> None:
         response = client.post(
             "/ventas",
             json={
+                "id_venta": str(__import__("uuid").uuid4()),
                 "id_medio_pago": 1,
                 "lineas": [
                     {
@@ -126,6 +128,7 @@ def test_rejects_price_mismatch(tmp_path: Path) -> None:
         response = client.post(
             "/ventas",
             json={
+                "id_venta": str(__import__("uuid").uuid4()),
                 "id_medio_pago": 1,
                 "lineas": [
                     {
@@ -180,6 +183,7 @@ def test_legacy_sale_without_lines_remains_readable(tmp_path: Path) -> None:
             client.post(
                 "/ventas",
                 json={
+                    "id_venta": str(__import__("uuid").uuid4()),
                     "id_medio_pago": 1,
                     "lineas": [
                         {

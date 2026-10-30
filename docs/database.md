@@ -39,7 +39,7 @@ Campos:
 
 | Campo | Descripción |
 |---|---|
-| id_venta | UUID en texto, generado al registrar la venta |
+| id_venta | UUID en texto; lo genera la caja antes del POST (idempotencia si se reintenta) |
 | valor_total | Valor total de la venta |
 | fecha_venta | Fecha y hora del registro |
 | id_medio_pago | Medio de pago utilizado |

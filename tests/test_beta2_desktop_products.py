@@ -35,14 +35,18 @@ class FakeProductsApiClient:
         return list(self.methods)
 
     def create_sale(
-        self, id_medio_pago: int, lineas: List[Mapping[str, Any]]
+        self,
+        id_medio_pago: int,
+        lineas: List[Mapping[str, Any]],
+        *,
+        id_venta: str,
     ) -> Mapping[str, Any]:
         self.request_count += 1
         valor_total = sum(
             int(line["precio_aplicado"]) * int(line["cantidad"]) for line in lineas
         )
         sale = {
-            "id_venta": "11111111-1111-4111-8111-111111111111",
+            "id_venta": id_venta,
             "valor_total": valor_total,
             "fecha_venta": "2026-10-15T12:00:00",
             "id_medio_pago": id_medio_pago,

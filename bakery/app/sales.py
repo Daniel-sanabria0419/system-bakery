@@ -11,6 +11,7 @@ from bakery.app.promotions import (
 from bakery.persistence.repositories import (
     get_producto,
     get_promocion,
+    get_sale,
     insert_sale,
     insert_venta_linea,
     list_active_payment_methods,
@@ -30,8 +31,14 @@ def register_sale(
     id_medio_pago: int,
     lineas: Sequence[Mapping],
     *,
+    id_venta: str,
     fecha_venta: str = None,
 ) -> Mapping:
+    sale_id = _validate_id_venta(id_venta)
+    existing = get_sale(connection, sale_id)
+    if existing is not None:
+        return existing
+
     if isinstance(id_medio_pago, bool) or not isinstance(id_medio_pago, int):
         raise SaleValidationError("Debe seleccionar un medio de pago activo.")
 
@@ -51,7 +58,7 @@ def register_sale(
         raise SaleValidationError("El valor debe ser un entero mayor que 0.")
 
     sale = {
-        "id_venta": str(uuid.uuid4()),
+        "id_venta": sale_id,
         "valor_total": valor_total,
         "fecha_venta": fecha_venta or _now(),
         "id_medio_pago": id_medio_pago,
@@ -74,10 +81,26 @@ def register_sale(
                 nombre_promocion=line.get("nombre_promocion"),
             )
         connection.commit()
+    except sqlite3.IntegrityError:
+        # Carrera: otro POST con el mismo id ya hizo commit.
+        connection.rollback()
+        raced = get_sale(connection, sale_id)
+        if raced is not None:
+            return raced
+        raise
     except Exception:
         connection.rollback()
         raise
     return sale
+
+
+def _validate_id_venta(id_venta: object) -> str:
+    if not isinstance(id_venta, str) or not id_venta.strip():
+        raise SaleValidationError("Debe enviar un id_venta UUID válido.")
+    try:
+        return str(uuid.UUID(id_venta.strip()))
+    except ValueError as error:
+        raise SaleValidationError("Debe enviar un id_venta UUID válido.") from error
 
 
 def _resolve_lines_with_promociones(

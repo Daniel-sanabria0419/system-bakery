@@ -1,6 +1,7 @@
 """Integridad histórica y validaciones Beta 2 (scope §13 / Etapa 8)."""
 
 from pathlib import Path
+import uuid
 
 import pytest
 from fastapi.testclient import TestClient
@@ -52,6 +53,7 @@ def test_deactivate_after_sale_keeps_snapshot_and_hides_from_new_sales(
                     "precio_aplicado": 5000,
                 }
             ],
+            id_venta=str(uuid.uuid4()),
         )
         deactivate_product(connection, product["id_producto"])
 
@@ -79,7 +81,8 @@ def test_deactivate_after_sale_keeps_snapshot_and_hides_from_new_sales(
                         "precio_aplicado": 5000,
                     }
                 ],
-            )
+            id_venta=str(uuid.uuid4()),
+        )
     finally:
         connection.close()
 
@@ -100,6 +103,7 @@ def test_rename_and_reprice_do_not_change_historical_lines(tmp_path: Path) -> No
                     "precio_aplicado": 5000,
                 }
             ],
+            id_venta=str(uuid.uuid4()),
         )
         update_product(
             connection,
@@ -126,6 +130,7 @@ def test_rename_and_reprice_do_not_change_historical_lines(tmp_path: Path) -> No
                     "precio_aplicado": 7000,
                 }
             ],
+            id_venta=str(uuid.uuid4()),
         )
         lines2 = list_venta_lineas(connection, sale2["id_venta"])
         assert lines2[0]["nombre_producto"] == "Pan integral"
@@ -186,6 +191,7 @@ def test_subtotal_and_total_are_computed_not_client_editable(tmp_path: Path) -> 
         bad = client.post(
             "/ventas",
             json={
+                "id_venta": str(__import__("uuid").uuid4()),
                 "id_medio_pago": 1,
                 "lineas": [
                     {
@@ -203,6 +209,7 @@ def test_subtotal_and_total_are_computed_not_client_editable(tmp_path: Path) -> 
         bad_total = client.post(
             "/ventas",
             json={
+                "id_venta": str(__import__("uuid").uuid4()),
                 "id_medio_pago": 1,
                 "lineas": [
                     {
@@ -220,6 +227,7 @@ def test_subtotal_and_total_are_computed_not_client_editable(tmp_path: Path) -> 
         ok = client.post(
             "/ventas",
             json={
+                "id_venta": str(__import__("uuid").uuid4()),
                 "id_medio_pago": 1,
                 "lineas": [
                     {
@@ -249,6 +257,7 @@ def test_used_product_is_not_hard_deleted(tmp_path: Path) -> None:
         sale = client.post(
             "/ventas",
             json={
+                "id_venta": str(__import__("uuid").uuid4()),
                 "id_medio_pago": 1,
                 "lineas": [
                     {
@@ -303,6 +312,7 @@ def test_price_mismatch_rejected_after_reprice(tmp_path: Path) -> None:
                         "precio_aplicado": 3000,
                     }
                 ],
-            )
+            id_venta=str(uuid.uuid4()),
+        )
     finally:
         connection.close()

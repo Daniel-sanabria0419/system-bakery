@@ -144,6 +144,7 @@ def test_medios_pago_and_ventas_with_lines(tmp_path: Path) -> None:
         sale = client.post(
             "/ventas",
             json={
+                "id_venta": str(__import__("uuid").uuid4()),
                 "id_medio_pago": 1,
                 "lineas": [
                     {

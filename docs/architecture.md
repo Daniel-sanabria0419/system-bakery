@@ -138,8 +138,10 @@ Rutas de negocio vigentes:
 `POST /ventas` body:
 
 ```text
-{ "id_medio_pago": int, "lineas": [ { "id_producto", "cantidad", "precio_aplicado" }, ... ] }
+{ "id_venta": "UUID", "id_medio_pago": int, "lineas": [ { "id_producto", "cantidad", "precio_aplicado" }, ... ] }
 ```
+
+La caja genera `id_venta` antes del POST. Si el id ya existe, la API devuelve esa venta sin insertar otra.
 
 No hay endpoint de calculadora ni HTTP por tecla. El cobro (2.0.2+) filtra en desktop con `candidates_by_price_prefix` sobre el catálogo ya cargado; los dígitos son locales.
 

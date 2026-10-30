@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
+import uuid
 
 from bakery.app.products import create_product
 from bakery.app.sales import register_sale
@@ -184,7 +185,8 @@ def test_new_sale_splits_list_subtotal_and_charged_total(tmp_path: Path) -> None
                         "precio_aplicado": 300,
                     }
                 ],
-            )
+            id_venta=str(uuid.uuid4()),
+        )
             line = list_venta_lineas(connection, sale["id_venta"])[0]
             return {
                 "valor_total": sale["valor_total"],
@@ -237,6 +239,7 @@ def test_new_sale_splits_list_subtotal_and_charged_total(tmp_path: Path) -> None
                     "precio_aplicado": 300,
                 },
             ],
+            id_venta=str(uuid.uuid4()),
         )
         assert mixed["valor_total"] == 6500
         lines = list_venta_lineas(connection, mixed["id_venta"])

@@ -17,6 +17,20 @@ def list_active_payment_methods(connection: sqlite3.Connection) -> List[Mapping]
     return [dict(row) for row in rows]
 
 
+def get_sale(
+    connection: sqlite3.Connection, id_venta: str
+) -> Optional[Mapping]:
+    row = connection.execute(
+        """
+        SELECT id_venta, valor_total, fecha_venta, id_medio_pago, caja, tendero
+        FROM ventas
+        WHERE id_venta = ?
+        """,
+        (id_venta,),
+    ).fetchone()
+    return dict(row) if row is not None else None
+
+
 def insert_sale(
     connection: sqlite3.Connection,
     *,

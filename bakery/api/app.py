@@ -38,6 +38,7 @@ class SaleLineCreate(BaseModel):
 class SaleCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    id_venta: str
     id_medio_pago: int
     lineas: List[SaleLineCreate] = Field(min_length=1)
 
@@ -142,6 +143,7 @@ def create_app(db_path: Path = DEFAULT_DB_PATH) -> FastAPI:
                     connection,
                     body.id_medio_pago,
                     [line.model_dump() for line in body.lineas],
+                    id_venta=body.id_venta,
                 )
             )
         except SaleValidationError as error:

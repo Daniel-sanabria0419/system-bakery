@@ -141,6 +141,8 @@ def _resolve_lines_with_promociones(
     resolved: List[Mapping] = []
     for line, charged in zip(pending, charged_amounts):
         list_subtotal = line["cantidad"] * line["precio_aplicado"]
+        # Snapshot solo si la promo bajó el cobro. Si total == subtotal, nulos.
+        hubo_descuento = charged < list_subtotal
         resolved.append(
             {
                 "id_producto": line["id_producto"],
@@ -149,8 +151,10 @@ def _resolve_lines_with_promociones(
                 "cantidad": line["cantidad"],
                 "subtotal": list_subtotal,
                 "total": charged,
-                "id_promocion": line["promocion_id"],
-                "nombre_promocion": line["nombre_promocion"],
+                "id_promocion": line["promocion_id"] if hubo_descuento else None,
+                "nombre_promocion": (
+                    line["nombre_promocion"] if hubo_descuento else None
+                ),
             }
         )
     return resolved

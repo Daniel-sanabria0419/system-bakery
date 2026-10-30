@@ -255,6 +255,8 @@ def test_register_sale_pan_pequeno_promo_and_normal(tmp_path: Path) -> None:
         lines8 = list_venta_lineas(connection, sale8["id_venta"])
         assert lines8[0]["subtotal"] == 2400
         assert lines8[0]["total"] == 2400
+        assert lines8[0]["id_promocion"] is None
+        assert lines8[0]["nombre_promocion"] is None
     finally:
         connection.close()
 

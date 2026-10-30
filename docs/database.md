@@ -112,8 +112,8 @@ Campos:
 | cantidad | Cantidad vendida (entero > 0) |
 | subtotal | En ventas nuevas: `cantidad × precio_aplicado` (entero > 0), antes de promo. En filas viejas: el valor ya guardado, sin recalcular. |
 | total | Monto cobrado de la línea (entero > 0). En filas viejas es una copia del `subtotal` de entonces. En ventas nuevas lo calcula el backend (promo por línea o `cantidad × precio_aplicado`). |
-| id_promocion | Snapshot nullable de la promo aplicada (Beta 2.0.4) |
-| nombre_promocion | Snapshot texto del nombre de promo (Beta 2.0.4); estable si la promo se renombra o desactiva después |
+| id_promocion | Snapshot nullable. En ventas nuevas se llena solo cuando `total` < `subtotal`. Si son iguales, queda NULL. |
+| nombre_promocion | Snapshot texto del nombre de promo, con la misma regla que `id_promocion`. Si se guardó, no cambia aunque la promo se renombre o desactive después. |
 
 Las ventas antiguas (solo `valor_total`, sin detalle de productos) **permanecen sin filas** en `venta_lineas`. No se inventan líneas sintéticas.
 

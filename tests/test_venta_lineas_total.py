@@ -11,7 +11,10 @@ from bakery.persistence import initialize
 from bakery.persistence.connection import connect
 from bakery.persistence.migrations import CURRENT_SCHEMA_VERSION, get_schema_version
 from bakery.persistence.repositories import get_categoria_by_nombre, list_venta_lineas
-from bakery.persistence.schema import NOMBRE_CATEGORIA_PAN_PEQUENO
+from bakery.persistence.schema import (
+    NOMBRE_CATEGORIA_PAN_PEQUENO,
+    NOMBRE_PROMOCION_PAN_PEQUENO,
+)
 
 
 def _column_sql(connection: sqlite3.Connection) -> str:
@@ -187,16 +190,37 @@ def test_new_sale_splits_list_subtotal_and_charged_total(tmp_path: Path) -> None
                 "valor_total": sale["valor_total"],
                 "subtotal": line["subtotal"],
                 "total": line["total"],
+                "id_promocion": line["id_promocion"],
+                "nombre_promocion": line["nombre_promocion"],
             }
 
+        promo_id = product["promocion_id"]
         eight = sell(8)
-        assert eight == {"valor_total": 2400, "subtotal": 2400, "total": 2400}
+        assert eight == {
+            "valor_total": 2400,
+            "subtotal": 2400,
+            "total": 2400,
+            "id_promocion": None,
+            "nombre_promocion": None,
+        }
 
         seventeen = sell(17)
-        assert seventeen == {"valor_total": 5000, "subtotal": 5100, "total": 5000}
+        assert seventeen == {
+            "valor_total": 5000,
+            "subtotal": 5100,
+            "total": 5000,
+            "id_promocion": promo_id,
+            "nombre_promocion": NOMBRE_PROMOCION_PAN_PEQUENO,
+        }
 
         five = sell(5)
-        assert five == {"valor_total": 1500, "subtotal": 1500, "total": 1500}
+        assert five == {
+            "valor_total": 1500,
+            "subtotal": 1500,
+            "total": 1500,
+            "id_promocion": None,
+            "nombre_promocion": None,
+        }
 
         mixed = register_sale(
             connection,
@@ -216,9 +240,13 @@ def test_new_sale_splits_list_subtotal_and_charged_total(tmp_path: Path) -> None
         )
         assert mixed["valor_total"] == 6500
         lines = list_venta_lineas(connection, mixed["id_venta"])
-        assert [(line["subtotal"], line["total"]) for line in lines] == [
-            (5100, 5000),
-            (1500, 1500),
+        assert [
+            (line["subtotal"], line["total"], line["id_promocion"]) for line in lines
+        ] == [
+            (5100, 5000, promo_id),
+            (1500, 1500, None),
         ]
+        assert lines[0]["nombre_promocion"] == NOMBRE_PROMOCION_PAN_PEQUENO
+        assert lines[1]["nombre_promocion"] is None
     finally:
         connection.close()

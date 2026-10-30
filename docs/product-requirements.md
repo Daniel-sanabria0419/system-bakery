@@ -169,7 +169,7 @@ Cada producto tiene **un único precio actual**. Sin variantes ni listas de prec
 ## Registrar venta (vigente)
 
 - Catálogo de productos **activos** (por categoría) en el panel de venta (`#future_panel`; nombre legado; es el panel de catálogo).
-- Cantidad por línea. En ventas nuevas el backend calcula `subtotal` = `cantidad × precio_aplicado` y `total` = monto cobrado de la línea (promo por línea, o el mismo importe si no hay descuento). `valor_total` = suma de `total`. El cliente no envía `subtotal` ni `total`.
+- Cantidad por línea. En ventas nuevas el backend calcula `subtotal` = `cantidad × precio_aplicado` y `total` = monto cobrado de la línea (promo por línea, o el mismo importe si no hay descuento). `valor_total` = suma de `total`. El cliente no envía `subtotal` ni `total`. `id_promocion` y `nombre_promocion` se guardan solo cuando `total` < `subtotal`; si son iguales, quedan nulos.
 - Calculadora: dígitos locales. **Vigente (2.0.2+):** sin producto seleccionado, filtran la grilla por **prefijo** de precio (`candidates_by_price_prefix`). En 2.0 la búsqueda era exacta; `candidates_by_exact_price` / `GET /productos/activos?precio=` / `find_active_products_by_price` quedan como **legado API/helper** (tests y contrato HTTP); el desktop de cobro **no** los usa.
 - **AGREGAR** exige producto seleccionado; sin selección → rechazo con feedback visible (no se agrega monto suelto).
 - Lista de compra muestra nombre, cantidad y subtotal.

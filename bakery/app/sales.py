@@ -25,6 +25,7 @@ from bakery.persistence.repositories import (
     insert_venta_linea,
     insert_venta_observacion,
     list_active_payment_methods,
+    list_venta_cambios,
     list_venta_lineas,
     list_venta_observaciones,
     list_ventas,
@@ -80,6 +81,29 @@ def get_sale_detail(
     result["editable"] = sale_is_editable(result["fecha_venta"], now=now)
     result["es_legado"] = len(result["lineas"]) == 0
     return result
+
+
+def list_sale_cambios(
+    connection: sqlite3.Connection, id_venta: str
+) -> List[Mapping]:
+    """Auditoría consultable de una venta (creación, ediciones, obs).
+
+    Devuelve filas ordenadas; ``antes`` / ``despues`` parseados desde JSON.
+    No borra ni muta ``venta_cambios``.
+    """
+    sale = get_sale(connection, id_venta)
+    if sale is None:
+        raise SaleNotFoundError("Venta no encontrada.")
+
+    rows: List[Mapping] = []
+    for row in list_venta_cambios(connection, id_venta):
+        item = dict(row)
+        antes_raw = item.pop("antes_json")
+        despues_raw = item.pop("despues_json")
+        item["antes"] = json.loads(antes_raw) if antes_raw is not None else None
+        item["despues"] = json.loads(despues_raw)
+        rows.append(item)
+    return rows
 
 
 def register_sale(
@@ -146,28 +170,15 @@ def register_sale(
                     "origen": ORIGEN_OBSERVACION_DURANTE_VENTA,
                 }
             )
+        despues_payload = _audit_state_payload(
+            id_medio_pago=id_medio_pago,
+            nombre_medio=active_by_id[id_medio_pago]["nombre"],
+            valor_total=valor_total,
+            lineas=resolved,
+            observaciones=observaciones_audit,
+        )
         despues_json = json.dumps(
-            {
-                "id_medio_pago": id_medio_pago,
-                "nombre_medio": active_by_id[id_medio_pago]["nombre"],
-                "valor_total": valor_total,
-                "lineas": [
-                    {
-                        "id_producto": line["id_producto"],
-                        "nombre_producto": line["nombre_producto"],
-                        "cantidad": line["cantidad"],
-                        "precio_aplicado": line["precio_aplicado"],
-                        "subtotal": line["subtotal"],
-                        "total": line["total"],
-                        "id_promocion": line.get("id_promocion"),
-                        "nombre_promocion": line.get("nombre_promocion"),
-                    }
-                    for line in resolved
-                ],
-                "observaciones": observaciones_audit,
-            },
-            ensure_ascii=False,
-            separators=(",", ":"),
+            despues_payload, ensure_ascii=False, separators=(",", ":")
         )
         id_cambio = insert_venta_cambio(
             connection,
@@ -211,7 +222,8 @@ def update_sale(
     """Edita una venta dentro de la ventana de 1 h; recalcula con promo vigente.
 
     No muta ``fecha_venta``, ``caja``, ``tendero`` ni ``id_venta``.
-    Escribe auditoría mínima ``tipo=edicion`` (antes/después).
+    Escribe auditoría ``tipo=edicion`` con antes/después completos.
+    No borra filas previas de ``venta_cambios`` (el original se conserva).
     """
     sale = get_sale(connection, id_venta)
     if sale is None:

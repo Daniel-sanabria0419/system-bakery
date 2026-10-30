@@ -1,7 +1,5 @@
 import json
 import sqlite3
-from pathlib import Path
-from typing import Optional
 
 ESTADO_ACTIVO = 1
 ESTADO_INACTIVO = 0
@@ -370,12 +368,3 @@ def migrate_promociones_config_slim(connection: sqlite3.Connection) -> None:
             NOMBRE_PROMOCION_PAN_PEQUENO,
         ),
     )
-
-
-def ensure_imagenes_dirs(project_root: Optional[Path] = None) -> None:
-    """Crea imagenes/categorias y imagenes/productos si faltan (idempotente)."""
-    root = project_root
-    if root is None:
-        root = Path(__file__).resolve().parents[2]
-    for relative in ("imagenes/categorias", "imagenes/productos"):
-        (root / relative).mkdir(parents=True, exist_ok=True)

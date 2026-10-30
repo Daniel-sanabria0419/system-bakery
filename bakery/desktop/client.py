@@ -81,6 +81,16 @@ class ApiClient:
         raise_for_api_status(response)
         return response.json()
 
+    def list_sales(self) -> List[Mapping[str, Any]]:
+        response = self._request("GET", "/ventas")
+        raise_for_api_status(response)
+        return response.json()
+
+    def get_sale(self, id_venta: str) -> Mapping[str, Any]:
+        response = self._request("GET", f"/ventas/{id_venta}")
+        raise_for_api_status(response)
+        return response.json()
+
     def list_categories(self) -> List[Mapping[str, Any]]:
         response = self._request("GET", "/categorias")
         raise_for_api_status(response)

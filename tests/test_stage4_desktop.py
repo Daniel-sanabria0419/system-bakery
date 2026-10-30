@@ -158,6 +158,93 @@ class FakeApiClient:
         self.sales.append(sale)
         return sale
 
+    def list_sales(self) -> List[Mapping[str, Any]]:
+        self.request_count += 1
+        rows = []
+        for sale in self.sales:
+            lineas = list(sale.get("lineas") or [])
+            rows.append(
+                {
+                    "id_venta": sale["id_venta"],
+                    "valor_total": sale["valor_total"],
+                    "fecha_venta": sale["fecha_venta"],
+                    "id_medio_pago": sale["id_medio_pago"],
+                    "nombre_medio": next(
+                        (
+                            m["nombre"]
+                            for m in self.methods
+                            if m["id_medio_pago"] == sale["id_medio_pago"]
+                        ),
+                        "",
+                    ),
+                    "caja": sale.get("caja", 1),
+                    "tendero": sale.get("tendero", 1),
+                    "cantidad_lineas": len(lineas),
+                    "es_legado": len(lineas) == 0,
+                    "editable": True,
+                }
+            )
+        return list(reversed(rows))
+
+    def get_sale(self, id_venta: str) -> Mapping[str, Any]:
+        self.request_count += 1
+        for sale in self.sales:
+            if sale["id_venta"] == id_venta:
+                lineas = list(sale.get("lineas") or [])
+                detail_lineas = []
+                for index, line in enumerate(lineas):
+                    product = next(
+                        (
+                            p
+                            for p in self.products
+                            if p["id_producto"] == line["id_producto"]
+                        ),
+                        None,
+                    )
+                    nombre = product["nombre"] if product else f"#{line['id_producto']}"
+                    precio = int(line["precio_aplicado"])
+                    cantidad = int(line["cantidad"])
+                    subtotal = precio * cantidad
+                    detail_lineas.append(
+                        {
+                            "id_linea": index + 1,
+                            "id_venta": id_venta,
+                            "id_producto": line["id_producto"],
+                            "nombre_producto": nombre,
+                            "precio_aplicado": precio,
+                            "cantidad": cantidad,
+                            "subtotal": subtotal,
+                            "total": subtotal,
+                            "id_promocion": None,
+                            "nombre_promocion": None,
+                        }
+                    )
+                return {
+                    "id_venta": sale["id_venta"],
+                    "valor_total": sale["valor_total"],
+                    "fecha_venta": sale["fecha_venta"],
+                    "id_medio_pago": sale["id_medio_pago"],
+                    "nombre_medio": next(
+                        (
+                            m["nombre"]
+                            for m in self.methods
+                            if m["id_medio_pago"] == sale["id_medio_pago"]
+                        ),
+                        "",
+                    ),
+                    "caja": sale.get("caja", 1),
+                    "tendero": sale.get("tendero", 1),
+                    "lineas": detail_lineas,
+                    "observaciones": list(sale.get("observaciones") or []),
+                    "es_legado": len(detail_lineas) == 0,
+                    "editable": True,
+                }
+        raise httpx.HTTPStatusError(
+            "Venta no encontrada.",
+            request=httpx.Request("GET", f"/ventas/{id_venta}"),
+            response=httpx.Response(404),
+        )
+
     def _valor_total_promociones(
         self,
         lineas: List[Mapping[str, Any]],
@@ -906,6 +993,18 @@ class DesktopApiViaTestClient:
                 "lineas": list(lineas),
             },
         )
+        response.raise_for_status()
+        return response.json()
+
+    def list_sales(self) -> List[Mapping[str, Any]]:
+        self.request_count += 1
+        response = self._client.get("/ventas")
+        response.raise_for_status()
+        return response.json()
+
+    def get_sale(self, id_venta: str) -> Mapping[str, Any]:
+        self.request_count += 1
+        response = self._client.get(f"/ventas/{id_venta}")
         response.raise_for_status()
         return response.json()
 

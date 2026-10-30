@@ -24,7 +24,7 @@ from bakery.app.product_images import (
     category_image_path,
     resolve_relative_image,
 )
-from bakery.app.purchase import SaleDraft
+from bakery.app.purchase import CartRevalidationResult, SaleDraft
 from bakery.desktop import style
 from bakery.desktop.client import ApiClient
 from bakery.desktop.dialogs import (
@@ -42,6 +42,24 @@ from bakery.desktop.ui_helpers import (
     _apply_page_layout,
     _make_separator,
 )
+
+
+def _format_revalidation_feedback(result: CartRevalidationResult) -> str:
+    """Mensaje corto para precios actualizados y líneas quitadas."""
+    parts: List[str] = []
+    if result.price_changed:
+        names = ", ".join(result.price_changed)
+        if len(result.price_changed) == 1:
+            parts.append(f"El precio de {names} cambió.")
+        else:
+            parts.append(f"Los precios de {names} cambiaron.")
+    if result.removed:
+        names = ", ".join(result.removed)
+        if len(result.removed) == 1:
+            parts.append(f"Se quitó del carrito: {names}.")
+        else:
+            parts.append(f"Se quitaron del carrito: {names}.")
+    return " ".join(parts)
 
 
 class RegisterSalePage(QWidget):
@@ -347,13 +365,19 @@ class RegisterSalePage(QWidget):
     def load_catalog(self) -> None:
         self._categories = list(self._api.list_categories())
         self._active_products = list(self._api.list_active_products())
+        result = self._draft.revalidate_against_catalog(self._active_products)
         self._catalog_view = "categories"
         self._rebuild_categories()
         self._rebuild_products()
         self._apply_catalog_view()
+        self._refresh_display()
         self._refresh_selection_ui()
         self._sync_quantity_section()
         self._refresh_mode_ui()
+        self._refresh_submit()
+        self._feedback.setText(
+            _format_revalidation_feedback(result) if result.changed else ""
+        )
 
     def reset_form(self) -> None:
         self._draft.clear_purchase()
@@ -730,9 +754,20 @@ class RegisterSalePage(QWidget):
         self._submit.setEnabled(ready)
 
     def _on_submit(self) -> None:
-        value = self._draft.total()
         payment_id = self._selected_payment_id
-        if value <= 0 or payment_id is None or not self._selected_payment_name:
+        if payment_id is None or not self._selected_payment_name:
+            return
+        # Catálogo fresco antes de confirmar: el total en pantalla es el del POST.
+        self._active_products = list(self._api.list_active_products())
+        result = self._draft.revalidate_against_catalog(self._active_products)
+        self._rebuild_products()
+        self._refresh_display()
+        self._refresh_submit()
+        if result.changed:
+            self._feedback.setText(_format_revalidation_feedback(result))
+        value = self._draft.total()
+        if value <= 0:
+            self._refresh_submit()
             return
         dialog = ConfirmSaleDialog(value, self._selected_payment_name, self)
         if dialog.exec() != QDialog.Accepted:

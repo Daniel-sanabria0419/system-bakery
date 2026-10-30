@@ -16,7 +16,12 @@ from bakery.app.products import (
     list_categories,
     update_product,
 )
-from bakery.app.sales import SaleValidationError, register_sale
+from bakery.app.sales import (
+    SaleValidationError,
+    get_sale_detail,
+    list_sales,
+    register_sale,
+)
 from bakery.persistence import initialize
 from bakery.persistence.connection import DEFAULT_DB_PATH, connect
 from bakery.persistence.repositories import list_active_payment_methods
@@ -50,6 +55,55 @@ class SaleResponse(BaseModel):
     id_medio_pago: int
     caja: int
     tendero: int
+
+
+class SaleListItemResponse(BaseModel):
+    id_venta: str
+    valor_total: int
+    fecha_venta: str
+    id_medio_pago: int
+    nombre_medio: str
+    caja: int
+    tendero: int
+    cantidad_lineas: int
+    es_legado: bool
+    editable: bool
+
+
+class SaleLineDetailResponse(BaseModel):
+    id_linea: int
+    id_venta: str
+    id_producto: int
+    nombre_producto: str
+    precio_aplicado: int
+    cantidad: int
+    subtotal: int
+    total: int
+    id_promocion: Optional[int] = None
+    nombre_promocion: Optional[str] = None
+
+
+class SaleObservacionResponse(BaseModel):
+    id_observacion: int
+    id_venta: str
+    texto: str
+    origen: str
+    fecha_creacion: str
+    id_cambio: Optional[int] = None
+
+
+class SaleDetailResponse(BaseModel):
+    id_venta: str
+    valor_total: int
+    fecha_venta: str
+    id_medio_pago: int
+    nombre_medio: str
+    caja: int
+    tendero: int
+    lineas: List[SaleLineDetailResponse]
+    observaciones: List[SaleObservacionResponse]
+    es_legado: bool
+    editable: bool
 
 
 class PaymentMethodResponse(BaseModel):
@@ -148,6 +202,25 @@ def create_app(db_path: Path = DEFAULT_DB_PATH) -> FastAPI:
             )
         except SaleValidationError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
+        finally:
+            connection.close()
+
+    @app.get("/ventas", response_model=List[SaleListItemResponse])
+    def get_ventas() -> List[dict]:
+        connection = connect(app.state.db_path)
+        try:
+            return [dict(row) for row in list_sales(connection)]
+        finally:
+            connection.close()
+
+    @app.get("/ventas/{id_venta}", response_model=SaleDetailResponse)
+    def get_venta_by_id(id_venta: str) -> dict:
+        connection = connect(app.state.db_path)
+        try:
+            detail = get_sale_detail(connection, id_venta)
+            if detail is None:
+                raise HTTPException(status_code=404, detail="Venta no encontrada.")
+            return dict(detail)
         finally:
             connection.close()
 

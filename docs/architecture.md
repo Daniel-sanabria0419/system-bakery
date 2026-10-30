@@ -14,6 +14,8 @@ Beta 1 estableció las capas. Beta 1.1 las reutiliza cambiando el flujo de regis
 
 **Beta 2.0.3** añade navegación de catálogo en dos vistas (categorías ↔ productos + Volver) y métricas/tipografía de chips editables en `style.py` — sin cambiar API ni promo.
 
+**Beta 2.1** (alcance documentado; implementación por etapas) añade historial/detalle de ventas, observaciones append-only, edición dentro de 1 h con recálculo en `app`, y auditoría — sin romper `POST /ventas` ni el cobro 2.0.x. Sigue offline.
+
 ## Arquitectura general
 
 ```text
@@ -227,11 +229,30 @@ Detalle: `docs/beta-2.0.2/stages.md`.
 
 Detalle: `docs/beta-2.0.3/stages.md`.
 
-## Fuera de alcance arquitectónico (Beta 2.0 / 2.0.1 / 2.0.2 / 2.0.3)
+## Beta 2.1 (resumen — alcance; sin código en Etapa 0)
 
-- Historial avanzado / edición de ventas.
+Capas previstas (detalle en Context `docs/beta-2.1-plan.md` y `docs/beta-2.1/stages.md`):
+
+| Capa | Cambio previsto |
+|---|---|
+| `persistence` | Listado/detalle de ventas; tablas `venta_observaciones` y `venta_cambios` (nombres finales en Etapa 1); helpers de ventana editable |
+| `app` | `update_sale`; `is_sale_editable` con reloj inyectable; obs + auditoría en create/edit; reutilizar `_resolve_lines_with_promociones` |
+| `api` | `GET /ventas`, `GET /ventas/{id}` (+ cambios); `POST /ventas/{id}/observaciones`; `PUT /ventas/{id}`; flag `editable` solo servidor |
+| `desktop` | Menú Historial; listado/detalle/edición/obs; nuevos métodos en `ApiClient`; sin totales de negocio en Qt |
+
+Reglas de diseño:
+
+1. Reloj de la ventana de 1 h = proceso API local; ignorar timestamps del cliente.
+2. `POST /ventas` sigue siendo create idempotente; edición = `PUT` (no reutilizar POST).
+3. `fecha_venta`, `caja`, `tendero`, `id_venta` inmutables en edición.
+4. Observaciones append-only; legado value-only: historial/detalle sí, sin inventar líneas.
+5. Una transacción por edición (auditoría + cabecera + replace líneas).
+
+## Fuera de alcance arquitectónico (Beta 2.0.x; Beta 2.1 acota lo suyo en su sección)
+
 - Inventario, recetas, producción, clientes, sync, login, reportes.
-- Motor genérico/configurable de promociones.
+- Motor genérico/configurable de promociones (CRUD rico / otros tipos).
 - ORM / framework de migraciones pesado.
 - Mover la calculadora al backend.
 - PostgreSQL funcional.
+- Eliminación física / anulación contable compleja de ventas; multi-caja real.

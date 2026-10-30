@@ -4,13 +4,13 @@
 
 La sincronización con la base de datos en la nube está **FUERA DEL ALCANCE**.
 
-Esto incluye Beta 1, Beta 1.1, Beta 1.2 y las **betas 2.0.x** (2.0, 2.0.1, 2.0.2, 2.0.3).
+Esto incluye Beta 1, Beta 1.1, Beta 1.2, las **betas 2.0.x** y **Beta 2.1**.
 
 ## Comportamiento actual
 
 Las ventas (y el catálogo de productos) se almacenan únicamente en SQLite local.
 
-**Ninguna beta 2.0.x introduce ni modifica sincronización.** Beta 2.0 añadió tablas locales (`categorias`, `productos`, `venta_lineas`) y cambió el contrato local de `POST /ventas`; todo sigue offline.
+**Ninguna beta 2.0.x ni Beta 2.1 introduce ni modifica sincronización.** Beta 2.0 añadió tablas locales (`categorias`, `productos`, `venta_lineas`) y cambió el contrato local de `POST /ventas`; Beta 2.1 añadirá historial/edición/observaciones/auditoría **solo locales**. Todo sigue offline.
 
 No se debe implementar:
 

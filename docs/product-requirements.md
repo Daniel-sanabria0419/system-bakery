@@ -17,6 +17,51 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Beta 2.0.3 | **Terminada** 2026-10-27 (OK final Daniel) | Navegación catálogo Vista A/B; chips más grandes / tipografía editable |
 | Beta 2.0.4 | **Terminada** 2026-10-27 (OK final Daniel) | Migrar Pan pequeño a `promociones` + FK; cobro por FK/grupo |
 | Beta 2.0.5 | **En curso** | Promo `cantidad_por_monto` solo en los nudos de la tabla ceil; el resto × `precio_base` |
+| Beta 2.1 | **En curso** (Etapa 0: alcance documentado) | Historial, detalle, observaciones, edición ≤1 h (backend), auditoría |
+
+---
+
+# Beta 2.1 (en curso — alcance documentado)
+
+## Objetivo
+
+Permitir consultar ventas ya registradas (historial y detalle), anexar observaciones con trazabilidad, y **editar** una venta solo dentro de la primera hora desde `fecha_venta`, con recálculo de totales en el backend y auditoría del original y de cada cambio. Preserva el contrato de cobro Beta 2.0.x (`POST /ventas`, enteros, snapshot, promo por línea, UUID cliente).
+
+Plan autoritativo: Context `docs/beta-2.1-plan.md`. Etapas en repo: `docs/beta-2.1/stages.md`.
+
+## Alcance (in)
+
+1. **Historial:** listado de ventas (más recientes primero): fecha, hora, `valor_total`, medio de pago, resumen de productos (o indicador legado value-only).
+2. **Detalle:** cabecera + líneas (snapshot: nombre, cantidad, `precio_aplicado`, `subtotal`, `total`, promo si aplica) + observaciones ordenadas; legado sin líneas muestra mensaje fijo, sin inventar productos.
+3. **Observaciones:** durante la venta (opcional en el registro) y posteriores (siempre permitidas), en tabla append-only con origen distinguible y trazabilidad hacia auditoría.
+4. **Edición ≤ 1 h:** productos, cantidades, medio y observación de venta; ventana **enforced solo en backend** con reloj del servidor local; `fecha_venta` inmutable; total recalculado con promo/precio vigentes del catálogo (misma ruta que el registro).
+5. **Auditoría / versionado:** conservar estado de creación y cada edición (antes/después consultables).
+6. **UI:** menú Historial (o Ventas); listado → detalle → Editar (si editable) / Agregar observación. Sin lógica de negocio en Qt.
+
+## Fuera del alcance de Beta 2.1
+
+No implementar:
+
+- pedidos, clientes, recetas, inventario/stock, producción, costos/márgenes;
+- sync nube, PostgreSQL, login/roles, reportes analíticos, IA;
+- eliminación física de ventas; anulación contable compleja; multi-caja / multi-tendero real;
+- confiar en el reloj del cliente para la ventana de edición;
+- mutar `fecha_venta` para reabrir edición;
+- inventar `venta_lineas` en ventas legado value-only;
+- motor genérico nuevo de promociones / CRUD rico de promos;
+- features de Beta 2.2+ no escritas en requisitos;
+- cambiar el contrato de cobro vigente salvo lo estrictamente necesario para edición, observaciones y auditoría.
+
+## Criterios de cierre (resumen)
+
+1. Historial muestra fecha, hora, total, productos (o legado), medio.
+2. Detalle muestra líneas, medio, fecha/hora, observaciones.
+3. Observación durante y posterior, distinguibles y trazables.
+4. Edición solo si el backend considera &lt; 1 h desde `fecha_venta`; total con promo vigente por línea.
+5. Tras 1 h: edición rechazada por API; observación posterior permitida.
+6. Auditoría conserva original y cada edición.
+7. Regresión 2.0.x verde; `POST /ventas` idempotente intacto.
+8. Docs alineadas; OK final de Daniel.
 
 ---
 

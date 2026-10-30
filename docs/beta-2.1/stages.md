@@ -2,9 +2,9 @@
 
 Documento de etapas de **Beta 2.1** (historial, detalle, observaciones, edición ≤ 1 h, auditoría). Plan autoritativo: Context `docs/beta-2.1-plan.md`.
 
-**Estado:** en curso. **Etapas 0–8 hechas** (alcance docs; schema v6; persistencia list/detail + ventana 1 h; API GET; desktop Historial lectura; observaciones durante/posterior + auditoría de creación; `PUT` edición + recalc promo; auditoría completa create/edit + `GET /ventas/{id}/cambios`; desktop edición ≤1 h + obs posterior). Etapas 9–10 pendientes (regresión / docs cierre).
+**Estado:** en curso. **Etapas 0–9 hechas** (alcance docs; schema v6; persistencia list/detail + ventana 1 h; API GET; desktop Historial lectura; observaciones durante/posterior + auditoría de creación; `PUT` edición + recalc promo; auditoría completa create/edit + `GET /ventas/{id}/cambios`; desktop edición ≤1 h + obs posterior; regresión 2.0.x + `regression-notes.md`). Etapa 10 pendiente (docs cierre tras OK Daniel).
 
-Preservar Beta 2.0.x. Comando canónico de pruebas (cuando haya código):  
+Preservar Beta 2.0.x. Comando canónico de pruebas:  
 `QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest`
 
 ## Decisiones (CLOSED en el plan)
@@ -31,7 +31,7 @@ Preservar Beta 2.0.x. Comando canónico de pruebas (cuando haya código):
 | 6 | PUT edición + ventana 1 h | Hecha | `PUT /ventas/{id}`; recalc promo; `fecha_venta` inmutable; `edicion` antes/después |
 | 7 | Auditoría completa create/edit | Hecha | `creacion`/`edicion` antes/después; `GET /ventas/{id}/cambios`; original conservado |
 | 8 | Desktop edición + obs posterior | Hecha | Editar solo si `editable`; obs posterior siempre; sin pad de montos |
-| 9 | Regresión Beta 2.0.x | Pendiente | Suite offscreen + `regression-notes.md` |
+| 9 | Regresión Beta 2.0.x | Hecha | Suite offscreen; bordes legado/ventana/carrera; `regression-notes.md` |
 | 10 | Docs cierre | Pendiente | Tras OK Daniel |
 
 ## Fuera de alcance de Beta 2.1

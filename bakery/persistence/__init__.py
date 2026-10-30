@@ -1,12 +1,12 @@
 from pathlib import Path
 
+from bakery.app.product_images import ensure_imagenes_dirs
 from bakery.persistence.connection import DEFAULT_DB_PATH, connect
 from bakery.persistence.migrations import apply_migrations
 from bakery.persistence.schema import (
     backfill_productos_promocion_pan_pequeno,
     create_schema,
     ensure_categoria_pan_pequeno,
-    ensure_imagenes_dirs,
     ensure_promocion_pan_pequeno,
     seed_categorias,
     seed_payment_methods,

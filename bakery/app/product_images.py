@@ -22,6 +22,7 @@ def imagenes_productos_dir() -> Path:
 
 
 def ensure_imagenes_dirs() -> None:
+    """Crea imagenes/categorias y imagenes/productos si faltan (idempotente)."""
     imagenes_categorias_dir().mkdir(parents=True, exist_ok=True)
     imagenes_productos_dir().mkdir(parents=True, exist_ok=True)
 

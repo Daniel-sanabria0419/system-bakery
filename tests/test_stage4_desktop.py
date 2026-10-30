@@ -233,9 +233,36 @@ def _purchase_row_count(window) -> int:
 def _select_draft_product(
     window, *, precio: int, nombre: str = "Producto", id_producto: int = None
 ) -> None:
+    api = getattr(window, "_api", None)
+    products = getattr(api, "products", None) if api is not None else None
     if id_producto is None:
-        id_producto = _PRODUCT_ID_SEQ["n"]
-        _PRODUCT_ID_SEQ["n"] += 1
+        # Evitar colisión con IDs del catálogo seed (p. ej. Pan rollo id=4 + promo).
+        next_id = _PRODUCT_ID_SEQ["n"]
+        if isinstance(products, list) and products:
+            max_existing = max(int(p["id_producto"]) for p in products)
+            next_id = max(next_id, max_existing + 1)
+        id_producto = next_id
+        _PRODUCT_ID_SEQ["n"] = id_producto + 1
+    product = {
+        "id_producto": id_producto,
+        "nombre": nombre,
+        "precio": precio,
+        "id_categoria": 1,
+        "descripcion": None,
+        "id_estado": 1,
+    }
+    # Registrar en FakeApiClient para que la revalidación del carrito no lo quite.
+    if isinstance(products, list):
+        existing = next(
+            (p for p in products if p.get("id_producto") == id_producto),
+            None,
+        )
+        if existing is None:
+            products.append(dict(product))
+        else:
+            existing["nombre"] = nombre
+            existing["precio"] = precio
+            existing["id_estado"] = 1
     window._register._draft.select_product(
         {"id_producto": id_producto, "nombre": nombre, "precio": precio}
     )

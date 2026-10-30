@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Mapping, Optional, Sequence
 
 from bakery.app.promotions import (
@@ -20,6 +20,18 @@ class PurchaseLine:
     cantidad: int
     subtotal: int
     promocion_id: Optional[int] = None
+
+
+@dataclass(frozen=True)
+class CartRevalidationResult:
+    """Resultado de alinear el carrito con el catálogo vigente."""
+
+    price_changed: List[str] = field(default_factory=list)
+    removed: List[str] = field(default_factory=list)
+
+    @property
+    def changed(self) -> bool:
+        return bool(self.price_changed or self.removed)
 
 
 class Purchase:
@@ -288,6 +300,70 @@ class SaleDraft:
         self._quantity = 1
         self._promo_by_id.clear()
 
+    def revalidate_against_catalog(
+        self, products: Sequence[Mapping]
+    ) -> CartRevalidationResult:
+        """Alinea líneas con el catálogo activo vigente.
+
+        - Activo y mismo precio: se queda.
+        - Precio distinto: actualiza ``precio_aplicado``, promo vigente y
+          recalcula cobro; nombra el producto en ``price_changed``.
+        - Ausente (inactivo o borrado): quita la línea; nombra en ``removed``.
+        """
+        by_id: Dict[int, Mapping] = {}
+        for product in products:
+            if not isinstance(product, Mapping):
+                continue
+            id_producto = product.get("id_producto")
+            if isinstance(id_producto, bool) or not isinstance(id_producto, int):
+                continue
+            estado = product.get("id_estado")
+            if estado is not None and estado != ESTADO_ACTIVO:
+                continue
+            precio = product.get("precio")
+            if isinstance(precio, bool) or not isinstance(precio, int) or precio <= 0:
+                continue
+            by_id[id_producto] = product
+
+        price_changed: List[str] = []
+        removed: List[str] = []
+        kept: List[PurchaseLine] = []
+
+        for item in self.purchase.items():
+            product = by_id.get(item.id_producto)
+            if product is None:
+                removed.append(item.nombre)
+                continue
+            catalog_precio = int(product["precio"])
+            catalog_nombre = product.get("nombre")
+            nombre = (
+                catalog_nombre.strip()
+                if isinstance(catalog_nombre, str) and catalog_nombre.strip()
+                else item.nombre
+            )
+            if catalog_precio == item.precio_aplicado:
+                kept.append(item)
+                continue
+            promocion_id = self._promocion_id_for_catalog_price(product, catalog_precio)
+            kept.append(
+                PurchaseLine(
+                    id_producto=item.id_producto,
+                    nombre=nombre,
+                    precio_aplicado=catalog_precio,
+                    cantidad=item.cantidad,
+                    subtotal=catalog_precio * item.cantidad,
+                    promocion_id=promocion_id,
+                )
+            )
+            price_changed.append(nombre)
+
+        self.purchase.replace_items(kept)
+        if kept:
+            self._recalculate_purchase_subtotals()
+        return CartRevalidationResult(
+            price_changed=price_changed, removed=removed
+        )
+
     def list_subtotal(self) -> int:
         return self.purchase.list_subtotal()
 
@@ -296,6 +372,22 @@ class SaleDraft:
 
     def total(self) -> int:
         return self.purchase.total()
+
+    def _promocion_id_for_catalog_price(
+        self, product: Mapping, catalog_precio: int
+    ) -> Optional[int]:
+        """Promo vigente solo si la lista coincide con ``precio_base``."""
+        promo = _promo_payload_from_product(product)
+        if promo is None:
+            return None
+        try:
+            config = parse_cantidad_por_monto_config(promo["configuracion"])
+        except ValueError:
+            return None
+        if catalog_precio != int(config["precio_base"]):
+            return None
+        self._promo_by_id[int(promo["id"])] = promo
+        return int(promo["id"])
 
     def _selected_promo_config(self) -> Optional[Mapping]:
         product = self._selected_product

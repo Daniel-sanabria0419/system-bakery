@@ -17,12 +17,14 @@ from bakery.app.products import (
     update_product,
 )
 from bakery.app.sales import (
+    SaleNotEditableError,
     SaleNotFoundError,
     SaleValidationError,
     add_sale_observacion,
     get_sale_detail,
     list_sales,
     register_sale,
+    update_sale,
 )
 from bakery.persistence import initialize
 from bakery.persistence.connection import DEFAULT_DB_PATH, connect
@@ -49,6 +51,16 @@ class SaleCreate(BaseModel):
     id_medio_pago: int
     lineas: List[SaleLineCreate] = Field(min_length=1)
     observacion: Optional[str] = None
+
+
+class SaleUpdate(BaseModel):
+    """Edición dentro de 1 h. Sin fecha_venta / totales del cliente (extra forbid)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id_medio_pago: int
+    lineas: List[SaleLineCreate] = Field(default_factory=list)
+    observacion_venta: Optional[str] = None
 
 
 class SaleObservacionCreate(BaseModel):
@@ -231,6 +243,38 @@ def create_app(db_path: Path = DEFAULT_DB_PATH) -> FastAPI:
             if detail is None:
                 raise HTTPException(status_code=404, detail="Venta no encontrada.")
             return dict(detail)
+        finally:
+            connection.close()
+
+    @app.put("/ventas/{id_venta}", response_model=SaleResponse)
+    async def put_venta(id_venta: str, request: Request) -> dict:
+        payload: Any = await request.json()
+        if not isinstance(payload, dict):
+            raise HTTPException(
+                status_code=400, detail="Cuerpo de venta inválido."
+            )
+        try:
+            body = SaleUpdate.model_validate(payload)
+        except Exception as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+
+        connection = connect(app.state.db_path)
+        try:
+            return dict(
+                update_sale(
+                    connection,
+                    id_venta,
+                    body.id_medio_pago,
+                    [line.model_dump() for line in body.lineas],
+                    observacion_venta=body.observacion_venta,
+                )
+            )
+        except SaleNotFoundError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+        except SaleNotEditableError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
+        except SaleValidationError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
         finally:
             connection.close()
 

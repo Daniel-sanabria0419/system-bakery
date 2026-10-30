@@ -13,7 +13,9 @@ from bakery.persistence.repositories import (
     ORIGEN_OBSERVACION_DURANTE_VENTA,
     ORIGEN_OBSERVACION_POSTERIOR,
     TIPO_CAMBIO_CREACION,
+    TIPO_CAMBIO_EDICION,
     TIPO_CAMBIO_OBSERVACION_POSTERIOR,
+    delete_venta_lineas,
     get_producto,
     get_promocion,
     get_sale,
@@ -23,8 +25,11 @@ from bakery.persistence.repositories import (
     insert_venta_linea,
     insert_venta_observacion,
     list_active_payment_methods,
+    list_venta_lineas,
+    list_venta_observaciones,
     list_ventas,
     sale_is_editable,
+    update_sale_header,
 )
 from bakery.persistence.schema import ESTADO_ACTIVO
 
@@ -37,6 +42,12 @@ class SaleValidationError(Exception):
 
 
 class SaleNotFoundError(Exception):
+    pass
+
+
+class SaleNotEditableError(Exception):
+    """Venta fuera de la ventana de 1 h (reloj del servidor)."""
+
     pass
 
 
@@ -188,6 +199,141 @@ def register_sale(
     return sale
 
 
+def update_sale(
+    connection: sqlite3.Connection,
+    id_venta: str,
+    id_medio_pago: int,
+    lineas: Sequence[Mapping],
+    *,
+    observacion_venta: Optional[str] = None,
+    now: Optional[Union[datetime, str]] = None,
+) -> Mapping:
+    """Edita una venta dentro de la ventana de 1 h; recalcula con promo vigente.
+
+    No muta ``fecha_venta``, ``caja``, ``tendero`` ni ``id_venta``.
+    Escribe auditoría mínima ``tipo=edicion`` (antes/después).
+    """
+    sale = get_sale(connection, id_venta)
+    if sale is None:
+        raise SaleNotFoundError("Venta no encontrada.")
+
+    if not sale_is_editable(sale["fecha_venta"], now=now):
+        raise SaleNotEditableError(
+            "La venta solo se puede editar dentro de la primera hora."
+        )
+
+    if isinstance(id_medio_pago, bool) or not isinstance(id_medio_pago, int):
+        raise SaleValidationError("Debe seleccionar un medio de pago activo.")
+
+    active_methods = list_active_payment_methods(connection)
+    active_by_id = {method["id_medio_pago"]: method for method in active_methods}
+    if id_medio_pago not in active_by_id:
+        raise SaleValidationError("Debe seleccionar un medio de pago activo.")
+
+    if not isinstance(lineas, (list, tuple)):
+        raise SaleValidationError("Debe enviar lineas de producto.")
+
+    existing_lines = list_venta_lineas(connection, id_venta)
+    is_legado = len(existing_lines) == 0
+    if is_legado and len(lineas) > 0:
+        raise SaleValidationError(
+            "Venta legado sin líneas: no se pueden inventar productos."
+        )
+    if not is_legado and len(lineas) < 1:
+        raise SaleValidationError("Debe enviar al menos una línea de producto.")
+
+    texto_obs = _normalize_optional_observacion(observacion_venta)
+    existing_obs = list_venta_observaciones(connection, id_venta)
+    last_durante = _last_durante_venta_texto(existing_obs)
+    append_obs = texto_obs is not None and texto_obs != last_durante
+
+    if is_legado:
+        resolved: List[Mapping] = []
+        valor_total = int(sale["valor_total"])
+    else:
+        resolved = _resolve_lines_with_promociones(connection, lineas)
+        valor_total = sum(line["total"] for line in resolved)
+        if valor_total <= 0:
+            raise SaleValidationError("El valor debe ser un entero mayor que 0.")
+
+    when = _now_value(now)
+    antes_payload = _audit_state_payload(
+        id_medio_pago=int(sale["id_medio_pago"]),
+        nombre_medio=_medio_nombre(connection, int(sale["id_medio_pago"])),
+        valor_total=int(sale["valor_total"]),
+        lineas=existing_lines,
+        observaciones=existing_obs,
+    )
+    despues_obs_audit = [
+        {"texto": obs["texto"], "origen": obs["origen"]} for obs in existing_obs
+    ]
+    if append_obs:
+        despues_obs_audit.append(
+            {"texto": texto_obs, "origen": ORIGEN_OBSERVACION_DURANTE_VENTA}
+        )
+    despues_payload = _audit_state_payload(
+        id_medio_pago=id_medio_pago,
+        nombre_medio=active_by_id[id_medio_pago]["nombre"],
+        valor_total=valor_total,
+        lineas=resolved if not is_legado else [],
+        observaciones=despues_obs_audit,
+    )
+    antes_json = json.dumps(
+        antes_payload, ensure_ascii=False, separators=(",", ":")
+    )
+    despues_json = json.dumps(
+        despues_payload, ensure_ascii=False, separators=(",", ":")
+    )
+
+    try:
+        id_cambio = insert_venta_cambio(
+            connection,
+            id_venta=id_venta,
+            fecha_cambio=when,
+            tipo=TIPO_CAMBIO_EDICION,
+            antes_json=antes_json,
+            despues_json=despues_json,
+        )
+        update_sale_header(
+            connection,
+            id_venta,
+            valor_total=valor_total,
+            id_medio_pago=id_medio_pago,
+        )
+        if not is_legado:
+            delete_venta_lineas(connection, id_venta)
+            for line in resolved:
+                insert_venta_linea(
+                    connection,
+                    id_venta=id_venta,
+                    id_producto=line["id_producto"],
+                    nombre_producto=line["nombre_producto"],
+                    precio_aplicado=line["precio_aplicado"],
+                    cantidad=line["cantidad"],
+                    subtotal=line["subtotal"],
+                    total=line["total"],
+                    id_promocion=line.get("id_promocion"),
+                    nombre_promocion=line.get("nombre_promocion"),
+                )
+        if append_obs:
+            insert_venta_observacion(
+                connection,
+                id_venta=id_venta,
+                texto=texto_obs,
+                origen=ORIGEN_OBSERVACION_DURANTE_VENTA,
+                fecha_creacion=when,
+                id_cambio=id_cambio,
+            )
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+
+    updated = get_sale(connection, id_venta)
+    assert updated is not None
+    return updated
+
+
 def add_sale_observacion(
     connection: sqlite3.Connection,
     id_venta: str,
@@ -254,6 +400,71 @@ def _normalize_optional_observacion(observacion: object) -> Optional[str]:
     if not texto:
         return None
     return texto
+
+
+def _now_value(now: Optional[Union[datetime, str]]) -> str:
+    if now is None:
+        return _now()
+    if isinstance(now, datetime):
+        return now.replace(microsecond=0).isoformat(timespec="seconds")
+    return str(now)
+
+
+def _last_durante_venta_texto(observaciones: Sequence[Mapping]) -> Optional[str]:
+    last: Optional[str] = None
+    for obs in observaciones:
+        if obs.get("origen") == ORIGEN_OBSERVACION_DURANTE_VENTA:
+            last = str(obs["texto"])
+    return last
+
+
+def _medio_nombre(connection: sqlite3.Connection, id_medio_pago: int) -> str:
+    row = connection.execute(
+        "SELECT nombre FROM medios_pago WHERE id_medio_pago = ?",
+        (id_medio_pago,),
+    ).fetchone()
+    return str(row["nombre"]) if row is not None else ""
+
+
+def _audit_line_dicts(lineas: Sequence[Mapping]) -> List[dict]:
+    result: List[dict] = []
+    for line in lineas:
+        result.append(
+            {
+                "id_producto": line["id_producto"],
+                "nombre_producto": line["nombre_producto"],
+                "cantidad": line["cantidad"],
+                "precio_aplicado": line["precio_aplicado"],
+                "subtotal": line["subtotal"],
+                "total": line["total"],
+                "id_promocion": line.get("id_promocion"),
+                "nombre_promocion": line.get("nombre_promocion"),
+            }
+        )
+    return result
+
+
+def _audit_state_payload(
+    *,
+    id_medio_pago: int,
+    nombre_medio: str,
+    valor_total: int,
+    lineas: Sequence[Mapping],
+    observaciones: Sequence[Mapping],
+) -> dict:
+    obs_list: List[dict] = []
+    for obs in observaciones:
+        if "origen" in obs and "texto" in obs:
+            obs_list.append({"texto": obs["texto"], "origen": obs["origen"]})
+        else:
+            obs_list.append(dict(obs))
+    return {
+        "id_medio_pago": id_medio_pago,
+        "nombre_medio": nombre_medio,
+        "valor_total": valor_total,
+        "lineas": _audit_line_dicts(lineas),
+        "observaciones": obs_list,
+    }
 
 
 def _validate_id_venta(id_venta: object) -> str:

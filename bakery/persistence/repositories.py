@@ -136,6 +136,31 @@ def insert_sale(
     )
 
 
+def update_sale_header(
+    connection: sqlite3.Connection,
+    id_venta: str,
+    *,
+    valor_total: int,
+    id_medio_pago: int,
+) -> None:
+    """Actualiza medio y total. No toca fecha_venta / caja / tendero / id_venta."""
+    connection.execute(
+        """
+        UPDATE ventas
+        SET valor_total = ?, id_medio_pago = ?
+        WHERE id_venta = ?
+        """,
+        (valor_total, id_medio_pago, id_venta),
+    )
+
+
+def delete_venta_lineas(connection: sqlite3.Connection, id_venta: str) -> None:
+    connection.execute(
+        "DELETE FROM venta_lineas WHERE id_venta = ?",
+        (id_venta,),
+    )
+
+
 def insert_venta_linea(
     connection: sqlite3.Connection,
     *,

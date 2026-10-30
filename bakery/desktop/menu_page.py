@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QGridLayout, QPushButton, QVBoxLayout, QWidget
 from bakery.desktop import style
 
 class MenuPage(QWidget):
-    def __init__(self, on_register, on_products) -> None:
+    def __init__(self, on_register, on_products, on_historial=None) -> None:
         super().__init__()
         root = QVBoxLayout(self)
         root.setContentsMargins(
@@ -35,8 +35,14 @@ class MenuPage(QWidget):
         products_button.clicked.connect(on_products)
         grid.addWidget(products_button, 0, 1, Qt.AlignLeft | Qt.AlignTop)
 
-        grid.setColumnStretch(2, 1)
+        historial_button = QPushButton("Historial")
+        historial_button.setObjectName("menu_historial_button")
+        style.apply_class(historial_button, "menu-button")
+        if on_historial is not None:
+            historial_button.clicked.connect(on_historial)
+        grid.addWidget(historial_button, 0, 2, Qt.AlignLeft | Qt.AlignTop)
+
+        grid.setColumnStretch(3, 1)
         grid.setRowStretch(1, 1)
 
         root.addWidget(menu_grid, stretch=1)
-

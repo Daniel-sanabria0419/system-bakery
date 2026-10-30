@@ -27,6 +27,12 @@ def test_create_window(qtbot) -> None:
         def create_sale(self, id_medio_pago, lineas, *, id_venta):
             raise AssertionError("No debe guardar en esta prueba.")
 
+        def list_sales(self):
+            return []
+
+        def get_sale(self, id_venta):
+            raise AssertionError("No debe cargar detalle en esta prueba.")
+
     window = create_window(api_client=_StubClient())
     qtbot.addWidget(window)
     assert window.windowTitle() == "Panadería"

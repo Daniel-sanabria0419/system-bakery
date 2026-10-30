@@ -2,7 +2,7 @@
 
 Documento de etapas de **Beta 2.1** (historial, detalle, observaciones, edición ≤ 1 h, auditoría). Plan autoritativo: Context `docs/beta-2.1-plan.md`.
 
-**Estado:** en curso. **Etapas 0–3 hechas** (alcance docs; schema v6; persistencia list/detail + ventana 1 h; API GET listado/detalle + `editable`). Etapas 4+ pendientes — sin UI de historial/edición hasta su PR.
+**Estado:** en curso. **Etapas 0–4 hechas** (alcance docs; schema v6; persistencia list/detail + ventana 1 h; API GET listado/detalle + `editable`; desktop Historial + detalle lectura). Etapas 5+ pendientes — sin edición/obs mutables hasta su PR.
 
 Preservar Beta 2.0.x. Comando canónico de pruebas (cuando haya código):  
 `QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest`
@@ -26,7 +26,7 @@ Preservar Beta 2.0.x. Comando canónico de pruebas (cuando haya código):
 | 1 | Schema observaciones + auditoría | Hecha | `schema_version` v6; tablas + FKs/CHECKs; `POST /ventas` intacto |
 | 2 | Persistencia list/detail/tiempo | Hecha | `list_ventas` / `get_sale_detail` / `sale_is_editable` + insert obs/cambio; reloj inyectable |
 | 3 | API lectura GET | Hecha | `GET /ventas`, `GET /ventas/{id}` + `editable` / `es_legado` |
-| 4 | Desktop historial + detalle (lectura) | Pendiente | Menú Historial; sin edición |
+| 4 | Desktop historial + detalle (lectura) | Hecha | Menú Historial; listado + detalle lectura; sin edición/obs |
 | 5 | Observaciones durante + posterior | Pendiente | Create + endpoint + UI parcial |
 | 6 | PUT edición + ventana 1 h | Pendiente | Recalc promo; `fecha_venta` inmutable |
 | 7 | Auditoría completa create/edit | Pendiente | GET cambios; original conservado |

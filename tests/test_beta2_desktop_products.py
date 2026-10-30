@@ -57,6 +57,14 @@ class FakeProductsApiClient:
         self.sales.append(sale)
         return sale
 
+    def list_sales(self) -> List[Mapping[str, Any]]:
+        self.request_count += 1
+        return []
+
+    def get_sale(self, id_venta: str) -> Mapping[str, Any]:
+        self.request_count += 1
+        raise KeyError(id_venta)
+
     def list_categories(self) -> List[Mapping[str, Any]]:
         self.request_count += 1
         return list(self.categories)

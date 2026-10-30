@@ -10,6 +10,7 @@ from bakery.desktop.dialogs import (
     SaleSavedDialog,
     SelectPaymentMethodDialog,
 )
+from bakery.desktop.historial_page import HistorialPage
 from bakery.desktop.main_window import MainWindow
 from bakery.desktop.menu_page import MenuPage
 from bakery.desktop.products_page import ProductsPage
@@ -17,6 +18,7 @@ from bakery.desktop.register_sale_page import RegisterSalePage
 
 __all__ = [
     "ConfirmSaleDialog",
+    "HistorialPage",
     "MainWindow",
     "MenuPage",
     "ProductFormDialog",

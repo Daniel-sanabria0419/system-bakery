@@ -22,6 +22,7 @@ from bakery.app.sales import (
     SaleValidationError,
     add_sale_observacion,
     get_sale_detail,
+    list_sale_cambios,
     list_sales,
     register_sale,
     update_sale,
@@ -125,6 +126,17 @@ class SaleDetailResponse(BaseModel):
     observaciones: List[SaleObservacionResponse]
     es_legado: bool
     editable: bool
+
+
+class SaleCambioResponse(BaseModel):
+    """Fila de auditoría; ``antes`` / ``despues`` son objetos JSON parseados."""
+
+    id_cambio: int
+    id_venta: str
+    fecha_cambio: str
+    tipo: str
+    antes: Optional[Any] = None
+    despues: Any
 
 
 class PaymentMethodResponse(BaseModel):
@@ -243,6 +255,19 @@ def create_app(db_path: Path = DEFAULT_DB_PATH) -> FastAPI:
             if detail is None:
                 raise HTTPException(status_code=404, detail="Venta no encontrada.")
             return dict(detail)
+        finally:
+            connection.close()
+
+    @app.get(
+        "/ventas/{id_venta}/cambios",
+        response_model=List[SaleCambioResponse],
+    )
+    def get_venta_cambios(id_venta: str) -> List[dict]:
+        connection = connect(app.state.db_path)
+        try:
+            return [dict(row) for row in list_sale_cambios(connection, id_venta)]
+        except SaleNotFoundError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
         finally:
             connection.close()
 

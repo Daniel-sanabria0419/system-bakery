@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import uuid
 
 import pytest
 
@@ -284,6 +285,7 @@ def test_register_sale_4_plus_3_is_per_line(tmp_path: Path) -> None:
                 {"id_producto": id_a, "cantidad": 4, "precio_aplicado": 300},
                 {"id_producto": id_b, "cantidad": 3, "precio_aplicado": 300},
             ],
+            id_venta=str(uuid.uuid4()),
         )
         assert sale["valor_total"] == 1900
     finally:

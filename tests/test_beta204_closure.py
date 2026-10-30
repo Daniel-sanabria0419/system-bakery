@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import uuid
 
 from bakery.app.products import create_product
 from bakery.app.purchase import SaleDraft
@@ -65,6 +66,7 @@ def test_register_sale_persists_promo_snapshot(tmp_path: Path) -> None:
                     "precio_aplicado": 300,
                 }
             ],
+            id_venta=str(uuid.uuid4()),
         )
         lines = list_venta_lineas(connection, sale["id_venta"])
         assert len(lines) == 1
@@ -99,6 +101,7 @@ def test_snapshot_stable_after_rename_and_deactivate(tmp_path: Path) -> None:
                     "precio_aplicado": 300,
                 }
             ],
+            id_venta=str(uuid.uuid4()),
         )
         promo_id = product["promocion_id"]
         assert promo_id is not None

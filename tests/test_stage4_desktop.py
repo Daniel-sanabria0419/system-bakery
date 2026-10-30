@@ -137,13 +137,17 @@ class FakeApiClient:
         return [dict(p) for p in rows]
 
     def create_sale(
-        self, id_medio_pago: int, lineas: List[Mapping[str, Any]]
+        self,
+        id_medio_pago: int,
+        lineas: List[Mapping[str, Any]],
+        *,
+        id_venta: str,
     ) -> Mapping[str, Any]:
         self.request_count += 1
         prod_by_id = {p["id_producto"]: p for p in self.products}
         valor_total = self._valor_total_promociones(lineas, prod_by_id)
         sale = {
-            "id_venta": "11111111-1111-4111-8111-111111111111",
+            "id_venta": id_venta,
             "valor_total": valor_total,
             "fecha_venta": "2026-10-15T12:00:00",
             "id_medio_pago": id_medio_pago,
@@ -780,7 +784,11 @@ def test_confirm_sale_posts_accumulated_total(qtbot) -> None:
 def test_api_error_does_not_show_success_popup(qtbot) -> None:
     class FailingApiClient(FakeApiClient):
         def create_sale(
-            self, id_medio_pago: int, lineas: List[Mapping[str, Any]]
+            self,
+            id_medio_pago: int,
+            lineas: List[Mapping[str, Any]],
+            *,
+            id_venta: str,
         ) -> Mapping[str, Any]:
             self.request_count += 1
             raise httpx.HTTPError("fallo de red")
@@ -883,12 +891,20 @@ class DesktopApiViaTestClient:
         return response.json()
 
     def create_sale(
-        self, id_medio_pago: int, lineas: List[Mapping[str, Any]]
+        self,
+        id_medio_pago: int,
+        lineas: List[Mapping[str, Any]],
+        *,
+        id_venta: str,
     ) -> Mapping[str, Any]:
         self.request_count += 1
         response = self._client.post(
             "/ventas",
-            json={"id_medio_pago": id_medio_pago, "lineas": list(lineas)},
+            json={
+                "id_venta": id_venta,
+                "id_medio_pago": id_medio_pago,
+                "lineas": list(lineas),
+            },
         )
         response.raise_for_status()
         return response.json()

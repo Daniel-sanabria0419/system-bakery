@@ -63,12 +63,20 @@ class ApiClient:
         return response.json()
 
     def create_sale(
-        self, id_medio_pago: int, lineas: List[Mapping[str, Any]]
+        self,
+        id_medio_pago: int,
+        lineas: List[Mapping[str, Any]],
+        *,
+        id_venta: str,
     ) -> Mapping[str, Any]:
         response = self._request(
             "POST",
             "/ventas",
-            json={"id_medio_pago": id_medio_pago, "lineas": list(lineas)},
+            json={
+                "id_venta": id_venta,
+                "id_medio_pago": id_medio_pago,
+                "lineas": list(lineas),
+            },
         )
         raise_for_api_status(response)
         return response.json()

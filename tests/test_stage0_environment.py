@@ -24,7 +24,7 @@ def test_create_window(qtbot) -> None:
         def list_active_products(self, **kwargs):
             return []
 
-        def create_sale(self, id_medio_pago, lineas):
+        def create_sale(self, id_medio_pago, lineas, *, id_venta):
             raise AssertionError("No debe guardar en esta prueba.")
 
     window = create_window(api_client=_StubClient())

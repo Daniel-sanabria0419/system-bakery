@@ -59,6 +59,7 @@ def test_create_sale_returns_uuid_and_persists_lines(tmp_path: Path) -> None:
         response = client.post(
             "/ventas",
             json={
+                "id_venta": str(__import__("uuid").uuid4()),
                 "id_medio_pago": 1,
                 "lineas": [
                     {
@@ -112,7 +113,7 @@ def test_create_sale_rejects_empty_lineas(tmp_path: Path) -> None:
     with _client(tmp_path) as client:
         response = client.post(
             "/ventas",
-            json={"id_medio_pago": 1, "lineas": []},
+            json={"id_venta": str(__import__("uuid").uuid4()), "id_medio_pago": 1, "lineas": []},
         )
         assert response.status_code == 400
 
@@ -138,6 +139,7 @@ def test_create_sale_rejects_inactive_payment_method(tmp_path: Path) -> None:
         response = client.post(
             "/ventas",
             json={
+                "id_venta": str(__import__("uuid").uuid4()),
                 "id_medio_pago": inactive_id,
                 "lineas": [
                     {
@@ -164,6 +166,7 @@ def test_create_sale_rejects_unknown_payment_method(tmp_path: Path) -> None:
         response = client.post(
             "/ventas",
             json={
+                "id_venta": str(__import__("uuid").uuid4()),
                 "id_medio_pago": 999,
                 "lineas": [
                     {

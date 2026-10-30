@@ -1,4 +1,5 @@
 from pathlib import Path
+import uuid
 
 import pytest
 
@@ -175,6 +176,7 @@ def test_register_sale_persists_uuid_lines_and_defaults(tmp_path: Path) -> None:
                     "precio_aplicado": 25000,
                 }
             ],
+            id_venta=str(uuid.uuid4()),
             fecha_venta="2026-10-15T11:00:00",
         )
         row = connection.execute("SELECT * FROM ventas").fetchone()
@@ -197,9 +199,9 @@ def test_register_sale_rejects_empty_or_invalid_lines(tmp_path: Path) -> None:
     connection = _connection(tmp_path)
     try:
         with pytest.raises(SaleValidationError):
-            register_sale(connection, 1, [])
+            register_sale(connection, 1, [], id_venta=str(uuid.uuid4()))
         with pytest.raises(SaleValidationError):
-            register_sale(connection, 1, "x")  # type: ignore[arg-type]
+            register_sale(connection, 1, "x", id_venta=str(uuid.uuid4()))  # type: ignore[arg-type]
         count = connection.execute("SELECT COUNT(*) FROM ventas").fetchone()[0]
         assert count == 0
     finally:
@@ -227,9 +229,9 @@ def test_register_sale_rejects_inactive_or_unknown_payment_method(tmp_path: Path
             ("Inactivo",),
         ).fetchone()[0]
         with pytest.raises(SaleValidationError):
-            register_sale(connection, inactive_id, [line])
+            register_sale(connection, inactive_id, [line], id_venta=str(uuid.uuid4()))
         with pytest.raises(SaleValidationError):
-            register_sale(connection, 999, [line])
+            register_sale(connection, 999, [line], id_venta=str(uuid.uuid4()))
         count = connection.execute("SELECT COUNT(*) FROM ventas").fetchone()[0]
         assert count == 0
     finally:

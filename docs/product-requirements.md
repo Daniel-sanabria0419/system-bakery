@@ -181,6 +181,7 @@ Cada producto tiene **un único precio actual**. Sin variantes ni listas de prec
 ```text
 POST /ventas
 {
+  "id_venta": "UUID",
   "id_medio_pago": int,
   "lineas": [
     { "id_producto": int, "cantidad": int, "precio_aplicado": int },
@@ -188,6 +189,8 @@ POST /ventas
   ]
 }
 ```
+
+La caja genera `id_venta` (UUID) antes del POST. Si ese id ya existe, la API responde la venta guardada y no inserta otra (reintento tras timeout no duplica). Un pago nuevo usa otro UUID.
 
 El backend valida productos activos, calcula subtotales y `valor_total`, y persiste `ventas` + `venta_lineas` (con snapshot de nombre y precio) en una transacción. El shape antiguo solo-`valor_total` se rechaza.
 

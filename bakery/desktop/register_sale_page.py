@@ -1,5 +1,6 @@
 """Página Registrar venta (Beta 2.0.6: sin pad; dos columnas)."""
 
+import uuid
 from typing import List, Mapping, Optional
 
 import httpx
@@ -781,8 +782,10 @@ class RegisterSalePage(QWidget):
                     "precio_aplicado": line.precio_aplicado,
                 }
             )
+        # UUID antes del POST: un reintento con el mismo id no duplica la venta.
+        id_venta = str(uuid.uuid4())
         try:
-            self._api.create_sale(payment_id, lineas)
+            self._api.create_sale(payment_id, lineas, id_venta=id_venta)
         except httpx.HTTPError as error:
             QMessageBox.warning(self, "Error", f"No se pudo guardar la venta.\n{error}")
             return

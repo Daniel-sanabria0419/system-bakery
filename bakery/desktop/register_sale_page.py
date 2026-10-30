@@ -773,6 +773,7 @@ class RegisterSalePage(QWidget):
         dialog = ConfirmSaleDialog(value, self._selected_payment_name, self)
         if dialog.exec() != QDialog.Accepted:
             return
+        observacion = dialog.observacion()
         lineas = []
         for line in self._draft.purchase.items():
             lineas.append(
@@ -784,8 +785,11 @@ class RegisterSalePage(QWidget):
             )
         # UUID antes del POST: un reintento con el mismo id no duplica la venta.
         id_venta = str(uuid.uuid4())
+        create_kwargs = {"id_venta": id_venta}
+        if observacion is not None:
+            create_kwargs["observacion"] = observacion
         try:
-            self._api.create_sale(payment_id, lineas, id_venta=id_venta)
+            self._api.create_sale(payment_id, lineas, **create_kwargs)
         except httpx.HTTPError as error:
             QMessageBox.warning(self, "Error", f"No se pudo guardar la venta.\n{error}")
             return

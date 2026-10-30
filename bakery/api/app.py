@@ -17,7 +17,9 @@ from bakery.app.products import (
     update_product,
 )
 from bakery.app.sales import (
+    SaleNotFoundError,
     SaleValidationError,
+    add_sale_observacion,
     get_sale_detail,
     list_sales,
     register_sale,
@@ -46,6 +48,13 @@ class SaleCreate(BaseModel):
     id_venta: str
     id_medio_pago: int
     lineas: List[SaleLineCreate] = Field(min_length=1)
+    observacion: Optional[str] = None
+
+
+class SaleObservacionCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    texto: str
 
 
 class SaleResponse(BaseModel):
@@ -198,6 +207,7 @@ def create_app(db_path: Path = DEFAULT_DB_PATH) -> FastAPI:
                     body.id_medio_pago,
                     [line.model_dump() for line in body.lineas],
                     id_venta=body.id_venta,
+                    observacion=body.observacion,
                 )
             )
         except SaleValidationError as error:
@@ -221,6 +231,23 @@ def create_app(db_path: Path = DEFAULT_DB_PATH) -> FastAPI:
             if detail is None:
                 raise HTTPException(status_code=404, detail="Venta no encontrada.")
             return dict(detail)
+        finally:
+            connection.close()
+
+    @app.post(
+        "/ventas/{id_venta}/observaciones",
+        response_model=SaleObservacionResponse,
+    )
+    def post_venta_observacion(
+        id_venta: str, body: SaleObservacionCreate
+    ) -> dict:
+        connection = connect(app.state.db_path)
+        try:
+            return dict(add_sale_observacion(connection, id_venta, body.texto))
+        except SaleNotFoundError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+        except SaleValidationError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
         finally:
             connection.close()
 

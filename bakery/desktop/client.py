@@ -68,16 +68,16 @@ class ApiClient:
         lineas: List[Mapping[str, Any]],
         *,
         id_venta: str,
+        observacion: Optional[str] = None,
     ) -> Mapping[str, Any]:
-        response = self._request(
-            "POST",
-            "/ventas",
-            json={
-                "id_venta": id_venta,
-                "id_medio_pago": id_medio_pago,
-                "lineas": list(lineas),
-            },
-        )
+        payload: dict = {
+            "id_venta": id_venta,
+            "id_medio_pago": id_medio_pago,
+            "lineas": list(lineas),
+        }
+        if observacion is not None:
+            payload["observacion"] = observacion
+        response = self._request("POST", "/ventas", json=payload)
         raise_for_api_status(response)
         return response.json()
 
@@ -88,6 +88,17 @@ class ApiClient:
 
     def get_sale(self, id_venta: str) -> Mapping[str, Any]:
         response = self._request("GET", f"/ventas/{id_venta}")
+        raise_for_api_status(response)
+        return response.json()
+
+    def add_sale_observacion(
+        self, id_venta: str, texto: str
+    ) -> Mapping[str, Any]:
+        response = self._request(
+            "POST",
+            f"/ventas/{id_venta}/observaciones",
+            json={"texto": texto},
+        )
         raise_for_api_status(response)
         return response.json()
 

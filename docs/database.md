@@ -8,7 +8,7 @@ SQLite
 
 La base de datos es local y debe funcionar sin Internet.
 
-## Esquema vigente (Beta 2.0 … Beta 2.0.4 Etapa 1)
+## Esquema vigente (Beta 2.0 … schema v5)
 
 Las tablas de catálogo y líneas (`categorias`, `productos`, `venta_lineas`) se introdujeron en **Beta 2.0 Etapa 1**.
 
@@ -20,6 +20,7 @@ Las tablas de catálogo y líneas (`categorias`, `productos`, `venta_lineas`) se
 - **Beta 2.0.4 Etapa 2:** seed de promo canónica Pan pequeño + backfill de `promocion_id` en productos de esa categoría.
 - **Beta 2.0.4 cutover + cierre:** cobro por FK/grupo; `venta_lineas.id_promocion` / `nombre_promocion` (snapshot, schema v3).
 - **Meta:** tabla `schema_version` para migraciones ordenadas (ver sección Versión de esquema).
+- **Beta 2.1 (previsto, no aplicado en Etapa 0):** tablas `venta_observaciones` y `venta_cambios` (schema v6+ en Etapa 1). Sin columnas nuevas en `ventas`/`venta_lineas` en el alcance documentado de Etapa 0.
 
 ## Tabla: medios_pago
 
@@ -208,6 +209,35 @@ Versión vigente:
 | 3 | Beta 2.0.4 cierre: `venta_lineas.id_promocion` + `nombre_promocion` |
 | 4 | Config de promo canónica: JSON solo `precio_base` + `modo` |
 | 5 | `venta_lineas.total` NOT NULL CHECK (> 0). Filas existentes: `total = subtotal`, sin recalcular `subtotal` |
+| 6+ (previsto Beta 2.1 Etapa 1) | `venta_observaciones` + `venta_cambios` — ver sección prevista abajo; **aún no en código** |
+
+## Previsto Beta 2.1 (documentación; sin migración en Etapa 0)
+
+Plan: Context `docs/beta-2.1-plan.md`. Nombres finales y CHECKs se fijan en Etapa 1.
+
+### Tabla prevista: `venta_observaciones` (append-only)
+
+| Campo | Rol |
+|---|---|
+| id_observacion | PK |
+| id_venta | FK → `ventas` |
+| texto | Contenido (trim; no vacío) |
+| origen | `durante_venta` \| `posterior` |
+| fecha_creacion | Servidor ISO (mismo estilo que `fecha_venta`) |
+| id_cambio | FK nullable → fila de auditoría que la originó |
+
+### Tabla prevista: `venta_cambios` (auditoría)
+
+| Campo | Rol |
+|---|---|
+| id_cambio | PK |
+| id_venta | FK → `ventas` |
+| fecha_cambio | Servidor |
+| tipo | `creacion` \| `edicion` \| `observacion_posterior` \| (opcional) `observacion_correccion` |
+| antes_json | TEXT JSON nullable (`null` en creación) |
+| despues_json | TEXT JSON (estado tras el evento) |
+
+El JSON de auditoría incluye al menos medio, `valor_total`, líneas snapshot y observaciones relevantes. En creación se guarda `tipo=creacion` con el estado inicial. **No** se muta `fecha_venta` en ediciones. Ventas legado value-only no reciben líneas inventadas.
 
 ## Migración
 

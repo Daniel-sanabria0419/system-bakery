@@ -182,7 +182,29 @@ Requisitos y etapas:
 - `docs/beta-2.0.5/stages.md`
 - Diseño Context: `docs/beta-2.0.5-promo-por-producto-y-grupo.md`
 
-Preservar Beta 2.0.5. **No** features de Beta 2.1+ hasta que estén en los requisitos.
+Preservar Beta 2.0.5. **No** features de Beta 2.1+ hasta que estén en los requisitos (la sección Beta 2.1 siguiente fija ese alcance).
+
+## Beta 2.1
+
+**Beta 2.1 en curso** (Etapa 0: alcance documentado). Sobre 2.0.x: historial y detalle de ventas, observaciones (durante / posterior con trazabilidad), edición solo en la primera hora (regla en backend), auditoría/versionado. Sin implementar schema/API/UI en Etapa 0.
+
+Alcance:
+
+1. Historial (fecha, hora, total, productos o legado, medio) y detalle con líneas snapshot + observaciones.
+2. Observaciones append-only: durante la venta y posteriores.
+3. `PUT` de edición ≤ 1 h (reloj servidor); recálculo con promo vigente; `fecha_venta` inmutable; legado value-only sin inventar líneas.
+4. Auditoría de creación y cada edición (antes/después).
+5. Menú Historial; UI de listado/detalle/edición/obs sin lógica de negocio en Qt.
+
+Requisitos y etapas:
+
+- `docs/product-requirements.md` (sección Beta 2.1)
+- `docs/architecture.md`
+- `docs/database.md`
+- `docs/beta-2.1/stages.md`
+- Plan Context: `docs/beta-2.1-plan.md`
+
+Preservar Beta 2.0.x. **No** features de Beta 2.2+ hasta que estén en los requisitos. Etapa 0 = solo documentación.
 
 ## Fuera del alcance
 
@@ -195,8 +217,7 @@ NO implementar, ni anticipar en una versión que todavía no está especificada:
 - Proveedores / compras a proveedores.
 - Usuarios / roles / login.
 - Reportes.
-- Historial avanzado de ventas.
-- Edición / eliminación / corrección de ventas.
+- Eliminación física / anulación contable compleja de ventas (la edición acotada ≤ 1 h y el historial sí están en Beta 2.1).
 - Múltiples precios o variantes de producto.
 - CRUD de categorías en UI (en Beta 2 solo semilla + listado).
 - Sincronización con la nube.
@@ -204,7 +225,7 @@ NO implementar, ni anticipar en una versión que todavía no está especificada:
 - IA dentro de la aplicación.
 - Funcionalidades no especificadas en los documentos de requisitos.
 
-**Nota:** el catálogo de **productos** y las **líneas de venta** sí están en alcance de Beta 2.0 (ver sección anterior). Lo demás de la lista histórica sigue fuera.
+**Nota:** el catálogo de **productos** y las **líneas de venta** sí están en alcance de Beta 2.0 (ver sección anterior). **Historial, detalle, observaciones, edición ≤ 1 h y auditoría** pasan a estar en alcance de **Beta 2.1** (ver sección anterior). Lo demás de la lista histórica sigue fuera.
 
 Si una funcionalidad no está especificada en los documentos de requisitos, NO debe implementarse.
 

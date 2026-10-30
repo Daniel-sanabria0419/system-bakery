@@ -6,10 +6,12 @@ los imports históricos (`from bakery.desktop.ui import ...`).
 
 from bakery.desktop.dialogs import (
     AddObservacionDialog,
+    ConfirmEditDialog,
     ConfirmSaleDialog,
     ProductFormDialog,
     SaleSavedDialog,
     SelectPaymentMethodDialog,
+    SelectProductDialog,
 )
 from bakery.desktop.historial_page import HistorialPage
 from bakery.desktop.main_window import MainWindow
@@ -19,6 +21,7 @@ from bakery.desktop.register_sale_page import RegisterSalePage
 
 __all__ = [
     "AddObservacionDialog",
+    "ConfirmEditDialog",
     "ConfirmSaleDialog",
     "HistorialPage",
     "MainWindow",
@@ -28,4 +31,5 @@ __all__ = [
     "RegisterSalePage",
     "SaleSavedDialog",
     "SelectPaymentMethodDialog",
+    "SelectProductDialog",
 ]

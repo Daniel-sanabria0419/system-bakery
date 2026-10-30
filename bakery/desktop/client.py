@@ -102,6 +102,24 @@ class ApiClient:
         raise_for_api_status(response)
         return response.json()
 
+    def update_sale(
+        self,
+        id_venta: str,
+        *,
+        id_medio_pago: int,
+        lineas: List[Mapping[str, Any]],
+        observacion_venta: Optional[str] = None,
+    ) -> Mapping[str, Any]:
+        payload: dict = {
+            "id_medio_pago": id_medio_pago,
+            "lineas": list(lineas),
+        }
+        if observacion_venta is not None:
+            payload["observacion_venta"] = observacion_venta
+        response = self._request("PUT", f"/ventas/{id_venta}", json=payload)
+        raise_for_api_status(response)
+        return response.json()
+
     def list_categories(self) -> List[Mapping[str, Any]]:
         response = self._request("GET", "/categorias")
         raise_for_api_status(response)

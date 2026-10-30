@@ -127,7 +127,7 @@ Detalle de etapas: `docs/beta-2.0.1/stages.md`. Regresión: `docs/beta-2.0.1/reg
 - Cantidades siempre enteras; valores inválidos redondean **hacia arriba** (ceil); el usuario ve el resultado antes de Agregar.
 - `+/-` recalcula cantidad y subtotal (promo solo si queda múltiplo de 7).
 - Otras categorías: por unidades; sin promo Pan pequeño.
-- En `venta_lineas`, `precio_aplicado` = unitario de lista ($300); el `subtotal` puede ser distinto de `precio_aplicado × cantidad` cuando aplica la promo.
+- En `venta_lineas`, `precio_aplicado` = unitario de lista ($300). En ventas nuevas, `subtotal` = `cantidad × precio_aplicado` y `total` es el monto cobrado (puede ser menor si hay promo).
 
 ## UI catálogo / imágenes / formularios
 
@@ -169,7 +169,7 @@ Cada producto tiene **un único precio actual**. Sin variantes ni listas de prec
 ## Registrar venta (vigente)
 
 - Catálogo de productos **activos** (por categoría) en el panel de venta (`#future_panel`; nombre legado; es el panel de catálogo).
-- Cantidad por línea; subtotal = precio × cantidad en el caso general; **excepción Beta 2.0.1:** Pan pequeño puede tener subtotal de promo (ver sección Pan pequeño). Total = suma de subtotales (siempre recalculado en backend).
+- Cantidad por línea. En ventas nuevas el backend calcula `subtotal` = `cantidad × precio_aplicado` y `total` = monto cobrado de la línea (promo por línea, o el mismo importe si no hay descuento). `valor_total` = suma de `total`. El cliente no envía `subtotal` ni `total`.
 - Calculadora: dígitos locales. **Vigente (2.0.2+):** sin producto seleccionado, filtran la grilla por **prefijo** de precio (`candidates_by_price_prefix`). En 2.0 la búsqueda era exacta; `candidates_by_exact_price` / `GET /productos/activos?precio=` / `find_active_products_by_price` quedan como **legado API/helper** (tests y contrato HTTP); el desktop de cobro **no** los usa.
 - **AGREGAR** exige producto seleccionado; sin selección → rechazo con feedback visible (no se agrega monto suelto).
 - Lista de compra muestra nombre, cantidad y subtotal.

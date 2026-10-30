@@ -237,8 +237,8 @@ def test_register_sale_pan_pequeno_promo_and_normal(tmp_path: Path) -> None:
         lines7 = list_venta_lineas(connection, sale7["id_venta"])
         assert lines7[0]["precio_aplicado"] == 300
         assert lines7[0]["cantidad"] == 7
-        assert lines7[0]["subtotal"] == 2000
-        assert lines7[0]["subtotal"] != 300 * 7
+        assert lines7[0]["subtotal"] == 300 * 7
+        assert lines7[0]["total"] == 2000
 
         sale8 = register_sale(
             connection,
@@ -254,6 +254,7 @@ def test_register_sale_pan_pequeno_promo_and_normal(tmp_path: Path) -> None:
         assert sale8["valor_total"] == 2400
         lines8 = list_venta_lineas(connection, sale8["id_venta"])
         assert lines8[0]["subtotal"] == 2400
+        assert lines8[0]["total"] == 2400
     finally:
         connection.close()
 
@@ -289,7 +290,8 @@ def test_pan_pequeno_snapshot_stable_after_rename(tmp_path: Path) -> None:
         lines = list_venta_lineas(connection, sale["id_venta"])
         assert lines[0]["nombre_producto"] == "Pan rollo"
         assert lines[0]["precio_aplicado"] == 300
-        assert lines[0]["subtotal"] == 2000
+        assert lines[0]["subtotal"] == 2100
+        assert lines[0]["total"] == 2000
     finally:
         connection.close()
 

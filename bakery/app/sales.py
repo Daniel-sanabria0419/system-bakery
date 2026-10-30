@@ -46,7 +46,7 @@ def register_sale(
 
     resolved = _resolve_lines_with_promociones(connection, lineas)
 
-    valor_total = sum(line["subtotal"] for line in resolved)
+    valor_total = sum(line["total"] for line in resolved)
     if valor_total <= 0:
         raise SaleValidationError("El valor debe ser un entero mayor que 0.")
 
@@ -69,6 +69,7 @@ def register_sale(
                 precio_aplicado=line["precio_aplicado"],
                 cantidad=line["cantidad"],
                 subtotal=line["subtotal"],
+                total=line["total"],
                 id_promocion=line.get("id_promocion"),
                 nombre_promocion=line.get("nombre_promocion"),
             )
@@ -133,17 +134,21 @@ def _resolve_lines_with_promociones(
         }
         for line in pending
     ]
-    computed = compute_cart_line_subtotals(line_maps, promos_by_id=promos_by_id)
+    charged_amounts = compute_cart_line_subtotals(
+        line_maps, promos_by_id=promos_by_id
+    )
 
     resolved: List[Mapping] = []
-    for line, subtotal in zip(pending, computed):
+    for line, charged in zip(pending, charged_amounts):
+        list_subtotal = line["cantidad"] * line["precio_aplicado"]
         resolved.append(
             {
                 "id_producto": line["id_producto"],
                 "nombre_producto": line["nombre_producto"],
                 "precio_aplicado": line["precio_aplicado"],
                 "cantidad": line["cantidad"],
-                "subtotal": subtotal,
+                "subtotal": list_subtotal,
+                "total": charged,
                 "id_promocion": line["promocion_id"],
                 "nombre_promocion": line["nombre_promocion"],
             }

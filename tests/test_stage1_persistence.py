@@ -459,8 +459,8 @@ def test_venta_linea_checks_and_foreign_keys(tmp_path: Path) -> None:
             """
             INSERT INTO venta_lineas (
                 id_venta, id_producto, nombre_producto,
-                precio_aplicado, cantidad, subtotal
-            ) VALUES (?, ?, ?, ?, ?, ?)
+                precio_aplicado, cantidad, subtotal, total
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
@@ -468,6 +468,7 @@ def test_venta_linea_checks_and_foreign_keys(tmp_path: Path) -> None:
                 "Pan de chocolate",
                 5000,
                 2,
+                10000,
                 10000,
             ),
         )
@@ -477,8 +478,8 @@ def test_venta_linea_checks_and_foreign_keys(tmp_path: Path) -> None:
                 """
                 INSERT INTO venta_lineas (
                     id_venta, id_producto, nombre_producto,
-                    precio_aplicado, cantidad, subtotal
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                    precio_aplicado, cantidad, subtotal, total
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
@@ -487,6 +488,7 @@ def test_venta_linea_checks_and_foreign_keys(tmp_path: Path) -> None:
                     5000,
                     0,
                     5000,
+                    5000,
                 ),
             )
         with pytest.raises(sqlite3.IntegrityError):
@@ -494,8 +496,8 @@ def test_venta_linea_checks_and_foreign_keys(tmp_path: Path) -> None:
                 """
                 INSERT INTO venta_lineas (
                     id_venta, id_producto, nombre_producto,
-                    precio_aplicado, cantidad, subtotal
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                    precio_aplicado, cantidad, subtotal, total
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     "missing-sale",
@@ -504,6 +506,25 @@ def test_venta_linea_checks_and_foreign_keys(tmp_path: Path) -> None:
                     5000,
                     1,
                     5000,
+                    5000,
+                ),
+            )
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(
+                """
+                INSERT INTO venta_lineas (
+                    id_venta, id_producto, nombre_producto,
+                    precio_aplicado, cantidad, subtotal, total
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+                    1,
+                    "Pan de chocolate",
+                    5000,
+                    1,
+                    5000,
+                    0,
                 ),
             )
     finally:

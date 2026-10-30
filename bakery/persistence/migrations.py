@@ -16,10 +16,11 @@ from bakery.persistence.schema import (
     migrate_productos_ruta_imagen,
     migrate_promociones_config_slim,
     migrate_venta_lineas_promocion_snapshot,
+    migrate_venta_lineas_total,
 )
 
 # Versión objetivo tras aplicar todas las migraciones listadas abajo.
-CURRENT_SCHEMA_VERSION = 4
+CURRENT_SCHEMA_VERSION = 5
 
 MigrationFn = Callable[[sqlite3.Connection], None]
 
@@ -76,12 +77,18 @@ def _migrate_to_v4(connection: sqlite3.Connection) -> None:
     migrate_promociones_config_slim(connection)
 
 
+def _migrate_to_v5(connection: sqlite3.Connection) -> None:
+    """venta_lineas.total: monto cobrado. Filas viejas copian subtotal."""
+    migrate_venta_lineas_total(connection)
+
+
 # Lista ordenada: (versión destino, función). Se aplica si version actual < destino.
 MIGRATIONS: List[Tuple[int, MigrationFn]] = [
     (1, _migrate_to_v1),
     (2, _migrate_to_v2),
     (3, _migrate_to_v3),
     (4, _migrate_to_v4),
+    (5, _migrate_to_v5),
 ]
 
 

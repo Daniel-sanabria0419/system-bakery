@@ -28,8 +28,8 @@ def test_schema_version_is_3_with_venta_lineas_snapshot(tmp_path: Path) -> None:
     initialize(path)
     connection = connect(path)
     try:
-        assert CURRENT_SCHEMA_VERSION == 4
-        assert get_schema_version(connection) == 4
+        assert CURRENT_SCHEMA_VERSION == 5
+        assert get_schema_version(connection) == 5
         columns = {
             row[1]
             for row in connection.execute(
@@ -68,7 +68,8 @@ def test_register_sale_persists_promo_snapshot(tmp_path: Path) -> None:
         )
         lines = list_venta_lineas(connection, sale["id_venta"])
         assert len(lines) == 1
-        assert lines[0]["subtotal"] == 2000
+        assert lines[0]["subtotal"] == 2100
+        assert lines[0]["total"] == 2000
         assert lines[0]["id_promocion"] == product["promocion_id"]
         assert lines[0]["nombre_promocion"] == NOMBRE_PROMOCION_PAN_PEQUENO
     finally:
@@ -109,7 +110,8 @@ def test_snapshot_stable_after_rename_and_deactivate(tmp_path: Path) -> None:
         lines = list_venta_lineas(connection, sale["id_venta"])
         assert lines[0]["id_promocion"] == promo_id
         assert lines[0]["nombre_promocion"] == NOMBRE_PROMOCION_PAN_PEQUENO
-        assert lines[0]["subtotal"] == 2000
+        assert lines[0]["subtotal"] == 2100
+        assert lines[0]["total"] == 2000
         promo = get_promocion(connection, int(promo_id))
         assert promo is not None
         assert promo["nombre"] == "Promo renombrada"
@@ -211,7 +213,7 @@ def test_migrate_v2_to_v3_adds_snapshot_columns(tmp_path: Path) -> None:
     initialize(path)
     connection = connect(path)
     try:
-        assert get_schema_version(connection) == 4
+        assert get_schema_version(connection) == 5
         columns = {
             row[1]
             for row in connection.execute(

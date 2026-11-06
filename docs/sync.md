@@ -10,7 +10,7 @@ Esto incluye Beta 1, Beta 1.1, Beta 1.2, las **betas 2.0.x** y **Beta 2.1**.
 
 Las ventas (y el catálogo de productos) se almacenan únicamente en SQLite local.
 
-**Ninguna beta 2.0.x ni Beta 2.1 introduce ni modifica sincronización.** Beta 2.0 añadió tablas locales (`categorias`, `productos`, `venta_lineas`) y cambió el contrato local de `POST /ventas`; Beta 2.1 añadirá historial/edición/observaciones/auditoría **solo locales**. Todo sigue offline.
+**Ninguna beta 2.0.x ni Beta 2.1 introduce ni modifica sincronización.** Beta 2.0 añadió tablas locales (`categorias`, `productos`, `venta_lineas`) y cambió el contrato local de `POST /ventas`; Beta 2.1 añadió historial/edición/observaciones/auditoría **solo locales**. Todo sigue offline.
 
 No se debe implementar:
 

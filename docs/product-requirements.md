@@ -17,26 +17,28 @@ Crear una aplicación de escritorio para registrar ventas de una panadería.
 | Beta 2.0.3 | **Terminada** 2026-10-27 (OK final Daniel) | Navegación catálogo Vista A/B; chips más grandes / tipografía editable |
 | Beta 2.0.4 | **Terminada** 2026-10-27 (OK final Daniel) | Migrar Pan pequeño a `promociones` + FK; cobro por FK/grupo |
 | Beta 2.0.5 | **En curso** | Promo `cantidad_por_monto` solo en los nudos de la tabla ceil; el resto × `precio_base` |
-| Beta 2.1 | **En curso** (Etapa 0: alcance documentado) | Historial, detalle, observaciones, edición ≤1 h (backend), auditoría |
+| Beta 2.1 | Implementada (código); cierre documental Etapa 10 | Historial, detalle, observaciones, edición ≤1 h (backend), auditoría |
 
 ---
 
-# Beta 2.1 (en curso — alcance documentado)
+# Beta 2.1 (implementada — cierre documental Etapa 10)
 
 ## Objetivo
 
 Permitir consultar ventas ya registradas (historial y detalle), anexar observaciones con trazabilidad, y **editar** una venta solo dentro de la primera hora desde `fecha_venta`, con recálculo de totales en el backend y auditoría del original y de cada cambio. Preserva el contrato de cobro Beta 2.0.x (`POST /ventas`, enteros, snapshot, promo por línea, UUID cliente).
 
-Plan autoritativo: Context `docs/beta-2.1-plan.md`. Etapas en repo: `docs/beta-2.1/stages.md`.
+Plan autoritativo: Context `docs/beta-2.1-plan.md`. Etapas: `docs/beta-2.1/stages.md`. Regresión: `docs/beta-2.1/regression-notes.md`. Informe de cierre: Context `docs/beta-2.1-closure.md`.
 
-## Alcance (in)
+**Estado:** etapas 0–10 hechas. **Terminada** solo con OK final de Daniel.
+
+## Alcance (in) — implementado
 
 1. **Historial:** listado de ventas (más recientes primero): fecha, hora, `valor_total`, medio de pago, resumen de productos (o indicador legado value-only).
 2. **Detalle:** cabecera + líneas (snapshot: nombre, cantidad, `precio_aplicado`, `subtotal`, `total`, promo si aplica) + observaciones ordenadas; legado sin líneas muestra mensaje fijo, sin inventar productos.
 3. **Observaciones:** durante la venta (opcional en el registro) y posteriores (siempre permitidas), en tabla append-only con origen distinguible y trazabilidad hacia auditoría.
-4. **Edición ≤ 1 h:** productos, cantidades, medio y observación de venta; ventana **enforced solo en backend** con reloj del servidor local; `fecha_venta` inmutable; total recalculado con promo/precio vigentes del catálogo (misma ruta que el registro).
-5. **Auditoría / versionado:** conservar estado de creación y cada edición (antes/después consultables).
-6. **UI:** menú Historial (o Ventas); listado → detalle → Editar (si editable) / Agregar observación. Sin lógica de negocio en Qt.
+4. **Edición ≤ 1 h:** productos, cantidades, medio y observación de venta; ventana **enforced solo en backend** con reloj del servidor local; `fecha_venta` inmutable; total recalculado con promo/precio vigentes del catálogo (misma ruta que el registro). Criterio: `elapsed < 3600` s.
+5. **Auditoría / versionado:** conservar estado de creación y cada edición (antes/después consultables vía `GET /ventas/{id}/cambios`).
+6. **UI:** menú Historial; listado → detalle → Editar (si `editable`) / Agregar observación. Sin lógica de negocio en Qt.
 
 ## Fuera del alcance de Beta 2.1
 
@@ -54,14 +56,14 @@ No implementar:
 
 ## Criterios de cierre (resumen)
 
-1. Historial muestra fecha, hora, total, productos (o legado), medio.
-2. Detalle muestra líneas, medio, fecha/hora, observaciones.
-3. Observación durante y posterior, distinguibles y trazables.
-4. Edición solo si el backend considera &lt; 1 h desde `fecha_venta`; total con promo vigente por línea.
-5. Tras 1 h: edición rechazada por API; observación posterior permitida.
-6. Auditoría conserva original y cada edición.
-7. Regresión 2.0.x verde; `POST /ventas` idempotente intacto.
-8. Docs alineadas; OK final de Daniel.
+1. Historial muestra fecha, hora, total, productos (o legado), medio. ✓
+2. Detalle muestra líneas, medio, fecha/hora, observaciones. ✓
+3. Observación durante y posterior, distinguibles y trazables. ✓
+4. Edición solo si el backend considera &lt; 1 h desde `fecha_venta`; total con promo vigente por línea. ✓
+5. Tras 1 h: edición rechazada por API; observación posterior permitida. ✓
+6. Auditoría conserva original y cada edición. ✓
+7. Regresión 2.0.x verde; `POST /ventas` idempotente intacto. ✓ (364 passed Etapa 9)
+8. Docs alineadas; OK final de Daniel. (docs Etapa 10; OK pendiente)
 
 ---
 

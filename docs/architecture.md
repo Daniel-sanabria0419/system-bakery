@@ -14,7 +14,7 @@ Beta 1 estableció las capas. Beta 1.1 las reutiliza cambiando el flujo de regis
 
 **Beta 2.0.3** añade navegación de catálogo en dos vistas (categorías ↔ productos + Volver) y métricas/tipografía de chips editables en `style.py` — sin cambiar API ni promo.
 
-**Beta 2.1** (alcance documentado; implementación por etapas) añade historial/detalle de ventas, observaciones append-only, edición dentro de 1 h con recálculo en `app`, y auditoría — sin romper `POST /ventas` ni el cobro 2.0.x. Sigue offline.
+**Beta 2.1** (implementada; cierre documental Etapa 10) añade historial/detalle de ventas, observaciones append-only, edición dentro de 1 h con recálculo en `app`, y auditoría — sin romper `POST /ventas` ni el cobro 2.0.x. Sigue offline.
 
 ## Arquitectura general
 
@@ -41,11 +41,11 @@ SQLite
 
 | Capa | Paquete | Responsabilidad |
 |---|---|---|
-| Desktop | `bakery/desktop` | Pantallas (menú, productos, registrar venta), navegación, diálogos; sin reglas de negocio. Módulos: `main_window`, `menu_page`, `register_sale_page`, `products_page`, `dialogs`, `ui_helpers`; `ui.py` reexporta la API pública |
-| Cliente HTTP | `bakery/desktop/client.py` | Medios, productos/categorías, `POST /ventas` con líneas; `GET /health` al arranque |
+| Desktop | `bakery/desktop` | Pantallas (menú, productos, registrar venta, historial), navegación, diálogos; sin reglas de negocio. Módulos: `main_window`, `menu_page`, `register_sale_page`, `products_page`, `historial_page`, `dialogs`, `ui_helpers`; `ui.py` reexporta la API pública |
+| Cliente HTTP | `bakery/desktop/client.py` | Medios, productos/categorías, `POST /ventas`; list/get/update venta; obs posterior; `GET /health` al arranque |
 | API | `bakery/api` | Rutas delgadas; validación HTTP |
-| Aplicación | `bakery/app` | Calculadora, compra con líneas (`PurchaseLine` / `SaleDraft`), productos, `promotions` (cobro), shim `pan_pequeno_pricing`, imágenes, `register_sale`, formato COP |
-| Persistencia | `bakery/persistence` | Schema SQLite, repositorios (medios, productos, ventas + líneas) |
+| Aplicación | `bakery/app` | Calculadora, compra con líneas (`PurchaseLine` / `SaleDraft`), productos, `promotions` (cobro), shim `pan_pequeno_pricing`, imágenes, `register_sale` / `update_sale` / list-detail, formato COP |
+| Persistencia | `bakery/persistence` | Schema SQLite, repositorios (medios, productos, ventas + líneas + obs + cambios) |
 
 ## Flujo desktop (Beta 2.0)
 
@@ -229,20 +229,33 @@ Detalle: `docs/beta-2.0.2/stages.md`.
 
 Detalle: `docs/beta-2.0.3/stages.md`.
 
-## Beta 2.1 (resumen — alcance; sin código en Etapa 0)
+## Beta 2.1 (resumen — implementado)
 
-Capas previstas (detalle en Context `docs/beta-2.1-plan.md` y `docs/beta-2.1/stages.md`):
+Detalle: Context `docs/beta-2.1-plan.md`, `docs/beta-2.1/stages.md`, `docs/beta-2.1-closure.md`.
 
-| Capa | Cambio previsto |
+| Capa | Cambio |
 |---|---|
-| `persistence` | Listado/detalle de ventas; tablas `venta_observaciones` y `venta_cambios` (nombres finales en Etapa 1); helpers de ventana editable |
-| `app` | `update_sale`; `is_sale_editable` con reloj inyectable; obs + auditoría en create/edit; reutilizar `_resolve_lines_with_promociones` |
-| `api` | `GET /ventas`, `GET /ventas/{id}` (+ cambios); `POST /ventas/{id}/observaciones`; `PUT /ventas/{id}`; flag `editable` solo servidor |
-| `desktop` | Menú Historial; listado/detalle/edición/obs; nuevos métodos en `ApiClient`; sin totales de negocio en Qt |
+| `persistence` | Schema v6: `venta_observaciones`, `venta_cambios`; `list_ventas` / `get_sale_detail` / `sale_is_editable` / insert obs-cambio / `update_sale_header` + replace líneas |
+| `app` | `list_sales`, `get_sale_detail`, `register_sale` (+ obs + `creacion`), `update_sale`, `add_sale_observacion`, `list_sale_cambios`; misma `_resolve_lines_with_promociones` |
+| `api` | `GET /ventas`, `GET /ventas/{id}`, `GET /ventas/{id}/cambios`; `POST /ventas/{id}/observaciones`; `PUT /ventas/{id}` (409 fuera de ventana); `editable` solo servidor |
+| `desktop` | Menú Historial; `HistorialPage` (listado/detalle/edición/obs); `ApiClient.list_sales` / `get_sale` / `update_sale` / `add_sale_observacion`; sin totales de negocio en Qt |
+
+Flujo desktop añadido:
+
+```text
+Menú principal
+  - Registrar venta
+  - Productos
+  - Historial
+      |
+      +-- listado (fecha, hora, total, medio, ítems / legado)
+      +-- detalle (líneas snapshot, obs, Editar si editable, Agregar observación)
+      +-- edición ≤ 1 h (líneas/cantidades/medio/obs; total lo confirma el backend)
+```
 
 Reglas de diseño:
 
-1. Reloj de la ventana de 1 h = proceso API local; ignorar timestamps del cliente.
+1. Reloj de la ventana de 1 h = proceso API local (`elapsed < 3600`); ignorar timestamps del cliente.
 2. `POST /ventas` sigue siendo create idempotente; edición = `PUT` (no reutilizar POST).
 3. `fecha_venta`, `caja`, `tendero`, `id_venta` inmutables en edición.
 4. Observaciones append-only; legado value-only: historial/detalle sí, sin inventar líneas.

@@ -183,6 +183,46 @@ QPushButton[class="products-row-button"]:disabled {
     color: __COLOR_DISABLED_TEXT__;
 }
 
+/* Historial listado (E) — crema + filas blancas; no reusar payment-method-button. */
+QWidget#historial_page,
+QWidget#historial_list_page,
+QWidget#historial_list,
+QScrollArea#historial_list_scroll,
+QScrollArea#historial_list_scroll > QWidget {
+    background-color: __COLOR_PAGE_BG__;
+    color: __COLOR_TEXT_STRONG__;
+    border: none;
+}
+
+QLabel#historial_empty[class="historial-empty-text"],
+QLabel[class="historial-empty-text"] {
+    color: __COLOR_TEXT__;
+    font-size: __FONT_SIZE_BODY__px;
+    background-color: transparent;
+    padding: 12px 4px;
+}
+
+QPushButton[class="historial-row-button"] {
+    background-color: __COLOR_SURFACE__;
+    color: __COLOR_TEXT_STRONG__;
+    padding: 12px 16px 12px 12px;
+    font-size: __FONT_SIZE_BODY__px;
+    font-weight: bold;
+    text-align: left;
+    border: 1px solid __COLOR_BORDER__;
+    border-radius: __RADIUS_BASE__px;
+}
+
+QPushButton[class="historial-row-button"]:pressed {
+    background-color: __COLOR_BORDER__;
+    color: __COLOR_TEXT_STRONG__;
+}
+
+QPushButton[class="historial-row-button"]:disabled {
+    background-color: __COLOR_DISABLED_BG__;
+    color: __COLOR_DISABLED_TEXT__;
+}
+
 QLabel[class="dialog-text"] {
     color: __COLOR_TEXT__;
     font-size: 28px;

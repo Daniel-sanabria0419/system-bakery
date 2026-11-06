@@ -82,6 +82,8 @@ PRODUCTS_LIST_BACKGROUND = "#FFFFFF"
 PRODUCTS_ROW_BUTTON_MIN_WIDTH = 120
 PRODUCTS_ROW_BUTTON_MIN_HEIGHT = 64
 PRODUCTS_TOOLBAR_BUTTON_MIN_HEIGHT = 64
+# Listado Historial (rediseño visual Etapa 2): filas claras táctiles.
+HISTORIAL_ROW_MIN_HEIGHT = 72
 PRODUCT_FORM_FIELD_TEXT = "#000000"
 # Placeholder más oscuro que el fondo de la app (#F5F0E8) para diferenciarse.
 PRODUCT_FORM_PLACEHOLDER = "#5C5346"

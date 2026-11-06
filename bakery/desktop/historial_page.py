@@ -155,6 +155,7 @@ class HistorialPage(QWidget):
 
         self._empty_label = QLabel("No hay ventas registradas.")
         self._empty_label.setObjectName("historial_empty")
+        style.apply_class(self._empty_label, "historial-empty-text")
         self._empty_label.setWordWrap(True)
         self._empty_label.hide()
         layout.addWidget(self._empty_label)
@@ -324,12 +325,11 @@ class HistorialPage(QWidget):
 
         row = QPushButton()
         row.setObjectName(f"historial_row_{id_venta}")
-        style.apply_class(row, "payment-method-button")
-        row.setMinimumHeight(style.PAYMENT_METHOD_BUTTON_MIN_HEIGHT)
+        style.apply_class(row, "historial-row-button")
+        row.setMinimumHeight(style.HISTORIAL_ROW_MIN_HEIGHT)
         parts = [p for p in (fecha, hora) if p]
         when = " ".join(parts) if parts else id_venta
         row.setText(f"{when}  ·  {total}  ·  {medio}  ·  {resumen}")
-        row.setStyleSheet("text-align: left; padding-left: 12px;")
         row.clicked.connect(
             lambda checked=False, sale_id=id_venta: self._open_detail(sale_id)
         )

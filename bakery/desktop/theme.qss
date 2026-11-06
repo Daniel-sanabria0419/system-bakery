@@ -1,26 +1,36 @@
-/* Tema visual del desktop — edita colores y tipografía aquí. */
+/* Tema visual del desktop — edita colores y tipografía aquí.
+ *
+ * Tokens (Etapa 0 rediseño visual): placeholders COLOR / RADIUS / FONT
+ * sustituidos desde style.py (load_theme_qss).
+ * Menú (menu-button) y formularios producto (product-form-*) quedan con
+ * valores fijos — no usar placeholders ahí.
+ *
+ * Reserva etapas 1+ (sin efecto visual aún): radio __RADIUS_BASE__px,
+ * body __FONT_SIZE_BODY__px, title __FONT_SIZE_TITLE__px,
+ * borde __COLOR_BORDER__.
+ */
 
 QMainWindow,
 QDialog{
-    background-color: #F5F0E8;
+    background-color: __COLOR_PAGE_BG__;
     
 }
 
 
 QWidget#purchase_panel {
-    background-color: #FFFFFF;
+    background-color: __COLOR_SURFACE__;
 }
 
 QFrame#total_separator {
-    color: #000000;
-    background-color: #000000;
+    color: __COLOR_TEXT_STRONG__;
+    background-color: __COLOR_TEXT_STRONG__;
     min-height: 2px;
     max-height: 2px;
 }
 
 QPushButton[class="back-button"] {
-    background-color: #5ac4f6;
-    color: #FFFFFF;
+    background-color: __COLOR_ACCENT_CYAN__;
+    color: __COLOR_TEXT_ON_DARK__;
     font-size: 30px;
     font-weight: bold;
     min-width: 72px;
@@ -28,6 +38,16 @@ QPushButton[class="back-button"] {
     padding: 4px 8px;
 }
 
+QPushButton[class="back-button"]:pressed {
+    background-color: __COLOR_ACCENT_CYAN_PRESSED__;
+}
+
+QPushButton[class="back-button"]:disabled {
+    background-color: __COLOR_DISABLED_BG__;
+    color: __COLOR_DISABLED_TEXT__;
+}
+
+/* Menú principal — INTACTO (no tokens / no :pressed aquí). */
 QPushButton[class="menu-button"] {
     background-color: #2E7D32;
     color: #FFFFFF;
@@ -35,35 +55,71 @@ QPushButton[class="menu-button"] {
 }
 
 QPushButton[class="payment-button"] {
-    background-color: #9E9E9E;
-    color: #FFFFFF;
+    background-color: __COLOR_PAYMENT_IDLE__;
+    color: __COLOR_TEXT_ON_DARK__;
     padding: 12px;
     font-size: 18px;
     font-weight: bold;
+}
+
+QPushButton[class="payment-button"]:pressed {
+    background-color: __COLOR_PAYMENT_IDLE_PRESSED__;
+}
+
+QPushButton[class="payment-button"]:disabled {
+    background-color: __COLOR_DISABLED_BG__;
+    color: __COLOR_DISABLED_TEXT__;
 }
 
 /* Acciones cobro 2.0.6 — colores desde style.py (load_theme_qss). */
 QPushButton[class="pagar-button"] {
     background-color: __PAGAR_BUTTON_COLOR__;
-    color: #FFFFFF;
+    color: __COLOR_TEXT_ON_DARK__;
     padding: 12px;
     font-size: 20px;
     font-weight: bold;
 }
 
+QPushButton[class="pagar-button"]:pressed {
+    background-color: __COLOR_ACCENT_CYAN_PRESSED__;
+}
+
+QPushButton[class="pagar-button"]:disabled {
+    background-color: __COLOR_DISABLED_BG__;
+    color: __COLOR_DISABLED_TEXT__;
+}
+
 QPushButton[class="borrar-todo-button"] {
     background-color: __BORRAR_TODO_BUTTON_COLOR__;
-    color: #FFFFFF;
+    color: __COLOR_TEXT_ON_DARK__;
     padding: 12px;
     font-size: 18px;
     font-weight: bold;
 }
 
+QPushButton[class="borrar-todo-button"]:pressed {
+    background-color: __COLOR_DESTRUCTIVE_PRESSED__;
+}
+
+QPushButton[class="borrar-todo-button"]:disabled {
+    background-color: __COLOR_DISABLED_BG__;
+    color: __COLOR_DISABLED_TEXT__;
+}
+
 QPushButton[class="payment-method-button"] {
-    background-color: #1A1A1A;
-    color: #FFFFFF;
+    background-color: __COLOR_BUTTON_DARK__;
+    color: __COLOR_TEXT_ON_DARK__;
     padding: 16px 20px;
     font-size: 18px;
+}
+
+QPushButton[class="payment-method-button"]:pressed {
+    background-color: __COLOR_BUTTON_DARK_PRESSED__;
+}
+
+QPushButton[class="payment-method-button"]:disabled {
+    background-color: __COLOR_DISABLED_BG__;
+    color: __COLOR_DISABLED_TEXT__;
 }
 
 QWidget#sale_actions_panel {
@@ -75,27 +131,36 @@ QWidget#products_page,
 QWidget#products_list,
 QScrollArea#products_list_scroll,
 QScrollArea#products_list_scroll > QWidget {
-    background-color: #FFFFFF;
-    color: #000000;
+    background-color: __COLOR_SURFACE__;
+    color: __COLOR_TEXT_STRONG__;
     border: none;
 }
 
 QLabel[class="dialog-text"] {
-    color: #1A1A1A;
+    color: __COLOR_TEXT__;
     font-size: 28px;
     font-weight: bold;
 }
 
 QPushButton[class="dialog-action-button"] {
-    background-color: #1A1A1A;
-    color: #FFFFFF;
+    background-color: __COLOR_BUTTON_DARK__;
+    color: __COLOR_TEXT_ON_DARK__;
     font-size: 22px;
     padding: 12px 24px;
     min-height: 80px;
 }
 
+QPushButton[class="dialog-action-button"]:pressed {
+    background-color: __COLOR_BUTTON_DARK_PRESSED__;
+}
+
+QPushButton[class="dialog-action-button"]:disabled {
+    background-color: __COLOR_DISABLED_BG__;
+    color: __COLOR_DISABLED_TEXT__;
+}
+
 QLabel[class="money-text"] {
-    color: #1A1A1A;
+    color: __COLOR_TEXT__;
 }
 
 /* Footer Subtotal / Descuento / Total (Beta 2.0.6). */
@@ -112,28 +177,28 @@ QLabel#purchase_total[class="money-text"] {
 
 /* Filas de la tabla de compra. */
 QWidget#purchase_list {
-    background-color: #FFFFFF;
-    color: #1A1A1A;
+    background-color: __COLOR_SURFACE__;
+    color: __COLOR_TEXT__;
 }
 
 QScrollArea#purchase_list_scroll > QWidget {
-    background-color: #FFFFFF;
+    background-color: __COLOR_SURFACE__;
 }
 QScrollArea#purchase_list_scroll {
-    background-color: #FFFFFF;
+    background-color: __COLOR_SURFACE__;
     border: none;
 }
 
 QWidget#purchase_table_header QLabel {
-    color: #1A1A1A;
+    color: __COLOR_TEXT__;
     font-size: 14px;
     font-weight: bold;
 }
 
 /* Catálogo venta Beta 2.0.2 — secciones #d7d4ce; no payment-method-button. */
 QWidget#future_panel {
-    background-color: #F5F0E8;
-    color: #000000;
+    background-color: __COLOR_PAGE_BG__;
+    color: __COLOR_TEXT_STRONG__;
     border: none;
 }
 
@@ -146,27 +211,27 @@ QScrollArea#sale_products_scroll,
 QScrollArea#categories_scroll > QWidget,
 QScrollArea#sale_products_scroll > QWidget {
     background-color: #d7d4ce;
-    color: #000000;
+    color: __COLOR_TEXT_STRONG__;
     border: none;
 }
 
 QFrame#catalog_sections_divider {
-    color: #000000;
-    background-color: #000000;
+    color: __COLOR_TEXT_STRONG__;
+    background-color: __COLOR_TEXT_STRONG__;
     min-height: 2px;
     max-height: 2px;
 }
 
 QLabel#categories_caption,
 QLabel#products_caption {
-    color: #000000;
+    color: __COLOR_TEXT_STRONG__;
 }
 
 /* Tipografía: placeholders sustituidos desde style.py (load_theme_qss).
    Chips son QToolButton (CatalogChipButton); no hay QPushButton chip. */
 QToolButton[class="category-chip"] {
-    background-color: #64c466;
-    color: #000000;
+    background-color: __COLOR_CHIP__;
+    color: __COLOR_TEXT_STRONG__;
     font-size: __CATEGORY_CHIP_FONT_SIZE__px;
     font-weight: bold;
     padding: 4px;
@@ -174,12 +239,23 @@ QToolButton[class="category-chip"] {
 }
 
 QToolButton[class="product-chip"] {
-    background-color: #64c466;
-    color: #000000;
+    background-color: __COLOR_CHIP__;
+    color: __COLOR_TEXT_STRONG__;
     font-size: __PRODUCT_CHIP_FONT_SIZE__px;
     font-weight: bold;
     padding: 4px;
     border: none;
+}
+
+QToolButton[class="category-chip"]:pressed,
+QToolButton[class="product-chip"]:pressed {
+    background-color: __COLOR_CHIP_PRESSED__;
+}
+
+QToolButton[class="category-chip"]:disabled,
+QToolButton[class="product-chip"]:disabled {
+    background-color: __COLOR_DISABLED_BG__;
+    color: __COLOR_DISABLED_TEXT__;
 }
 
 QToolButton[class="category-chip-selected"] {
@@ -200,6 +276,11 @@ QToolButton[class="product-chip-selected"] {
     border: 2px solid #1B5E20;
 }
 
+QToolButton[class="category-chip-selected"]:pressed,
+QToolButton[class="product-chip-selected"]:pressed {
+    background-color: __COLOR_CHIP_SELECTED_PRESSED__;
+}
+
 QWidget#selected_product_panel,
 QWidget#quantity_section {
     background-color: transparent;
@@ -212,11 +293,12 @@ QLabel#sale_value_preview,
 QLabel#selected_product_label,
 QLabel#selected_product_image,
 QLabel#sale_feedback {
-    color: #000000;
+    color: __COLOR_TEXT_STRONG__;
 }
 
 
-/* Formularios Crear / Editar producto — mismo lenguaje visual. */
+/* Formularios Crear / Editar producto — mismo lenguaje visual.
+ * INTACTO en Etapa 0: valores fijos (no placeholders de tokens). */
 QDialog#product_form_dialog {
     background-color: #F5F0E8;
 }

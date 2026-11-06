@@ -223,6 +223,95 @@ QPushButton[class="historial-row-button"]:disabled {
     color: __COLOR_DISABLED_TEXT__;
 }
 
+/* Historial detalle (F) — crema + paneles blancos; sin inline font-weight. */
+QWidget#historial_detail_page,
+QWidget#historial_detail_content,
+QScrollArea#historial_detail_scroll,
+QScrollArea#historial_detail_scroll > QWidget {
+    background-color: __COLOR_PAGE_BG__;
+    color: __COLOR_TEXT_STRONG__;
+    border: none;
+}
+
+QLabel#historial_detail_title[class="historial-detail-page-title"],
+QLabel[class="historial-detail-page-title"] {
+    color: __COLOR_TEXT_STRONG__;
+    font-size: __FONT_SIZE_TITLE__px;
+    font-weight: bold;
+    background-color: transparent;
+}
+
+QWidget[class="historial-section"] {
+    background-color: __COLOR_SURFACE__;
+    color: __COLOR_TEXT_STRONG__;
+    border: 1px solid __COLOR_BORDER__;
+    border-radius: __RADIUS_BASE__px;
+}
+
+QLabel[class="historial-section-title"] {
+    color: __COLOR_TEXT_STRONG__;
+    font-size: __FONT_SIZE_TITLE__px;
+    font-weight: bold;
+    background-color: transparent;
+}
+
+QLabel[class="historial-detail-meta"] {
+    color: __COLOR_TEXT__;
+    font-size: __FONT_SIZE_BODY__px;
+    background-color: transparent;
+}
+
+QLabel[class="historial-detail-total"] {
+    color: __COLOR_TEXT_STRONG__;
+    font-size: __FONT_SIZE_TITLE__px;
+    font-weight: bold;
+    background-color: transparent;
+}
+
+QLabel[class="historial-detail-body"] {
+    color: __COLOR_TEXT__;
+    font-size: __FONT_SIZE_BODY__px;
+    background-color: transparent;
+}
+
+QPushButton[class="historial-detail-primary-button"] {
+    background-color: #2E7D32;
+    color: #FFFFFF;
+    padding: 12px 24px;
+    font-size: __FONT_SIZE_BODY__px;
+    font-weight: bold;
+    border: none;
+    border-radius: __RADIUS_BASE__px;
+}
+
+QPushButton[class="historial-detail-primary-button"]:pressed {
+    background-color: __COLOR_ACCENT_GREEN_PRESSED__;
+}
+
+QPushButton[class="historial-detail-primary-button"]:disabled {
+    background-color: __COLOR_DISABLED_BG__;
+    color: __COLOR_DISABLED_TEXT__;
+}
+
+QPushButton[class="historial-detail-secondary-button"] {
+    background-color: __COLOR_BUTTON_SECONDARY__;
+    color: __COLOR_TEXT_ON_DARK__;
+    padding: 12px 24px;
+    font-size: __FONT_SIZE_BODY__px;
+    font-weight: bold;
+    border: none;
+    border-radius: __RADIUS_BASE__px;
+}
+
+QPushButton[class="historial-detail-secondary-button"]:pressed {
+    background-color: __COLOR_BUTTON_SECONDARY_PRESSED__;
+}
+
+QPushButton[class="historial-detail-secondary-button"]:disabled {
+    background-color: __COLOR_DISABLED_BG__;
+    color: __COLOR_DISABLED_TEXT__;
+}
+
 QLabel[class="dialog-text"] {
     color: __COLOR_TEXT__;
     font-size: 28px;

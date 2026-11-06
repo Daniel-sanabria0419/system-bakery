@@ -32,7 +32,7 @@ Preservar Beta 2.0.x. Comando canónico de pruebas:
 | 7 | Auditoría completa create/edit | Hecha | #74 |
 | 8 | Desktop edición + obs posterior | Hecha | #75 |
 | 9 | Regresión Beta 2.0.x | Hecha | #76 |
-| 10 | Docs cierre | Hecha (pendiente OK final Daniel) | (este PR) |
+| 10 | Docs cierre | Hecha (pendiente OK final Daniel) | #77 |
 
 ## Resumen por etapa
 

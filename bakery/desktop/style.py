@@ -27,8 +27,21 @@ PURCHASE_PANEL_STRETCH = 1
 # Catálogo vs acciones en la columna derecha (acciones no se encogen).
 CATALOG_SECTION_STRETCH = 1
 ACTIONS_PANEL_STRETCH = 0
-ACTION_BUTTON_MIN_HEIGHT = 64
+# Acciones Medio / Borrar todo / Pagar (solo cobro vía _apply_action_button_size).
+ACTION_BUTTON_MIN_HEIGHT = 72
 ACTION_BUTTON_MIN_WIDTH = 120
+
+# Registrar venta (rediseño visual Etapa 4): márgenes por página.
+# No subir PAGE_MARGIN/PAGE_SPACING (compartidos) ni MENU_MARGIN.
+REGISTER_SALE_PAGE_MARGIN = 12
+REGISTER_SALE_PAGE_SPACING = 10
+REGISTER_SALE_PANEL_MARGIN = 16
+REGISTER_SALE_PANEL_SPACING = 10
+REGISTER_SALE_CATALOG_MARGIN = 12
+REGISTER_QTY_BUTTON_MIN_WIDTH = 56
+REGISTER_QTY_BUTTON_MIN_HEIGHT = 56
+REGISTER_DELETE_BUTTON_SIZE = 56
+REGISTER_AGREGAR_MIN_HEIGHT = 56
 
 # Colores de acciones (mockup 2.0.6) — también en theme.qss
 PAGAR_BUTTON_COLOR = "#5ac4f6"

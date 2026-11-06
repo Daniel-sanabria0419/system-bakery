@@ -17,8 +17,16 @@ QDialog{
 }
 
 
+/* Registrar venta (B) — paneles con radio/borde (Etapa 4). */
+QWidget#register_sale_page {
+    background-color: __COLOR_PAGE_BG__;
+    color: __COLOR_TEXT_STRONG__;
+}
+
 QWidget#purchase_panel {
     background-color: __COLOR_SURFACE__;
+    border: 1px solid __COLOR_BORDER__;
+    border-radius: __RADIUS_BASE__px;
 }
 
 QFrame#total_separator {
@@ -34,8 +42,11 @@ QPushButton[class="back-button"] {
     font-size: 30px;
     font-weight: bold;
     min-width: 72px;
-    min-height: 20px;
+    /* Alineado a BACK_BUTTON_MIN_HEIGHT (style.py); border:none no debe bajarlo. */
+    min-height: 29px;
     padding: 4px 8px;
+    border: none;
+    border-radius: __RADIUS_BASE__px;
 }
 
 QPushButton[class="back-button"]:pressed {
@@ -60,6 +71,8 @@ QPushButton[class="payment-button"] {
     padding: 12px;
     font-size: 18px;
     font-weight: bold;
+    border: none;
+    border-radius: __RADIUS_BASE__px;
 }
 
 QPushButton[class="payment-button"]:pressed {
@@ -78,6 +91,8 @@ QPushButton[class="pagar-button"] {
     padding: 12px;
     font-size: 20px;
     font-weight: bold;
+    border: none;
+    border-radius: __RADIUS_BASE__px;
 }
 
 QPushButton[class="pagar-button"]:pressed {
@@ -95,6 +110,8 @@ QPushButton[class="borrar-todo-button"] {
     padding: 12px;
     font-size: 18px;
     font-weight: bold;
+    border: none;
+    border-radius: __RADIUS_BASE__px;
 }
 
 QPushButton[class="borrar-todo-button"]:pressed {
@@ -124,6 +141,29 @@ QPushButton[class="payment-method-button"]:disabled {
 
 QWidget#sale_actions_panel {
     background-color: transparent;
+}
+
+/* ± cantidad y X de fila en cobro: gris secundario (no negro payment-method). */
+QPushButton[class="qty-adjust-button"],
+QPushButton[class="purchase-row-delete-button"] {
+    background-color: __COLOR_BUTTON_SECONDARY__;
+    color: __COLOR_TEXT_ON_DARK__;
+    padding: 8px 12px;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    border-radius: __RADIUS_BASE__px;
+}
+
+QPushButton[class="qty-adjust-button"]:pressed,
+QPushButton[class="purchase-row-delete-button"]:pressed {
+    background-color: __COLOR_BUTTON_SECONDARY_PRESSED__;
+}
+
+QPushButton[class="qty-adjust-button"]:disabled,
+QPushButton[class="purchase-row-delete-button"]:disabled {
+    background-color: __COLOR_DISABLED_BG__;
+    color: __COLOR_DISABLED_TEXT__;
 }
 
 /* Listado Productos (CRUD) — fondo blanco; no tocar payment-method-button. */
@@ -457,7 +497,12 @@ QToolButton[class="product-chip-selected"]:pressed {
     background-color: __COLOR_CHIP_SELECTED_PRESSED__;
 }
 
-QWidget#selected_product_panel,
+QWidget#selected_product_panel {
+    background-color: __COLOR_SURFACE__;
+    border: 1px solid __COLOR_BORDER__;
+    border-radius: __RADIUS_BASE__px;
+}
+
 QWidget#quantity_section {
     background-color: transparent;
 }

@@ -57,7 +57,8 @@ class ProductsPage(QWidget):
 
         new_button = QPushButton("Nuevo producto")
         new_button.setObjectName("new_product_button")
-        style.apply_class(new_button, "menu-button")
+        style.apply_class(new_button, "products-toolbar-button")
+        new_button.setMinimumHeight(style.PRODUCTS_TOOLBAR_BUTTON_MIN_HEIGHT)
         new_button.clicked.connect(self._on_new_product)
         top_bar.addWidget(new_button)
         root.addLayout(top_bar)
@@ -110,12 +111,17 @@ class ProductsPage(QWidget):
             summary = f"{summary} — {descripcion}"
         label = QLabel(summary)
         label.setObjectName(f"product_summary_{product['id_producto']}")
+        style.apply_class(label, "products-row-summary")
         label.setWordWrap(True)
         layout.addWidget(label, stretch=1)
 
         edit = QPushButton("Editar")
         edit.setObjectName(f"edit_product_{product['id_producto']}")
-        style.apply_class(edit, "payment-method-button")
+        style.apply_class(edit, "products-row-button")
+        edit.setMinimumSize(
+            style.PRODUCTS_ROW_BUTTON_MIN_WIDTH,
+            style.PRODUCTS_ROW_BUTTON_MIN_HEIGHT,
+        )
         edit.clicked.connect(
             lambda checked=False, p=product: self._on_edit_product(p)
         )
@@ -135,7 +141,11 @@ class ProductsPage(QWidget):
             toggle.clicked.connect(
                 lambda checked=False, pid=product["id_producto"]: self._on_activate(pid)
             )
-        style.apply_class(toggle, "payment-method-button")
+        style.apply_class(toggle, "products-row-button")
+        toggle.setMinimumSize(
+            style.PRODUCTS_ROW_BUTTON_MIN_WIDTH,
+            style.PRODUCTS_ROW_BUTTON_MIN_HEIGHT,
+        )
         layout.addWidget(toggle)
         return row
 

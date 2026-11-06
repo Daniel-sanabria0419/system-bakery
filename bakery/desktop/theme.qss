@@ -136,6 +136,53 @@ QScrollArea#products_list_scroll > QWidget {
     border: none;
 }
 
+/* Etapa 1: resumen de fila legible (texto oscuro sobre blanco). */
+QLabel[class="products-row-summary"] {
+    color: __COLOR_TEXT_STRONG__;
+    font-size: __FONT_SIZE_BODY__px;
+    background-color: transparent;
+}
+
+/* Toolbar «Nuevo producto»: verde propio (no acoplar a menu-button). */
+QPushButton[class="products-toolbar-button"] {
+    background-color: #2E7D32;
+    color: #FFFFFF;
+    padding: 12px 24px;
+    font-size: __FONT_SIZE_BODY__px;
+    font-weight: bold;
+    border: none;
+    border-radius: __RADIUS_BASE__px;
+}
+
+QPushButton[class="products-toolbar-button"]:pressed {
+    background-color: __COLOR_ACCENT_GREEN_PRESSED__;
+}
+
+QPushButton[class="products-toolbar-button"]:disabled {
+    background-color: __COLOR_DISABLED_BG__;
+    color: __COLOR_DISABLED_TEXT__;
+}
+
+/* Editar / Activar|Desactivar: gris secundario táctil (no negro de cobro). */
+QPushButton[class="products-row-button"] {
+    background-color: __COLOR_BUTTON_SECONDARY__;
+    color: __COLOR_TEXT_ON_DARK__;
+    padding: 12px 16px;
+    font-size: __FONT_SIZE_BODY__px;
+    font-weight: bold;
+    border: none;
+    border-radius: __RADIUS_BASE__px;
+}
+
+QPushButton[class="products-row-button"]:pressed {
+    background-color: __COLOR_BUTTON_SECONDARY_PRESSED__;
+}
+
+QPushButton[class="products-row-button"]:disabled {
+    background-color: __COLOR_DISABLED_BG__;
+    color: __COLOR_DISABLED_TEXT__;
+}
+
 QLabel[class="dialog-text"] {
     color: __COLOR_TEXT__;
     font-size: 28px;

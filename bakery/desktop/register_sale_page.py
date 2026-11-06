@@ -40,7 +40,6 @@ from bakery.desktop.ui_helpers import (
     _PAYMENT_BUTTON_PLACEHOLDER,
     _apply_action_button_size,
     _apply_catalog_chip_icon,
-    _apply_page_layout,
     _make_separator,
 )
 
@@ -66,6 +65,7 @@ def _format_revalidation_feedback(result: CartRevalidationResult) -> str:
 class RegisterSalePage(QWidget):
     def __init__(self, api_client: ApiClient, on_back=None) -> None:
         super().__init__()
+        self.setObjectName("register_sale_page")
         self._api = api_client
         self._draft = SaleDraft()
         self._payment_methods: List[Mapping] = []
@@ -78,7 +78,14 @@ class RegisterSalePage(QWidget):
         self._catalog_view = "categories"
 
         root = QVBoxLayout(self)
-        _apply_page_layout(root)
+        # Márgenes propios de cobro (Etapa 4); no usar PAGE_MARGIN global.
+        root.setContentsMargins(
+            style.REGISTER_SALE_PAGE_MARGIN,
+            style.REGISTER_SALE_PAGE_MARGIN,
+            style.REGISTER_SALE_PAGE_MARGIN,
+            style.REGISTER_SALE_PAGE_MARGIN,
+        )
+        root.setSpacing(style.REGISTER_SALE_PAGE_SPACING)
 
         top_bar = QHBoxLayout()
         back = QPushButton(_BACK_BUTTON_ARROW)
@@ -96,25 +103,30 @@ class RegisterSalePage(QWidget):
         root.addLayout(top_bar)
 
         columns = QHBoxLayout()
-        columns.setSpacing(style.PAGE_SPACING)
+        columns.setSpacing(style.REGISTER_SALE_PAGE_SPACING)
 
         left = QWidget()
         left.setObjectName("left_column")
         left_layout = QVBoxLayout(left)
         left_layout.setContentsMargins(0, 0, 0, 0)
-        left_layout.setSpacing(style.PAGE_SPACING)
+        left_layout.setSpacing(style.REGISTER_SALE_PAGE_SPACING)
 
         purchase_panel = QWidget()
         purchase_panel.setObjectName("purchase_panel")
         panel_layout = QVBoxLayout(purchase_panel)
-        panel_layout.setContentsMargins(12, 12, 12, 12)
-        panel_layout.setSpacing(8)
+        panel_layout.setContentsMargins(
+            style.REGISTER_SALE_PANEL_MARGIN,
+            style.REGISTER_SALE_PANEL_MARGIN,
+            style.REGISTER_SALE_PANEL_MARGIN,
+            style.REGISTER_SALE_PANEL_MARGIN,
+        )
+        panel_layout.setSpacing(style.REGISTER_SALE_PANEL_SPACING)
 
         header = QWidget()
         header.setObjectName("purchase_table_header")
         header_row = QHBoxLayout(header)
         header_row.setContentsMargins(0, 0, 0, 0)
-        header_row.setSpacing(style.PAGE_SPACING)
+        header_row.setSpacing(style.REGISTER_SALE_PAGE_SPACING)
         for object_name, caption, stretch in (
             ("purchase_header_producto", "Producto", 3),
             ("purchase_header_cantidad", "Cantidad", 1),
@@ -126,7 +138,7 @@ class RegisterSalePage(QWidget):
             style.apply_class(label, "money-text")
             header_row.addWidget(label, stretch=stretch)
         delete_spacer = QLabel("")
-        delete_spacer.setFixedWidth(48)
+        delete_spacer.setFixedWidth(style.REGISTER_DELETE_BUTTON_SIZE)
         header_row.addWidget(delete_spacer)
         panel_layout.addWidget(header)
 
@@ -134,7 +146,7 @@ class RegisterSalePage(QWidget):
         self._purchase_rows_host.setObjectName("purchase_list")
         self._purchase_rows_layout = QVBoxLayout(self._purchase_rows_host)
         self._purchase_rows_layout.setContentsMargins(0, 0, 0, 0)
-        self._purchase_rows_layout.setSpacing(4)
+        self._purchase_rows_layout.setSpacing(style.REGISTER_SALE_PANEL_SPACING)
         self._purchase_rows_layout.addStretch(1)
 
         self._purchase_list_scroll = QScrollArea()
@@ -149,7 +161,7 @@ class RegisterSalePage(QWidget):
         panel_layout.addWidget(_make_separator("total_separator"))
 
         footer = QHBoxLayout()
-        footer.setSpacing(style.PAGE_SPACING)
+        footer.setSpacing(style.REGISTER_SALE_PAGE_SPACING)
         self._purchase_subtotal = QLabel("")
         self._purchase_subtotal.setObjectName("purchase_subtotal")
         style.apply_class(self._purchase_subtotal, "money-text")
@@ -170,12 +182,17 @@ class RegisterSalePage(QWidget):
         selection_panel = QWidget()
         selection_panel.setObjectName("selected_product_panel")
         selection_outer = QVBoxLayout(selection_panel)
-        selection_outer.setContentsMargins(12, 12, 12, 12)
-        selection_outer.setSpacing(style.PAGE_SPACING)
+        selection_outer.setContentsMargins(
+            style.REGISTER_SALE_PANEL_MARGIN,
+            style.REGISTER_SALE_PANEL_MARGIN,
+            style.REGISTER_SALE_PANEL_MARGIN,
+            style.REGISTER_SALE_PANEL_MARGIN,
+        )
+        selection_outer.setSpacing(style.REGISTER_SALE_PANEL_SPACING)
 
         selection_row = QHBoxLayout()
         selection_row.setContentsMargins(0, 0, 0, 0)
-        selection_row.setSpacing(style.PAGE_SPACING)
+        selection_row.setSpacing(style.REGISTER_SALE_PAGE_SPACING)
 
         self._selection_image = QLabel()
         self._selection_image.setObjectName("selected_product_image")
@@ -189,7 +206,7 @@ class RegisterSalePage(QWidget):
 
         info_column = QVBoxLayout()
         info_column.setContentsMargins(0, 0, 0, 0)
-        info_column.setSpacing(style.PAGE_SPACING)
+        info_column.setSpacing(style.REGISTER_SALE_PAGE_SPACING)
         self._selection_label = QLabel("Sin producto seleccionado")
         self._selection_label.setObjectName("selected_product_label")
         self._selection_label.setWordWrap(True)
@@ -211,21 +228,29 @@ class RegisterSalePage(QWidget):
         qty_section.setObjectName("quantity_section")
         qty_section_layout = QVBoxLayout(qty_section)
         qty_section_layout.setContentsMargins(0, 0, 0, 0)
-        qty_section_layout.setSpacing(style.PAGE_SPACING)
+        qty_section_layout.setSpacing(style.REGISTER_SALE_PAGE_SPACING)
         qty_row = QHBoxLayout()
-        qty_row.setSpacing(style.PAGE_SPACING)
+        qty_row.setSpacing(style.REGISTER_SALE_PAGE_SPACING)
         self._quantity_label = QLabel("1")
         self._quantity_label.setObjectName("quantity_label")
         self._quantity_label.setAlignment(Qt.AlignCenter)
         qty_row.addWidget(self._quantity_label)
         minus = QPushButton("−")
         minus.setObjectName("quantity_minus_button")
-        style.apply_class(minus, "payment-method-button")
+        style.apply_class(minus, "qty-adjust-button")
+        minus.setMinimumSize(
+            style.REGISTER_QTY_BUTTON_MIN_WIDTH,
+            style.REGISTER_QTY_BUTTON_MIN_HEIGHT,
+        )
         minus.clicked.connect(self._quantity_minus)
         qty_row.addWidget(minus)
         plus = QPushButton("+")
         plus.setObjectName("quantity_plus_button")
-        style.apply_class(plus, "payment-method-button")
+        style.apply_class(plus, "qty-adjust-button")
+        plus.setMinimumSize(
+            style.REGISTER_QTY_BUTTON_MIN_WIDTH,
+            style.REGISTER_QTY_BUTTON_MIN_HEIGHT,
+        )
         plus.clicked.connect(self._quantity_plus)
         qty_row.addWidget(plus)
         qty_section_layout.addLayout(qty_row)
@@ -233,6 +258,7 @@ class RegisterSalePage(QWidget):
         agregar = QPushButton("Agregar")
         agregar.setObjectName("agregar_button")
         style.apply_class(agregar, "payment-button")
+        agregar.setMinimumHeight(style.REGISTER_AGREGAR_MIN_HEIGHT)
         agregar.clicked.connect(self._on_agregar)
         qty_section_layout.addWidget(agregar)
         qty_section_layout.addStretch(1)
@@ -251,14 +277,24 @@ class RegisterSalePage(QWidget):
         right.setObjectName("future_panel")
         right.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         right_layout = QVBoxLayout(right)
-        right_layout.setContentsMargins(8, 8, 8, 8)
-        right_layout.setSpacing(style.PAGE_SPACING)
+        right_layout.setContentsMargins(
+            style.REGISTER_SALE_CATALOG_MARGIN,
+            style.REGISTER_SALE_CATALOG_MARGIN,
+            style.REGISTER_SALE_CATALOG_MARGIN,
+            style.REGISTER_SALE_CATALOG_MARGIN,
+        )
+        right_layout.setSpacing(style.REGISTER_SALE_PAGE_SPACING)
 
         self._categories_section = QWidget()
         self._categories_section.setObjectName("catalog_categories_section")
         categories_section_layout = QVBoxLayout(self._categories_section)
-        categories_section_layout.setContentsMargins(8, 8, 8, 8)
-        categories_section_layout.setSpacing(style.PAGE_SPACING)
+        categories_section_layout.setContentsMargins(
+            style.REGISTER_SALE_CATALOG_MARGIN,
+            style.REGISTER_SALE_CATALOG_MARGIN,
+            style.REGISTER_SALE_CATALOG_MARGIN,
+            style.REGISTER_SALE_CATALOG_MARGIN,
+        )
+        categories_section_layout.setSpacing(style.REGISTER_SALE_PAGE_SPACING)
         categories_caption = QLabel("Categorías")
         categories_caption.setObjectName("categories_caption")
         categories_section_layout.addWidget(categories_caption)
@@ -281,8 +317,13 @@ class RegisterSalePage(QWidget):
         self._products_section = QWidget()
         self._products_section.setObjectName("catalog_products_section")
         products_section_layout = QVBoxLayout(self._products_section)
-        products_section_layout.setContentsMargins(8, 8, 8, 8)
-        products_section_layout.setSpacing(style.PAGE_SPACING)
+        products_section_layout.setContentsMargins(
+            style.REGISTER_SALE_CATALOG_MARGIN,
+            style.REGISTER_SALE_CATALOG_MARGIN,
+            style.REGISTER_SALE_CATALOG_MARGIN,
+            style.REGISTER_SALE_CATALOG_MARGIN,
+        )
+        products_section_layout.setSpacing(style.REGISTER_SALE_PAGE_SPACING)
         products_caption = QLabel("Productos")
         products_caption.setObjectName("products_caption")
         products_section_layout.addWidget(products_caption)
@@ -304,11 +345,11 @@ class RegisterSalePage(QWidget):
         actions.setObjectName("sale_actions_panel")
         actions.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
         actions_layout = QVBoxLayout(actions)
-        actions_layout.setContentsMargins(0, 8, 0, 0)
-        actions_layout.setSpacing(style.PAGE_SPACING)
+        actions_layout.setContentsMargins(0, style.REGISTER_SALE_PAGE_SPACING, 0, 0)
+        actions_layout.setSpacing(style.REGISTER_SALE_PAGE_SPACING)
 
         actions_row = QHBoxLayout()
-        actions_row.setSpacing(style.PAGE_SPACING)
+        actions_row.setSpacing(style.REGISTER_SALE_PAGE_SPACING)
         self._payment_button = QPushButton(_PAYMENT_BUTTON_PLACEHOLDER)
         self._payment_button.setObjectName("payment_button")
         style.apply_class(self._payment_button, "payment-button")
@@ -701,7 +742,7 @@ class RegisterSalePage(QWidget):
             row.setObjectName(f"purchase_row_{index}")
             row_layout = QHBoxLayout(row)
             row_layout.setContentsMargins(0, 0, 0, 0)
-            row_layout.setSpacing(style.PAGE_SPACING)
+            row_layout.setSpacing(style.REGISTER_SALE_PAGE_SPACING)
 
             producto = QLabel(line.nombre)
             producto.setObjectName(f"purchase_row_{index}_producto")
@@ -730,9 +771,12 @@ class RegisterSalePage(QWidget):
 
             delete = QPushButton("X")
             delete.setObjectName(f"purchase_row_{index}_delete")
-            delete.setFixedSize(48, 48)
+            delete.setFixedSize(
+                style.REGISTER_DELETE_BUTTON_SIZE,
+                style.REGISTER_DELETE_BUTTON_SIZE,
+            )
             delete.setToolTip("Quitar línea")
-            style.apply_class(delete, "payment-method-button")
+            style.apply_class(delete, "purchase-row-delete-button")
             delete.clicked.connect(
                 lambda checked=False, i=index: self._on_remove_line(i)
             )

@@ -188,7 +188,7 @@ class HistorialPage(QWidget):
 
         title = QLabel("Detalle de venta")
         title.setObjectName("historial_detail_title")
-        style.apply_class(title, "dialog-text")
+        style.apply_class(title, "historial-detail-page-title")
         top_bar.addWidget(title)
         top_bar.addStretch(1)
         layout.addLayout(top_bar)
@@ -197,7 +197,7 @@ class HistorialPage(QWidget):
         self._detail_host.setObjectName("historial_detail_content")
         self._detail_layout = QVBoxLayout(self._detail_host)
         self._detail_layout.setContentsMargins(0, 0, 0, 0)
-        self._detail_layout.setSpacing(style.PAGE_SPACING)
+        self._detail_layout.setSpacing(style.HISTORIAL_DETAIL_SECTIONS_GAP)
         self._detail_layout.addStretch(1)
 
         scroll = QScrollArea()
@@ -374,15 +374,34 @@ class HistorialPage(QWidget):
                             child.setObjectName("")
                         nested_widget.deleteLater()
 
+    def _make_detail_section(
+        self, object_name: str
+    ) -> tuple[QWidget, QVBoxLayout]:
+        section = QWidget()
+        section.setObjectName(object_name)
+        style.apply_class(section, "historial-section")
+        layout = QVBoxLayout(section)
+        margin = style.HISTORIAL_DETAIL_SECTION_MARGIN
+        layout.setContentsMargins(margin, margin, margin, margin)
+        layout.setSpacing(style.HISTORIAL_DETAIL_SECTION_SPACING)
+        self._detail_layout.addWidget(section)
+        return section, layout
+
     def _add_detail_label(
-        self, object_name: str, text: str, *, class_name: Optional[str] = None
+        self,
+        object_name: str,
+        text: str,
+        *,
+        class_name: Optional[str] = None,
+        layout: Optional[QVBoxLayout] = None,
     ) -> QLabel:
         label = QLabel(text)
         label.setObjectName(object_name)
         label.setWordWrap(True)
         if class_name:
             style.apply_class(label, class_name)
-        self._detail_layout.addWidget(label)
+        target = layout if layout is not None else self._detail_layout
+        target.addWidget(label)
         return label
 
     def _render_detail(self, detail: Mapping) -> None:
@@ -394,41 +413,52 @@ class HistorialPage(QWidget):
         total = format_cop(int(detail["valor_total"]))
         editable = bool(detail.get("editable"))
 
+        _, header_layout = self._make_detail_section(
+            "historial_detail_header_section"
+        )
         self._add_detail_label(
             "historial_detail_id",
             f"ID: {id_venta}",
-            class_name="dialog-text",
+            class_name="historial-detail-meta",
+            layout=header_layout,
         )
         self._add_detail_label(
             "historial_detail_fecha",
             f"Fecha: {fecha}" + (f"  Hora: {hora}" if hora else ""),
-            class_name="dialog-text",
+            class_name="historial-detail-meta",
+            layout=header_layout,
         )
         self._add_detail_label(
             "historial_detail_medio",
             f"Medio de pago: {medio}",
-            class_name="dialog-text",
+            class_name="historial-detail-meta",
+            layout=header_layout,
         )
         self._add_detail_label(
             "historial_detail_total",
             f"Total: {total}",
-            class_name="dialog-text",
+            class_name="historial-detail-total",
+            layout=header_layout,
         )
 
+        _, products_layout = self._make_detail_section(
+            "historial_detail_products_section"
+        )
         lineas = list(detail.get("lineas") or [])
         if detail.get("es_legado") or not lineas:
             self._add_detail_label(
                 "historial_detail_legado",
                 _LEGADO_SIN_LINEAS,
-                class_name="dialog-text",
+                class_name="historial-detail-body",
+                layout=products_layout,
             )
         else:
-            lines_title = self._add_detail_label(
+            self._add_detail_label(
                 "historial_detail_lineas_title",
                 "Productos",
-                class_name="dialog-text",
+                class_name="historial-section-title",
+                layout=products_layout,
             )
-            lines_title.setStyleSheet("font-weight: bold;")
             for index, line in enumerate(lineas):
                 nombre = str(line.get("nombre_producto") or "")
                 cantidad = int(line.get("cantidad") or 0)
@@ -445,19 +475,26 @@ class HistorialPage(QWidget):
                 self._add_detail_label(
                     f"historial_detail_line_{index}",
                     text,
+                    class_name="historial-detail-body",
+                    layout=products_layout,
                 )
 
+        _, obs_layout = self._make_detail_section(
+            "historial_detail_obs_section"
+        )
         observaciones = list(detail.get("observaciones") or [])
-        obs_title = self._add_detail_label(
+        self._add_detail_label(
             "historial_detail_obs_title",
             "Observaciones",
-            class_name="dialog-text",
+            class_name="historial-section-title",
+            layout=obs_layout,
         )
-        obs_title.setStyleSheet("font-weight: bold;")
         if not observaciones:
             self._add_detail_label(
                 "historial_detail_obs_empty",
                 "Sin observaciones.",
+                class_name="historial-detail-body",
+                layout=obs_layout,
             )
         else:
             for index, obs in enumerate(observaciones):
@@ -469,24 +506,38 @@ class HistorialPage(QWidget):
                     f"historial_detail_obs_{index}",
                     f"[{origen_label}] {texto}"
                     + (f" ({fecha_obs})" if fecha_obs else ""),
+                    class_name="historial-detail-body",
+                    layout=obs_layout,
                 )
 
-        actions = QHBoxLayout()
+        actions_host = QWidget()
+        actions_host.setObjectName("historial_detail_actions_section")
+        style.apply_class(actions_host, "historial-section")
+        actions = QHBoxLayout(actions_host)
+        margin = style.HISTORIAL_DETAIL_SECTION_MARGIN
+        actions.setContentsMargins(margin, margin, margin, margin)
+        actions.setSpacing(style.HISTORIAL_DETAIL_SECTION_SPACING)
         if editable:
             edit = QPushButton("Editar")
             edit.setObjectName("historial_edit_button")
-            style.apply_class(edit, "dialog-action-button")
-            edit.setMinimumHeight(style.DIALOG_ACTION_BUTTON_MIN_HEIGHT)
+            style.apply_class(edit, "historial-detail-primary-button")
+            edit.setMinimumSize(
+                style.HISTORIAL_DETAIL_ACTION_MIN_WIDTH,
+                style.HISTORIAL_DETAIL_ACTION_MIN_HEIGHT,
+            )
             edit.clicked.connect(self._on_edit)
             actions.addWidget(edit)
 
         add_obs = QPushButton("Agregar observación")
         add_obs.setObjectName("historial_add_observacion_button")
-        style.apply_class(add_obs, "dialog-action-button")
-        add_obs.setMinimumHeight(style.DIALOG_ACTION_BUTTON_MIN_HEIGHT)
+        style.apply_class(add_obs, "historial-detail-secondary-button")
+        add_obs.setMinimumSize(
+            style.HISTORIAL_DETAIL_ACTION_MIN_WIDTH,
+            style.HISTORIAL_DETAIL_ACTION_MIN_HEIGHT,
+        )
         add_obs.clicked.connect(self._on_add_observacion)
         actions.addWidget(add_obs)
-        self._detail_layout.addLayout(actions)
+        self._detail_layout.addWidget(actions_host)
 
         self._detail_layout.addStretch(1)
 

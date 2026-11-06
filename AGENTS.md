@@ -186,15 +186,15 @@ Preservar Beta 2.0.5. **No** features de Beta 2.1+ hasta que estén en los requi
 
 ## Beta 2.1
 
-**Beta 2.1 en curso** (Etapa 0: alcance documentado). Sobre 2.0.x: historial y detalle de ventas, observaciones (durante / posterior con trazabilidad), edición solo en la primera hora (regla en backend), auditoría/versionado. Sin implementar schema/API/UI en Etapa 0.
+**Beta 2.1 está implementada en código** (etapas 0–9 vía #67–#76; Etapa 10 = docs de cierre). Sobre 2.0.x: historial y detalle de ventas, observaciones (durante / posterior con trazabilidad), edición solo en la primera hora (regla en backend), auditoría/versionado.
 
-Alcance:
+Alcance implementado:
 
 1. Historial (fecha, hora, total, productos o legado, medio) y detalle con líneas snapshot + observaciones.
-2. Observaciones append-only: durante la venta y posteriores.
-3. `PUT` de edición ≤ 1 h (reloj servidor); recálculo con promo vigente; `fecha_venta` inmutable; legado value-only sin inventar líneas.
-4. Auditoría de creación y cada edición (antes/después).
-5. Menú Historial; UI de listado/detalle/edición/obs sin lógica de negocio en Qt.
+2. Observaciones append-only: durante la venta (`POST /ventas` opcional) y posteriores (`POST /ventas/{id}/observaciones`).
+3. `PUT /ventas/{id}` ≤ 1 h (`elapsed < 3600`, reloj servidor); recálculo con promo vigente; `fecha_venta` inmutable; legado value-only sin inventar líneas.
+4. Auditoría de creación y cada edición (`venta_cambios`; `GET /ventas/{id}/cambios`).
+5. Menú Historial; UI de listado/detalle/edición/obs sin lógica de negocio en Qt (`HistorialPage`).
 
 Requisitos y etapas:
 
@@ -202,9 +202,10 @@ Requisitos y etapas:
 - `docs/architecture.md`
 - `docs/database.md`
 - `docs/beta-2.1/stages.md`
-- Plan Context: `docs/beta-2.1-plan.md`
+- `docs/beta-2.1/regression-notes.md`
+- Plan / cierre Context: `docs/beta-2.1-plan.md`, `docs/beta-2.1-closure.md`
 
-Preservar Beta 2.0.x. **No** features de Beta 2.2+ hasta que estén en los requisitos. Etapa 0 = solo documentación.
+Preservar Beta 2.0.x. **No** features de Beta 2.2+ hasta que estén en los requisitos. Cierre formal de versión = OK final de Daniel.
 
 ## Fuera del alcance
 

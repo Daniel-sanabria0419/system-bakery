@@ -20,7 +20,7 @@ Las tablas de catálogo y líneas (`categorias`, `productos`, `venta_lineas`) se
 - **Beta 2.0.4 Etapa 2:** seed de promo canónica Pan pequeño + backfill de `promocion_id` en productos de esa categoría.
 - **Beta 2.0.4 cutover + cierre:** cobro por FK/grupo; `venta_lineas.id_promocion` / `nombre_promocion` (snapshot, schema v3).
 - **Meta:** tabla `schema_version` para migraciones ordenadas (ver sección Versión de esquema).
-- **Beta 2.1 Etapa 1:** tablas `venta_observaciones` y `venta_cambios` (schema v6). Sin columnas nuevas en `ventas`/`venta_lineas`. Sin API/UI en esta etapa.
+- **Beta 2.1:** tablas `venta_observaciones` y `venta_cambios` (schema v6). Sin columnas nuevas en `ventas`/`venta_lineas`. Lectura/escritura vía API (`GET`/`PUT` ventas, obs, cambios); UI Historial.
 
 ## Tabla: medios_pago
 
@@ -212,11 +212,11 @@ Versión vigente:
 | 3 | Beta 2.0.4 cierre: `venta_lineas.id_promocion` + `nombre_promocion` |
 | 4 | Config de promo canónica: JSON solo `precio_base` + `modo` |
 | 5 | `venta_lineas.total` NOT NULL CHECK (> 0). Filas existentes: `total = subtotal`, sin recalcular `subtotal` |
-| 6 | Beta 2.1 Etapa 1: `venta_observaciones` + `venta_cambios` (FKs/CHECKs; sin API/UI) |
+| 6 | Beta 2.1: `venta_observaciones` + `venta_cambios` (FKs/CHECKs) |
 
-## Tablas Beta 2.1 Etapa 1: observaciones y auditoría
+## Tablas Beta 2.1: observaciones y auditoría
 
-Plan: Context `docs/beta-2.1-plan.md`. Persistencia/API de escritura llega en etapas posteriores; aquí solo el schema.
+Plan / cierre: Context `docs/beta-2.1-plan.md`, `docs/beta-2.1-closure.md`. Schema v6; API y UI de Historial implementadas.
 
 ### Tabla: `venta_cambios` (auditoría)
 
@@ -240,7 +240,7 @@ Plan: Context `docs/beta-2.1-plan.md`. Persistencia/API de escritura llega en et
 | fecha_creacion | Servidor ISO (mismo estilo que `fecha_venta`) |
 | id_cambio | FK nullable → `venta_cambios(id_cambio)` |
 
-El JSON de auditoría (cuando se escriba en etapas posteriores) incluye al menos medio, `valor_total`, líneas snapshot y observaciones relevantes. En creación se guardará `tipo=creacion` con el estado inicial. **No** se muta `fecha_venta` en ediciones. Ventas legado value-only no reciben líneas inventadas.
+El JSON de auditoría incluye al menos medio, `valor_total`, líneas snapshot y observaciones relevantes. En creación se guarda `tipo=creacion` con el estado inicial; cada `PUT` deja `edicion` con antes/después. Consulta: `GET /ventas/{id}/cambios`. **No** se muta `fecha_venta` en ediciones. Ventas legado value-only no reciben líneas inventadas. Ventana editable: `elapsed < 3600` s desde `fecha_venta` (reloj del proceso API).
 
 ## Migración
 

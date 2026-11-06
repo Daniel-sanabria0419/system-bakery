@@ -1,4 +1,4 @@
-# Notas de regresión — Beta 2.1 (Etapa 9)
+# Notas de regresión — Beta 2.1
 
 ## Suite
 
@@ -8,7 +8,7 @@ Comando canónico:
 QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest
 ```
 
-Al cierre de Etapa 9: **364 passed** (incl. smokes 2.0–2.0.x, #61–#66 y `test_beta21_*`).
+Al cierre de Etapa 9 / docs Etapa 10: **364 passed** (incl. smokes 2.0–2.0.x, #61–#66 y `test_beta21_*`).
 
 ## Ventana de edición (definición inclusive)
 
@@ -58,3 +58,7 @@ Al cierre de Etapa 9: **364 passed** (incl. smokes 2.0–2.0.x, #61–#66 y `tes
 ## Sin regresiones de Beta 2.0.x
 
 Se conservan: enteros (sin float dinero), snapshot de líneas, promo por línea, UUID cliente + idempotencia, revalidación de carrito, precio de lista, snapshot promo solo con descuento, `ensure_imagenes_dirs`, catálogo/Vista A-B/prefijo, soft-delete, y legado value-only.
+
+## Etapa 10 (docs)
+
+Sin cambios de código de app. Docs del repo + informe Context alineados al comportamiento de las etapas 1–9. Cierre formal de versión = OK final de Daniel.
